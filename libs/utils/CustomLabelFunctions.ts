@@ -1,5 +1,4 @@
 ﻿import { actionToAllPlayers } from "./Common";
-import { ScriptPlayer } from "zep-script";
 import { Localizer } from "./Localizer";
 
 export function clearCustomLabel(player = null) {
@@ -69,7 +68,7 @@ export function showLabel(player: any, key: string, options: LabelOptions = {}) 
 	const topGap = isMobile ? topGapMobile : topGapPC;
 
 	// Label Percent Width 설정
-	let labelPercentWidth;
+	let labelPercentWidth: number;
 	if (isMobile) {
 		labelPercentWidth = mobileLabelPercentWidth[labelWidth];
 	} else if (isTablet) {

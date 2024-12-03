@@ -1,7 +1,7 @@
 {
   "compilerOptions": {
     "noEmit": false,
-    "isolatedModules": true
+    "isolatedModules": true,
   },
   "include": ["src", "main.ts"],
   "exclude": ["node_modules"]

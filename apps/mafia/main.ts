@@ -1,6 +1,5 @@
-import { ScriptPlayer } from "zep-script";
+import { Game } from "../../libs/core/mafia/Game";
 
 ScriptApp.onInit.Add(() => {
-
-
+	Game.create();
 });

@@ -1,11 +1,15 @@
-import { ScriptPlayer } from "zep-script/src/ScriptPlayer";
 import { Localizer } from "../../utils/Localizer";
 import { GameBase } from "../GameBase";
+import { GamePlayer } from "./types/GamePlayer";
 
 export class Game extends GameBase {
 	private static _instance: Game;
 
-	static create() {}
+	static create() {
+		if (!Game._instance) {
+			Game._instance = new Game();
+		}
+	}
 
 	constructor() {
 		super();
@@ -16,19 +20,22 @@ export class Game extends GameBase {
 		this.addOnDestroyCallback(this.onDestroy.bind(this));
 	}
 
-	private onStart() {}
+	private onStart() {
+		ScriptApp.enableFreeView = false;
+		ScriptApp.sendUpdated();
+	}
 
-	private onDestroy() {}
-
-	private onJoinPlayer(player: ScriptPlayer) {
-		// // 로컬라이징
+	private onJoinPlayer(player: GamePlayer) {
+		// 로컬라이징
 		Localizer.prepareLocalizationContainer(player);
 
 		//@ts-ignore
 		const customData = parseJsonString(player.customData);
 	}
 
-	private onLeavePlayer(player: ScriptPlayer) {}
+	private onLeavePlayer(player: GamePlayer) {}
 
 	private update(dt: number) {}
+
+	private onDestroy() {}
 }

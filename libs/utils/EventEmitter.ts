@@ -1,5 +1,3 @@
-import { ScriptPlayer } from "zep-script/src/ScriptPlayer";
-
 type EventHandler<T = any> = (...args: T[]) => void;
 
 export class EventEmitter {

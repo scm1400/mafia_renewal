@@ -1,13 +1,13 @@
-import { ScriptPlayer } from "zep-script";
 import { isDevServer, log } from "../utils/Common";
+import { GamePlayer } from "./mafia/types/GamePlayer";
 
 export abstract class GameBase {
 	protected onStartCallbacks: (() => void)[] = [];
 	protected onDestroyCallbacks: (() => void)[] = [];
-	private onJoinPlayerCallbacks: ((player: ScriptPlayer) => void)[] = [];
-	private onLeavePlayerCallbacks: ((player: ScriptPlayer) => void)[] = [];
+	private onJoinPlayerCallbacks: ((player: GamePlayer) => void)[] = [];
+	private onLeavePlayerCallbacks: ((player: GamePlayer) => void)[] = [];
 	private onUpdateCallbacks: ((dt: number) => void)[] = [];
-	private onTriggerObjectCallbacks: ((sender: ScriptPlayer, layerId: number, x: number, y: number, key: string | undefined) => void)[] = [];
+	private onTriggerObjectCallbacks: ((sender: GamePlayer, layerId: number, x: number, y: number, key: string | undefined) => void)[] = [];
 
 	constructor() {
 		this.initEventListeners();
@@ -19,26 +19,26 @@ export abstract class GameBase {
 				try {
 					callback();
 				} catch (error) {
-					log(`[zep-quiz] ${error}`);
+					//*
 				}
 			});
 		});
-		ScriptApp.onJoinPlayer.Add((player) => {
+		ScriptApp.onJoinPlayer.Add((player:GamePlayer) => {
 			this.onJoinPlayerCallbacks.forEach((callback) => {
 				try {
 					callback(player);
 				} catch (error) {
-					log(`[zep-quiz] ${error}`);
+					//*
 				}
 			});
 		});
 
-		ScriptApp.onLeavePlayer.Add((player) => {
+		ScriptApp.onLeavePlayer.Add((player:GamePlayer) => {
 			this.onLeavePlayerCallbacks.forEach((callback) => {
 				try {
 					callback(player);
 				} catch (error) {
-					log(`[zep-quiz] ${error}`);
+					//*
 				}
 			});
 		});
@@ -48,7 +48,7 @@ export abstract class GameBase {
 				try {
 					callback(dt);
 				} catch (error) {
-					log(`[zep-quiz] ${error}`);
+					//*
 				}
 			});
 		});
@@ -58,17 +58,17 @@ export abstract class GameBase {
 				try {
 					callback();
 				} catch (error) {
-					log(`[zep-quiz] ${error}`);
+					//*
 				}
 			});
 		});
 
-		ScriptApp.onTriggerObject.Add((sender, layerId, x, y, key) => {
+		ScriptApp.onTriggerObject.Add((sender:GamePlayer, layerId, x, y, key) => {
 			this.onTriggerObjectCallbacks.forEach((callback) => {
 				try {
 					callback(sender, layerId, x, y, key);
 				} catch (error) {
-					log(`[zep-quiz] ${error}`);
+					//*
 				}
 			});
 		});
@@ -82,11 +82,11 @@ export abstract class GameBase {
 		this.onDestroyCallbacks.push(callback);
 	}
 
-	public addOnJoinPlayerCallback(callback: (player: ScriptPlayer) => void): void {
+	public addOnJoinPlayerCallback(callback: (player: GamePlayer) => void): void {
 		this.onJoinPlayerCallbacks.push(callback);
 	}
 
-	public addOnLeavePlayerCallback(callback: (player: ScriptPlayer) => void): void {
+	public addOnLeavePlayerCallback(callback: (player: GamePlayer) => void): void {
 		this.onLeavePlayerCallbacks.push(callback);
 	}
 
@@ -94,7 +94,7 @@ export abstract class GameBase {
 		this.onUpdateCallbacks.push(callback);
 	}
 
-	public addOnTriggerObjectCallback(callback: (sender: ScriptPlayer, layerId: number, x: number, y: number, key: string | undefined) => void): void {
+	public addOnTriggerObjectCallback(callback: (sender: GamePlayer, layerId: number, x: number, y: number, key: string | undefined) => void): void {
 		this.onTriggerObjectCallbacks.push(callback);
 	}
 }

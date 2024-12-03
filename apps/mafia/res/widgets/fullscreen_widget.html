@@ -1,0 +1,199 @@
+<html style="overflow: hidden">
+
+<head>
+    <script>
+        /* create style sheet */
+        const newFontStylePath = document.URL.includes('https://zep.us') ? "https://cdn-static.zep.us/static/zep-script/css/typography.css" : "https://cdn-static-stage.zep.us/static/zep-script/css/typography.css";
+
+        document.head.appendChild(Object.assign(document.createElement("link"), {
+            rel: "stylesheet",
+            type: "text/css",
+            href: newFontStylePath
+        }));
+    </script>
+    <style type="text/css">
+        :root {
+            --sat: env(safe-area-inset-top);
+            --sar: env(safe-area-inset-right);
+            --sab: env(safe-area-inset-bottom);
+            --sal: env(safe-area-inset-left);
+        }
+
+        * {
+            padding: 0;
+            margin: 0;
+            box-sizing: border-box;
+            user-select: none !important;
+            font-family: 'Pretendard JP', 'Pretendard', sans-serif, Arial;
+            color: #27262E;
+        }
+
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background-color: #BEC3CC;
+            box-shadow: 0px 2px 10px rgba(42, 39, 65, 0.1);
+            border-radius: 10px;
+            background-clip: padding-box;
+            border: 1px solid transparent;
+        }
+
+        html {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(28, 27, 31, 0.80);
+            backdrop-filter: blur(2px);
+        }
+
+        html:has(.mobile) {
+            display: flex;
+            align-items: center;
+            height: 100%;
+        }
+
+        body.mobile {
+            width: 100%;
+            height: 100%;
+            justify-content: flex-start;
+        }
+
+        body {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            width: 800px;
+            max-width: 100%;
+            align-items: center;
+            height: max-content;
+        }
+
+        .content-box {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            gap: 24px;
+            /* margin-bottom: 60px; */
+            width: 100%;
+        }
+
+        .mobile .content-box {
+            width: 100%;
+            margin-bottom: 0px;
+            padding: 24px;
+            height: 100%;
+            max-height: 1080px;
+            gap: 24px;
+        }
+
+        .hidden {
+            border: 0;
+            clip: rect(1px 1px 1px 1px);
+            height: 1px;
+            margin: -1px;
+            overflow: hidden;
+            padding: 0;
+            position: absolute !important;
+            width: 1px;
+            left: -10000px;
+        }
+    </style>
+</head>
+
+<body class="hidden">
+    <script type="text/javascript">
+        let _isMobile = false;
+        let _isTablet = false;
+
+        let _languageCode;
+        let _localizeContainer;
+
+
+        const isLocal = window.location.protocol === 'file:';
+        let debug = false;
+
+        if (isLocal) {
+            debug = true;
+            document.body.classList.remove("hidden");
+        }
+
+        window.addEventListener("message", function (e) {
+            const type = e.data.type;
+            if (type === "init") {
+                window.focus();
+                try {
+                    _isMobile = e.data.isMobile;
+                    _isTablet = e.data.isTablet;
+
+                    _languageCode = e.data.languageCode;
+                    _localizeContainer = e.data.localizeContainer;
+
+                    document.body.classList.remove("hidden");
+                    revealWidget();
+                } catch (error) {
+                    alert("An error occurred:", error);
+                }
+
+            }
+            else if (type === "hide") {
+                hideWidget();
+            } else if (type === "reveal") {
+                revealWidget(true);
+            }
+        });
+
+        window.addEventListener('unload', function () {
+            window.parent.focus();
+        });
+
+        function hideWidget() {
+            window.parent.postMessage({
+                type: "WidgetRearrange",
+                width: "0px",
+                height: "0px",
+            }, "*")
+            window.parent.focus();
+        }
+
+        function revealWidget(moveScrollToBottom = false) {
+            if (moveScrollToBottom) {
+                $contentWrapper.scrollTop = $contentWrapper.scrollHeight;
+            }
+            if (_isMobile) {
+                const rtcAndNotchHeight = 160 + parseInt(getComputedStyle(document.documentElement,).getPropertyValue("--sat"));
+                window.parent.postMessage({
+                    type: 'WidgetRearrange',
+                    anchor: 'middle',
+                    height: '100%',
+                    width: '100%',
+                    top: `-${parseInt(0)}px`
+                }, '*')
+            } else {
+                // document.querySelector("html").style.background = "rgba(0, 0, 0, 0.24)";
+                window.parent.postMessage({
+                    type: "WidgetRearrange",
+                    anchor: "middle",
+                    width: `100%`,
+                    height: `100%`,
+                }, "*")
+            }
+        }
+
+        function fitTheSize() {
+            window.parent.postMessage({
+                type: "WidgetRearrange",
+                width: document.body.offsetWidth + 10,
+                height: document.body.offsetHeight + 10,
+            }, "*")
+        }
+
+    </script>
+</body>
+
+</html>
