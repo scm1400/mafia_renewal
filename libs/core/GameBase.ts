@@ -23,7 +23,7 @@ export abstract class GameBase {
 				}
 			});
 		});
-		ScriptApp.onJoinPlayer.Add((player:GamePlayer) => {
+		ScriptApp.onJoinPlayer.Add((player: GamePlayer) => {
 			this.onJoinPlayerCallbacks.forEach((callback) => {
 				try {
 					callback(player);
@@ -33,7 +33,7 @@ export abstract class GameBase {
 			});
 		});
 
-		ScriptApp.onLeavePlayer.Add((player:GamePlayer) => {
+		ScriptApp.onLeavePlayer.Add((player: GamePlayer) => {
 			this.onLeavePlayerCallbacks.forEach((callback) => {
 				try {
 					callback(player);
@@ -63,7 +63,7 @@ export abstract class GameBase {
 			});
 		});
 
-		ScriptApp.onTriggerObject.Add((sender:GamePlayer, layerId, x, y, key) => {
+		ScriptApp.onTriggerObject.Add((sender: GamePlayer, layerId, x, y, key) => {
 			this.onTriggerObjectCallbacks.forEach((callback) => {
 				try {
 					callback(sender, layerId, x, y, key);

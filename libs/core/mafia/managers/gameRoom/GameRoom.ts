@@ -1,4 +1,4 @@
-import { GameFlowManager } from "../gameFlow/GameFlowManager";
+import { GameFlowManager, MafiaPlayer, MafiaGameRole } from "../gameFlow/GameFlowManager";
 
 // Define constants based on your code (placeholder values assumed)
 const STATE_INIT = "INIT";
@@ -16,8 +16,7 @@ const START_WAIT_TIME = 30;
 
 export class GameRoom {
 	public id: number;
-	public players: string[] = [];
-	public readyCount: number = 0;
+	public players: MafiaPlayer[] = [];
 	public flowManager: GameFlowManager;
 
 	constructor(id: number) {
@@ -25,19 +24,18 @@ export class GameRoom {
 		this.flowManager = new GameFlowManager(this); // 생성 시 GameFlowManager 초기화
 	}
 
+	// 플레이어 추가 (게임 시작 전에는 기본 역할은 CITIZEN)
 	addPlayer(playerId: string) {
-		this.players.push(playerId);
-		this.readyCount++;
+		this.players.push({ id: playerId, role: MafiaGameRole.CITIZEN, isAlive: true });
 	}
 
+	// 플레이어 제거
 	removePlayer(playerId: string) {
-		this.players = this.players.filter((player) => player !== playerId);
-		this.readyCount = Math.max(0, this.readyCount - 1);
+		this.players = this.players.filter((player) => player.id !== playerId);
 	}
 
 	reset() {
 		this.players = [];
-		this.readyCount = 0;
 		this.flowManager.resetGame(); // GameFlowManager 상태도 초기화
 	}
 }
