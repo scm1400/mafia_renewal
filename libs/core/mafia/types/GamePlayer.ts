@@ -13,6 +13,7 @@ export interface PlayerProfile {
 }
 
 export interface PlayerTag {
-	profile: PlayerProfile;
+	roomInfo?: { roomNum: number; };
+	profile?: PlayerProfile;
 	widget: Record<string, ScriptWidget>;
 }

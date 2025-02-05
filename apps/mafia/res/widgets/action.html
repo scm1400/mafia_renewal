@@ -1,0 +1,381 @@
+<html style="overflow: hidden">
+
+<head>
+    <script>
+        /* create style sheet */
+        const newFontStylePath = document.URL.includes('https://zep.us') ? "https://cdn-static.zep.us/static/zep-script/css/typography.css" : "https://cdn-static-stage.zep.us/static/zep-script/css/typography.css";
+
+        document.head.appendChild(Object.assign(document.createElement("link"), {
+            rel: "stylesheet",
+            type: "text/css",
+            href: newFontStylePath
+        }));
+    </script>
+    <style type="text/css">
+        :root {
+            --sat: env(safe-area-inset-top);
+            --sar: env(safe-area-inset-right);
+            --sab: env(safe-area-inset-bottom);
+            --sal: env(safe-area-inset-left);
+        }
+
+        * {
+            padding: 0;
+            margin: 0;
+            box-sizing: border-box;
+            user-select: none !important;
+            font-family: 'Pretendard JP', 'Pretendard', sans-serif, Arial;
+            color: #27262E;
+        }
+
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background-color: #BEC3CC;
+            box-shadow: 0px 2px 10px rgba(42, 39, 65, 0.1);
+            border-radius: 10px;
+            background-clip: padding-box;
+            border: 1px solid transparent;
+        }
+
+        html {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(28, 27, 31, 0.80);
+            backdrop-filter: blur(2px);
+        }
+
+        html:has(.mobile) {
+            display: flex;
+            align-items: center;
+            height: 100%;
+        }
+
+        body.mobile {
+            width: 100%;
+            height: 100%;
+            justify-content: flex-start;
+        }
+
+        body {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            width: 800px;
+            max-width: 100%;
+            align-items: center;
+            height: max-content;
+        }
+
+        .content-box {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            gap: 24px;
+            /* margin-bottom: 60px; */
+            width: 100%;
+        }
+
+        .mobile .content-box {
+            width: 100%;
+            margin-bottom: 0px;
+            padding: 24px;
+            height: 100%;
+            max-height: 1080px;
+            gap: 24px;
+        }
+
+        /* 기본 버튼 스타일 */
+        .player-button {
+            margin: 5px;
+            padding: 10px 20px;
+            font-size: 14px;
+            cursor: pointer;
+        }
+
+        /* isAlive인 플레이어의 기본 스타일 */
+        .alive-button {
+            background-color: #e0e0e0;
+            border: 1px solid #ccc;
+        }
+
+        /* highlight된 버튼 (선택된 플레이어) */
+        .highlight {
+            border: 2px solid green;
+        }
+
+        /* 죽은 플레이어: 빨간 배경, 클릭 불가 */
+        .dead-button {
+            background-color: red;
+            color: white;
+            cursor: not-allowed;
+            border: 1px solid #900;
+        }
+
+        .ui-container {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            gap: 16px;
+            transform: translateY(-100%);
+        }
+
+        .ui-section>h2 {
+            color: white;
+        }
+
+        .hidden {
+            border: 0;
+            clip: rect(1px 1px 1px 1px);
+            height: 1px;
+            margin: -1px;
+            overflow: hidden;
+            padding: 0;
+            position: absolute !important;
+            width: 1px;
+            left: -10000px;
+        }
+    </style>
+</head>
+
+<body class="hidden">
+    <div class="ui-container">
+        <!-- 마피아 타겟 선택 UI -->
+        <div id="mafia-ui" class="ui-section">
+            <h2>마피아: 타겟 선택</h2>
+        </div>
+
+        <!-- 경찰 타겟 조사 UI -->
+        <div id="police-ui" class="ui-section">
+            <h2>경찰: 타겟 조사</h2>
+        </div>
+
+        <!-- 의사 타겟 보호 UI -->
+        <div id="doctor-ui" class="ui-section">
+            <h2>의사: 타겟 보호</h2>
+        </div>
+
+        <!-- 낮 시간 또는 투표 UI -->
+        <div id="voting-ui" class="ui-section">
+            <h2>투표</h2>
+        </div>
+        <div id="players-container"></div>
+    </div>
+
+    <script type="text/javascript">
+        let _isMobile = false;
+        let _isTablet = false;
+
+        let _languageCode;
+        let _localizeContainer;
+
+
+        const isLocal = window.location.protocol === 'file:';
+        let debug = false;
+
+        if (isLocal) {
+            debug = true;
+            document.body.classList.remove("hidden");
+        }
+
+        window.addEventListener("message", function (e) {
+            const type = e.data.type;
+            if (type === "init") {
+                window.focus();
+
+                try {
+                    _isMobile = e.data.isMobile;
+                    _isTablet = e.data.isTablet;
+
+                    _languageCode = e.data.languageCode;
+                    _localizeContainer = e.data.localizeContainer;
+
+                    /*
+                    const testData = {
+                        role: "MAFIA",
+                        currentPhase: "NIGHT",
+                        players: [
+                            { id: "player1", role: "MAFIA", isAlive: true },
+                            { id: "player2", role: "POLICE", isAlive: true },
+                            { id: "player3", role: "DOCTOR", isAlive: true },
+                            { id: "player4", role: "CITIZEN", isAlive: true }
+                        ]
+                    };
+                    */
+                    renderUI(e.data.gameData);
+
+                    document.body.classList.remove("hidden");
+                    revealWidget();
+                } catch (error) {
+                    alert("An error occurred:", error);
+                }
+
+            }
+            else if (type === "hide") {
+                hideWidget();
+            } else if (type === "reveal") {
+                revealWidget(true);
+            }
+        });
+
+        /**
+        * 서버에서 전달받은 데이터를 기반으로 UI를 동적으로 렌더링합니다.
+        * data 예시:
+        * {
+        *   role: "MAFIA",
+        *   currentPhase: "NIGHT",
+        *   players: [{ id: "player1", role: "MAFIA", isAlive: true }, ...]
+        * }
+        */
+        function renderUI(data) {
+            // 모든 UI 섹션 숨기기
+            document.getElementById("mafia-ui").style.display = "none";
+            document.getElementById("police-ui").style.display = "none";
+            document.getElementById("doctor-ui").style.display = "none";
+            document.getElementById("voting-ui").style.display = "none";
+
+            // 현재 Phase에 따라 역할별 UI 표시
+            if (data.currentPhase === "NIGHT") {
+                if (data.role === "MAFIA") {
+                    document.getElementById("mafia-ui").style.display = "block";
+                } else if (data.role === "POLICE") {
+                    document.getElementById("police-ui").style.display = "block";
+                } else if (data.role === "DOCTOR") {
+                    document.getElementById("doctor-ui").style.display = "block";
+                }
+            }
+            // 낮 단계 혹은 투표 관련 Phase에서는 투표 UI 표시
+            else if (
+                data.currentPhase === "DAY" ||
+                data.currentPhase === "VOTING" ||
+                data.currentPhase === "FINAL_DEFENSE" ||
+                data.currentPhase === "APPROVAL_VOTING"
+            ) {
+                document.getElementById("voting-ui").style.display = "block";
+            }
+
+            // 플레이어 목록 버튼 생성
+            const container = document.getElementById("players-container");
+            container.innerHTML = ""; // 기존 내용 초기화
+
+            // 단 하나의 버튼만 선택되도록 하기 위한 변수
+            let selectedPlayerId = null;
+
+            data.players.forEach(player => {
+                // 각 플레이어에 대한 버튼 생성
+                const btn = document.createElement("button");
+                btn.textContent = player.name; // 또는 다른 표시 텍스트 사용
+                btn.classList.add("player-button");
+
+                if (player.isAlive) {
+                    btn.classList.add("alive-button");
+                    // alive인 경우, 클릭 시 highlight 처리 (단, 중복 선택은 허용하지 않음)
+                    btn.addEventListener("click", function () {
+                        // 이미 선택된 버튼이면 아무 작업도 하지 않음
+                        if (selectedPlayerId === player.id) {
+                            return;
+                        }
+                        // 다른 버튼이 이미 선택되었다면, 해당 버튼의 highlight 제거
+                        const previouslySelected = container.querySelector(".highlight");
+                        if (previouslySelected) {
+                            previouslySelected.classList.remove("highlight");
+                        }
+                        // 현재 버튼에 highlight 추가
+                        btn.classList.add("highlight");
+                        selectedPlayerId = player.id;
+                        console.log("선택된 플레이어:", selectedPlayerId);
+                    });
+                } else {
+                    // 죽은 플레이어는 빨간색 버튼으로 표시하고 클릭 불가 처리
+                    btn.classList.add("dead-button");
+                    btn.disabled = true;
+                }
+
+                container.appendChild(btn);
+            });
+        }
+
+        // 역할별 액션을 서버에 전달하는 함수 (예: 마피아 타겟 선택)
+        function selectTarget(targetPlayerId) {
+            // 실제 구현에서는 서버 API 호출 등을 통해 액션 전달
+            window.parent.postMessage({
+                type: "mafiaAction",
+                targetPlayerId
+            }, "*")
+        }
+        function investigateTarget(targetPlayerId) {
+            window.parent.postMessage({
+                type: "policeAction",
+                targetPlayerId
+            }, "*")
+        }
+        function protectTarget(targetPlayerId) {
+            window.parent.postMessage({
+                type: "doctorAction",
+                targetPlayerId
+            }, "*")
+        }
+        function voteTarget(targetPlayerId) {
+            window.parent.postMessage({
+                type: "voteAction",
+                targetPlayerId
+            }, "*")
+        }
+
+        window.addEventListener('unload', function () {
+            window.parent.focus();
+        });
+
+        function hideWidget() {
+            window.parent.postMessage({
+                type: "WidgetRearrange",
+                width: "0px",
+                height: "0px",
+            }, "*")
+            window.parent.focus();
+        }
+
+        function revealWidget(moveScrollToBottom = false) {
+            if (moveScrollToBottom) {
+                $contentWrapper.scrollTop = $contentWrapper.scrollHeight;
+            }
+            if (_isMobile) {
+                const rtcAndNotchHeight = 160 + parseInt(getComputedStyle(document.documentElement,).getPropertyValue("--sat"));
+                window.parent.postMessage({
+                    type: 'WidgetRearrange',
+                    anchor: 'middle',
+                    height: '100%',
+                    width: '100%',
+                    top: `-${parseInt(0)}px`
+                }, '*')
+            } else {
+                // document.querySelector("html").style.background = "rgba(0, 0, 0, 0.24)";
+                window.parent.postMessage({
+                    type: "WidgetRearrange",
+                    anchor: "middle",
+                    width: `100%`,
+                    height: `100%`,
+                }, "*")
+            }
+        }
+
+        function fitTheSize() {
+            window.parent.postMessage({
+                type: "WidgetRearrange",
+                width: document.body.offsetWidth + 10,
+                height: document.body.offsetHeight + 10,
+            }, "*")
+        }
+
+    </script>
+</body>
+
+</html>

@@ -92,6 +92,16 @@
             gap: 24px;
         }
 
+        #message {
+            font-size: 64px;
+            color: white;
+            border-right: 2px solid white;
+            display: inline-block;
+            white-space: nowrap;
+            overflow: hidden;
+            transform: translateY(-100%);
+        }
+
         .hidden {
             border: 0;
             clip: rect(1px 1px 1px 1px);
@@ -107,6 +117,8 @@
 </head>
 
 <body class="hidden">
+    <div id="message">
+    </div>
     <script type="text/javascript">
         let _isMobile = false;
         let _isTablet = false;
@@ -123,10 +135,37 @@
             document.body.classList.remove("hidden");
         }
 
+
+        const messageElement = document.getElementById("message");
+
+
+        let typingIndex = 0;
+        function typeText(text) {
+            if (typingIndex < text.length) {
+                if (text[typingIndex] === "\n") {
+                    messageElement.innerHTML += "<br>";
+                } else {
+                    messageElement.innerHTML += text[typingIndex];
+                }
+                typingIndex++;
+                setTimeout(() => {
+                    typeText(text);
+                }, 150); // 글자 타이핑 속도 조절 (밀리초 단위)
+            } else {
+                messageElement.style.borderRight = "none"; // 애니메이션 끝나면 커서 제거
+                setTimeout(() => {
+                    hideWidget();
+                }, 1000); // 글자 타이핑 속도 조절 (밀리초 단위)
+            }
+        }
+
         window.addEventListener("message", function (e) {
             const type = e.data.type;
             if (type === "init") {
                 window.focus();
+                typingIndex = 0;
+                messageElement.innerHTML = '';
+                typeText(e.data.message);
                 try {
                     _isMobile = e.data.isMobile;
                     _isTablet = e.data.isTablet;

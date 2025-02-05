@@ -1,3 +1,4 @@
+import { GamePlayer } from "../../types/GamePlayer";
 import { GameRoom } from "../gameRoom/GameRoom";
 
 // GameState Enum: 게임의 주요 상태를 정의
@@ -27,7 +28,7 @@ export enum MafiaPhase {
 
 export const phaseDurations: { [key in MafiaPhase]: number } = {
 	[MafiaPhase.NIGHT]: 30,
-	[MafiaPhase.DAY]: 60,
+	[MafiaPhase.DAY]: 20,
 	[MafiaPhase.VOTING]: 30,
 	[MafiaPhase.FINAL_DEFENSE]: 20,
 	[MafiaPhase.APPROVAL_VOTING]: 30,
@@ -36,6 +37,7 @@ export const phaseDurations: { [key in MafiaPhase]: number } = {
 // 각 플레이어에 대한 정보 인터페이스입니다.
 export interface MafiaPlayer {
 	id: string;
+	name: string;
 	role: MafiaGameRole;
 	isAlive: boolean;
 }
@@ -43,9 +45,14 @@ export interface MafiaPlayer {
 export class GameFlowManager {
 	public state: GameState = GameState.WAITING;
 	private currentPhase: MafiaPhase;
-	private dayCount: number = 1;
+	private dayCount: number = 0;
 	private phaseCycle: MafiaPhase[];
 	public phaseTimer: number;
+
+	// 밤에 수행되는 액션들을 저장하는 변수들
+	private mafiaTarget: string | null = null;
+	private doctorTarget: string | null = null;
+	private policeTarget: string | null = null;
 
 	constructor(private room: GameRoom) {}
 
@@ -60,7 +67,8 @@ export class GameFlowManager {
 	 */
 	startGame() {
 		if (this.room.players.length < 4) {
-			ScriptApp.sayToAll("게임 시작을 위해 최소 4명의 플레이어가 필요합니다");
+			ScriptApp.showCenterLabel("게임 시작을 위해 최소 4명의 플레이어가 필요합니다");
+			return;
 		}
 
 		// 플레이어 역할 무작위 배정
@@ -78,10 +86,12 @@ export class GameFlowManager {
 		// 플레이어 수에 따른 게임 단계 순서 설정
 		if (this.room.players.length === 4) {
 			// 4명인 경우: 낮 → 투표 → 최후 변론 → 찬반 투표 → 낮 …
-			this.phaseCycle = [MafiaPhase.DAY, MafiaPhase.VOTING, MafiaPhase.FINAL_DEFENSE, MafiaPhase.APPROVAL_VOTING];
+			// this.phaseCycle = [MafiaPhase.DAY, MafiaPhase.VOTING, MafiaPhase.FINAL_DEFENSE, MafiaPhase.APPROVAL_VOTING];
+			this.phaseCycle = [MafiaPhase.DAY, MafiaPhase.VOTING, MafiaPhase.NIGHT];
 		} else {
 			// 4명보다 많은 경우: 밤 → 낮 → 투표 → 최후 변론 → 찬반 투표 → 밤 …
-			this.phaseCycle = [MafiaPhase.NIGHT, MafiaPhase.DAY, MafiaPhase.VOTING, MafiaPhase.FINAL_DEFENSE, MafiaPhase.APPROVAL_VOTING];
+			// this.phaseCycle = [MafiaPhase.NIGHT, MafiaPhase.DAY, MafiaPhase.VOTING, MafiaPhase.FINAL_DEFENSE, MafiaPhase.APPROVAL_VOTING];
+			this.phaseCycle = [MafiaPhase.NIGHT, MafiaPhase.DAY, MafiaPhase.VOTING];
 		}
 
 		// 초기 단계 설정
@@ -100,7 +110,8 @@ export class GameFlowManager {
 	 */
 	nextPhase() {
 		if (this.state !== GameState.IN_PROGRESS) {
-			throw new Error("게임이 진행 중이 아닙니다.");
+			ScriptApp.sayToAll("게임이 진행 중이 아닙니다.");
+			return;
 		}
 		const currentIndex = this.phaseCycle.indexOf(this.currentPhase);
 		const nextIndex = (currentIndex + 1) % this.phaseCycle.length;
@@ -122,14 +133,97 @@ export class GameFlowManager {
 	private executePhaseActions() {
 		switch (this.currentPhase) {
 			case MafiaPhase.NIGHT:
-				ScriptApp.sayToAll(`Room ${this.room.id}: 밤 단계 - 마피아가 희생자를 선택합니다.`);
-				// 예: this.mafiaAction();
+				{
+					ScriptApp.sayToAll(`Room ${this.room.id}: 밤 단계 - 마피아가 희생자를 선택합니다.`);
+
+					this.room.actionToRoomPlayers((player) => {
+						const gamePlayer: GamePlayer = ScriptApp.getPlayerByID(player.id);
+						if (!gamePlayer) {
+							player.isAlive = false;
+							return;
+						}
+						let message = "🌙밤이 되었습니다";
+						if (this.dayCount == 0) {
+							message += `\n 당신은 [ ${player.role} ] 입니다`;
+						}
+
+						if (gamePlayer.tag.widget.main) {
+							gamePlayer.tag.widget.main.sendMessage({
+								type: "init",
+								message,
+							});
+						}
+
+						if (!gamePlayer.tag.widget.action) {
+							gamePlayer.tag.widget.action = gamePlayer.showWidget("widgets/action.html", "middle", 0, 0);
+						}
+
+						if (player.isAlive) {
+							gamePlayer.tag.widget.action.sendMessage({
+								type: "init",
+								gameData: {
+									role: player.role,
+									currentPhase: this.currentPhase,
+									players: this.room.players,
+								},
+							});
+						}
+					});
+
+					// 예: this.mafiaAction();
+				}
 				break;
 			case MafiaPhase.DAY:
-				ScriptApp.sayToAll(`Room ${this.room.id}: 낮 단계 - 플레이어들이 토론을 진행합니다.`);
+				{
+					this.evaluateNightActions();
+					ScriptApp.sayToAll(`Room ${this.room.id}: 낮 단계 - 플레이어들이 토론을 진행합니다.`);
+
+					this.room.actionToRoomPlayers((player) => {
+						let message = "🔅낮이 되었습니다";
+						const gamePlayer: GamePlayer = ScriptApp.getPlayerByID(player.id);
+						if (!gamePlayer) {
+							player.isAlive = false;
+							return;
+						}
+						if (this.dayCount == 0) {
+							message += `\n 당신은 [ ${player.role} ] 입니다`;
+						}
+
+						if (gamePlayer.tag.widget.main) {
+							gamePlayer.tag.widget.main.sendMessage({
+								type: "init",
+								message,
+							});
+						}
+
+						if (gamePlayer.tag.widget.action) {
+							gamePlayer.tag.widget.action.sendMessage({
+								type: "hide",
+							});
+						}
+					});
+				}
 				break;
 			case MafiaPhase.VOTING:
-				ScriptApp.sayToAll(`Room ${this.room.id}: 투표 단계 - 플레이어들이 투표를 진행합니다.`);
+				{
+					const message = "⚖️ 투표 시간 입니다";
+					ScriptApp.sayToAll(`Room ${this.room.id}: 낮 단계 - 플레이어들이 토론을 진행합니다.`);
+
+					this.room.actionToRoomPlayers((player) => {
+						const gamePlayer: GamePlayer = ScriptApp.getPlayerByID(player.id);
+						if (!gamePlayer) {
+							player.isAlive = false;
+							return;
+						}
+
+						if (gamePlayer.tag.widget.main) {
+							gamePlayer.tag.widget.main.sendMessage({
+								type: "init",
+								message,
+							});
+						}
+					});
+				}
 				break;
 			case MafiaPhase.FINAL_DEFENSE:
 				ScriptApp.sayToAll(`Room ${this.room.id}: 최후 변론 단계 - 피의자가 최후 변론을 합니다.`);
@@ -140,6 +234,7 @@ export class GameFlowManager {
 			default:
 				ScriptApp.sayToAll(`Room ${this.room.id}: 알 수 없는 단계입니다.`);
 		}
+		if (this.dayCount == 0) this.dayCount = 1;
 	}
 
 	/**
@@ -148,7 +243,8 @@ export class GameFlowManager {
 	 */
 	endVoting(votes: { [playerId: string]: number }) {
 		if (this.currentPhase !== MafiaPhase.VOTING && this.currentPhase !== MafiaPhase.APPROVAL_VOTING) {
-			throw new Error("현재 투표 단계가 아닙니다.");
+			ScriptApp.sayToAll("현재 투표 단계가 아닙니다.");
+			return;
 		}
 
 		// 가장 많은 표를 받은 플레이어 탈락 처리
@@ -182,6 +278,78 @@ export class GameFlowManager {
 		}
 	}
 
+	/**
+	 * 밤 단계에서 마피아가 희생 대상을 선택합니다.
+	 * @param targetPlayerId 선택한 대상 플레이어의 ID
+	 */
+	mafiaAction(targetPlayerId: string): void {
+		if (this.currentPhase !== MafiaPhase.NIGHT) {
+			ScriptApp.sayToAll("마피아 액션은 밤 단계에서만 수행할 수 있습니다.");
+			return;
+		}
+		// (선택 대상이 존재하고 살아있는지 등의 추가 검증 로직을 필요 시 추가)
+		this.mafiaTarget = targetPlayerId;
+		ScriptApp.sayToAll(`Room ${this.room.id}: 마피아가 ${targetPlayerId}를 희생 대상으로 선택했습니다.`);
+	}
+
+	/**
+	 * 밤 단계에서 의사가 보호할 대상을 선택합니다.
+	 * @param targetPlayerId 선택한 보호 대상 플레이어의 ID
+	 */
+	doctorAction(targetPlayerId: string): void {
+		if (this.currentPhase !== MafiaPhase.NIGHT) {
+			ScriptApp.sayToAll("의사 액션은 밤 단계에서만 수행할 수 있습니다.");
+			return;
+		}
+		this.doctorTarget = targetPlayerId;
+		ScriptApp.sayToAll(`Room ${this.room.id}: 의사가 ${targetPlayerId}를 보호 대상으로 선택했습니다.`);
+	}
+
+	/**
+	 * 밤 단계에서 경찰이 조사할 대상을 선택합니다.
+	 * 선택한 플레이어의 역할을 확인하여 결과를 출력합니다.
+	 * @param targetPlayerId 조사할 플레이어의 ID
+	 */
+	policeAction(targetPlayerId: string): void {
+		if (this.currentPhase !== MafiaPhase.NIGHT) {
+			ScriptApp.sayToAll("경찰 액션은 밤 단계에서만 수행할 수 있습니다.");
+			return;
+		}
+		this.policeTarget = targetPlayerId;
+		const targetPlayer = this.room.players.find((p) => p.id === targetPlayerId);
+		if (!targetPlayer) {
+			console.error(`Room ${this.room.id}: 경찰 액션 실패 - 플레이어 ${targetPlayerId}를 찾을 수 없습니다.`);
+			return;
+		}
+		ScriptApp.sayToAll(`Room ${this.room.id}: 경찰이 ${targetPlayerId}를 조사한 결과, 역할은 ${targetPlayer.role} 입니다.`);
+		// 필요에 따라 경찰에게 조사 결과를 반환하거나 별도 로직을 추가할 수 있습니다.
+	}
+
+	/**
+	 * 밤 단계 액션 평가
+	 * - 마피아가 선택한 대상이 의사의 보호 대상과 동일하면 보호 성공.
+	 * - 그렇지 않으면 해당 플레이어를 사망 처리합니다.
+	 * 밤 액션 평가 후, 내부 액션 변수들을 초기화합니다.
+	 */
+	evaluateNightActions(): void {
+		if (this.mafiaTarget) {
+			if (this.mafiaTarget === this.doctorTarget) {
+				ScriptApp.sayToAll(`Room ${this.room.id}: 의사의 보호로 ${this.mafiaTarget}는 살해되지 않았습니다.`);
+			} else {
+				ScriptApp.sayToAll(`Room ${this.room.id}: ${this.mafiaTarget}가 마피아의 공격으로 사망했습니다.`);
+				// 해당 플레이어를 사망 처리 (예: isAlive 상태 변경)
+				const targetPlayer = this.room.players.find((p) => p.id === this.mafiaTarget);
+				if (targetPlayer) {
+					targetPlayer.isAlive = false;
+				}
+			}
+		}
+		// 다음 밤을 위해 액션 변수 초기화
+		this.mafiaTarget = null;
+		this.doctorTarget = null;
+		this.policeTarget = null;
+	}
+
 	// 게임 리셋: 게임 상태와 단계 등을 초기화합니다.
 	resetGame() {
 		this.state = GameState.WAITING;
@@ -198,5 +366,13 @@ export class GameFlowManager {
 	setPhase(phase: MafiaPhase) {
 		this.currentPhase = phase;
 		this.phaseTimer = phaseDurations[this.currentPhase];
+	}
+
+	getCurrentPhase(): MafiaPhase {
+		return this.currentPhase;
+	}
+
+	isGameInProgress(): boolean {
+		return this.state === GameState.IN_PROGRESS;
 	}
 }
