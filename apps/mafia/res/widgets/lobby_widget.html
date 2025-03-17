@@ -44,9 +44,10 @@
         body {
             width: 100%;
             height: 100%;
-            background-color: var(--bg-color);
             display: flex;
             flex-direction: column;
+            align-items: center;
+            justify-content: center;
         }
 
         .header {
@@ -427,88 +428,98 @@
             color: white;
             border-color: var(--primary-color);
         }
+
+        .lobby-container {
+            display: flex;
+            flex-direction: column;
+            height: 75%;
+            width: 50%;
+            background-color: var(--bg-color);
+        }
     </style>
 </head>
 
 <body>
-    <div class="header">
-        <h1>마피아 게임 로비</h1>
-        <div class="header-controls">
-            <div class="search-bar">
-                <input type="text" id="searchInput" placeholder="방 또는 플레이어 검색...">
-                <button id="searchBtn">🔍</button>
+    <div class="lobby-container">
+        <div class="header">
+            <h1>마피아 게임 로비</h1>
+            <div class="header-controls">
+                <div class="search-bar">
+                    <input type="text" id="searchInput" placeholder="방 또는 플레이어 검색...">
+                    <button id="searchBtn">🔍</button>
+                </div>
+                <button class="button primary" id="createRoomBtn">방 만들기</button>
             </div>
-            <button class="button primary" id="createRoomBtn">방 만들기</button>
         </div>
-    </div>
 
-    <div class="main-content">
-        <div class="rooms-container">
-            <div class="section-title">
-                <span>대기중인 방</span>
-                <button class="refresh-btn" id="refreshBtn">
-                    <span>새로고침</span> 🔄
-                </button>
+        <div class="main-content">
+            <div class="rooms-container">
+                <div class="section-title">
+                    <span>대기중인 방</span>
+                    <button class="refresh-btn" id="refreshBtn">
+                        <span>새로고침</span> 🔄
+                    </button>
+                </div>
+
+                <div class="room-filters">
+                    <button class="filter-btn active" data-filter="all">전체</button>
+                    <button class="filter-btn" data-filter="waiting">대기중</button>
+                    <button class="filter-btn" data-filter="in-progress">게임중</button>
+                </div>
+
+                <div id="roomsList">
+                    <!-- 방 목록이 동적으로 추가됩니다 -->
+                    <div class="empty-state">
+                        <h3>현재 활성화된 방이 없습니다</h3>
+                        <p>'방 만들기' 버튼을 클릭하여 새 방을 생성하세요!</p>
+                    </div>
+                </div>
             </div>
 
-            <div class="room-filters">
-                <button class="filter-btn active" data-filter="all">전체</button>
-                <button class="filter-btn" data-filter="waiting">대기중</button>
-                <button class="filter-btn" data-filter="in-progress">게임중</button>
-            </div>
-
-            <div id="roomsList">
-                <!-- 방 목록이 동적으로 추가됩니다 -->
-                <div class="empty-state">
-                    <h3>현재 활성화된 방이 없습니다</h3>
-                    <p>'방 만들기' 버튼을 클릭하여 새 방을 생성하세요!</p>
+            <div class="user-sidebar">
+                <div class="section-title">접속중인 유저</div>
+                <div id="usersList" class="user-list">
+                    <!-- 유저 목록이 동적으로 추가됩니다 -->
                 </div>
             </div>
         </div>
 
-        <div class="user-sidebar">
-            <div class="section-title">접속중인 유저</div>
-            <div id="usersList" class="user-list">
-                <!-- 유저 목록이 동적으로 추가됩니다 -->
-            </div>
-        </div>
-    </div>
-
-    <!-- 방 생성 모달 -->
-    <div class="modal-overlay" id="createRoomModal">
-        <div class="create-room-modal">
-            <div class="modal-header">
-                <h2 class="modal-title">새 방 만들기</h2>
-                <button class="close-btn" id="closeModalBtn">&times;</button>
-            </div>
-
-            <div class="form-group">
-                <label class="form-label" for="roomTitle">방 제목</label>
-                <input type="text" id="roomTitle" class="form-input" placeholder="방 제목을 입력하세요">
-            </div>
-
-            <div class="form-group">
-                <label class="form-label">게임 모드</label>
-                <div class="game-mode-list" id="gameModeList">
-                    <!-- 게임 모드 목록이 동적으로 추가됩니다 -->
+        <!-- 방 생성 모달 -->
+        <div class="modal-overlay" id="createRoomModal">
+            <div class="create-room-modal">
+                <div class="modal-header">
+                    <h2 class="modal-title">새 방 만들기</h2>
+                    <button class="close-btn" id="closeModalBtn">&times;</button>
                 </div>
-            </div>
 
-            <div class="form-group">
-                <label class="form-label" for="maxPlayers">최대 인원</label>
-                <select id="maxPlayers" class="form-input">
-                    <option value="4">4명</option>
-                    <option value="6">6명</option>
-                    <option value="8" selected>8명</option>
-                    <option value="10">10명</option>
-                    <option value="12">12명</option>
-                    <option value="15">15명</option>
-                </select>
-            </div>
+                <div class="form-group">
+                    <label class="form-label" for="roomTitle">방 제목</label>
+                    <input type="text" id="roomTitle" class="form-input" placeholder="방 제목을 입력하세요">
+                </div>
 
-            <div class="modal-footer">
-                <button class="button secondary" id="cancelCreateBtn">취소</button>
-                <button class="button primary" id="confirmCreateBtn">생성하기</button>
+                <div class="form-group">
+                    <label class="form-label">게임 모드</label>
+                    <div class="game-mode-list" id="gameModeList">
+                        <!-- 게임 모드 목록이 동적으로 추가됩니다 -->
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="maxPlayers">최대 인원</label>
+                    <select id="maxPlayers" class="form-input">
+                        <option value="4">4명</option>
+                        <option value="6">6명</option>
+                        <option value="8" selected>8명</option>
+                        <option value="10">10명</option>
+                        <option value="12">12명</option>
+                        <option value="15">15명</option>
+                    </select>
+                </div>
+
+                <div class="modal-footer">
+                    <button class="button secondary" id="cancelCreateBtn">취소</button>
+                    <button class="button primary" id="confirmCreateBtn">생성하기</button>
+                </div>
             </div>
         </div>
     </div>

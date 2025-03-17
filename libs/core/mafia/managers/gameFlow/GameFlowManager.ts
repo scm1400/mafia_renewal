@@ -98,7 +98,7 @@ export class GameFlowManager {
 	 */
 	startGame() {
 		if (!this.room) {
-			console.error("게임 룸이 설정되지 않았습니다.");
+			ScriptApp.sayToAll("게임 룸이 설정되지 않았습니다.");
 			return;
 		}
 		

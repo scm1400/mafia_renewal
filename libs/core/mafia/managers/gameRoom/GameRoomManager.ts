@@ -217,7 +217,7 @@ export class GameRoomManager {
 			try {
 				callback(...args);
 			} catch (error) {
-				console.error(`Error in event listener for ${event}:`, error);
+				ScriptApp.sayToAll(`Error in event listener for ${event}:`, error);
 			}
 		});
 	}

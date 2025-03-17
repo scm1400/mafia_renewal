@@ -44,9 +44,10 @@
         body {
             width: 100%;
             height: 100%;
-            background-color: var(--bg-color);
             display: flex;
             flex-direction: column;
+            align-items: center;
+            justify-content: center;
         }
 
         .room-header {
@@ -337,7 +338,8 @@
             background-color: #d32f2f;
         }
 
-        .kick-btn, .dropdown-btn {
+        .kick-btn,
+        .dropdown-btn {
             padding: 5px;
             background: none;
             border: none;
@@ -348,7 +350,8 @@
             transition: all 0.2s;
         }
 
-        .kick-btn:hover, .dropdown-btn:hover {
+        .kick-btn:hover,
+        .dropdown-btn:hover {
             background-color: #f0f0f0;
         }
 
@@ -439,55 +442,66 @@
             background-color: #e6ee9c;
             color: #827717;
         }
+
+        #room-widget-container {
+            display: flex;
+            flex-direction: column;
+            height: 75%;
+            width: 50%;
+            background-color: var(--bg-color);
+        }
     </style>
 </head>
 
 <body>
-    <div class="room-header">
-        <div class="room-details">
-            <h1 class="room-title" id="roomTitle">방 제목</h1>
-            <div class="room-info">
-                <span id="roomPlayers">참가자: 0/0</span>
-                <span id="roomMode">모드: 클래식</span>
-            </div>
-        </div>
-        <div class="header-controls">
-            <button class="button secondary" id="leaveRoomBtn">나가기</button>
-        </div>
-    </div>
-
-    <div class="main-content">
-        <div class="players-container">
-            <div class="section-title">참가자 목록</div>
-            
-            <div class="settings-section">
-                <div class="section-title">게임 설정</div>
-                <div id="gameModeInfo" class="game-mode-info">
-                    <!-- 게임 모드 정보가 동적으로 추가됩니다 -->
+    <div id="room-widget-container">
+        <div class="room-header">
+            <div class="room-details">
+                <h1 class="room-title" id="roomTitle">방 제목</h1>
+                <div class="room-info">
+                    <span id="roomPlayers">참가자: 0/0</span>
+                    <span id="roomMode">모드: 클래식</span>
                 </div>
             </div>
-            
-            <div id="playersGrid" class="players-grid">
-                <!-- 플레이어 카드가 동적으로 추가됩니다 -->
-            </div>
-            
-            <div class="action-buttons" id="actionButtonsContainer">
-                <!-- 호스트일 경우 시작 버튼, 일반 유저일 경우 준비 버튼 -->
+            <div class="header-controls">
+                <button class="button secondary" id="leaveRoomBtn">나가기</button>
             </div>
         </div>
 
-        <div class="chat-sidebar">
-            <div class="chat-header">채팅</div>
-            <div id="chatMessages" class="chat-messages">
-                <div class="message system">채팅방에 입장했습니다.</div>
-                <!-- 채팅 메시지가 동적으로 추가됩니다 -->
+        <div class="main-content">
+            <div class="players-container">
+                <div class="section-title">참가자 목록</div>
+
+                <div class="settings-section">
+                    <div class="section-title">게임 설정</div>
+                    <div id="gameModeInfo" class="game-mode-info">
+                        <!-- 게임 모드 정보가 동적으로 추가됩니다 -->
+                    </div>
+                </div>
+
+                <div id="playersGrid" class="players-grid">
+                    <!-- 플레이어 카드가 동적으로 추가됩니다 -->
+                </div>
+
+                <div class="action-buttons" id="actionButtonsContainer">
+                    <!-- 호스트일 경우 시작 버튼, 일반 유저일 경우 준비 버튼 -->
+                </div>
             </div>
-            <div class="chat-input">
-                <input type="text" id="chatInput" placeholder="메시지 입력...">
-                <button id="sendBtn">➤</button>
+
+            <div class="chat-sidebar">
+                <div class="chat-header">채팅</div>
+                <div id="chatMessages" class="chat-messages">
+                    <div class="message system">채팅방에 입장했습니다.</div>
+                    <!-- 채팅 메시지가 동적으로 추가됩니다 -->
+                </div>
+                <div class="chat-input">
+                    <input type="text" id="chatInput" placeholder="메시지 입력...">
+                    <button id="sendBtn">➤</button>
+                </div>
             </div>
         </div>
     </div>
+
 
     <script>
         // 전역 변수
@@ -498,7 +512,7 @@
         let isReady = false;
         let gameMode = null;
         let gameModeDetails = null;
-        
+
         // DOM 요소 접근
         const roomTitle = document.getElementById('roomTitle');
         const roomPlayers = document.getElementById('roomPlayers');
@@ -510,7 +524,7 @@
         const chatInput = document.getElementById('chatInput');
         const sendBtn = document.getElementById('sendBtn');
         const gameModeInfo = document.getElementById('gameModeInfo');
-        
+
         // 이벤트 리스너 설정
         leaveRoomBtn.addEventListener('click', leaveRoom);
         sendBtn.addEventListener('click', sendChatMessage);
@@ -519,43 +533,43 @@
                 sendChatMessage();
             }
         });
-        
+
         // 초기화 함수
         function initializeRoom() {
             // 방 정보 및 플레이어 정보 요청
             window.parent.postMessage({
                 type: 'requestRoomInfo'
             }, "*");
-            
+
             // 게임 모드 정보 요청
             window.parent.postMessage({
                 type: 'requestGameModeDetails'
             }, "*");
         }
-        
+
         // 방 정보 업데이트
         function updateRoomInfo(roomData) {
             room = roomData;
             players = roomData.players;
             currentUser = roomData.currentUser;
             isHost = currentUser.id === roomData.host.id;
-            
+
             // UI 업데이트
             roomTitle.textContent = room.title;
             roomPlayers.textContent = `참가자: ${players.length}/${room.maxPlayers}`;
             roomMode.textContent = `모드: ${room.gameMode}`;
-            
+
             // 플레이어 목록 렌더링
             renderPlayers();
-            
+
             // 액션 버튼 렌더링
             renderActionButtons();
         }
-        
+
         // 게임 모드 정보 업데이트
         function updateGameModeInfo(modeData) {
             gameModeDetails = modeData;
-            
+
             // UI 업데이트
             gameModeInfo.innerHTML = `
                 <div class="mode-name">${modeData.name}</div>
@@ -565,7 +579,7 @@
                 </div>
             `;
         }
-        
+
         // 직업 태그 렌더링
         function renderJobTags(jobs) {
             return jobs.map(job => {
@@ -573,26 +587,26 @@
                 return `<div class="job-tag ${teamClass}">${job.name}</div>`;
             }).join('');
         }
-        
+
         // 플레이어 목록 렌더링
         function renderPlayers() {
             playersGrid.innerHTML = '';
-            
+
             players.forEach(player => {
                 const playerCard = document.createElement('div');
                 playerCard.className = 'player-card';
-                
+
                 // 이니셜 생성 (이름의 첫 글자)
                 const initial = player.name.charAt(0).toUpperCase();
-                
+
                 // 플레이어 상태 확인
                 const isPlayerHost = player.id === room.host.id;
                 const isPlayerReady = player.isReady;
-                
+
                 // 상태 클래스/텍스트 결정
                 let statusClass = '';
                 let statusText = '';
-                
+
                 if (isPlayerHost) {
                     statusClass = 'host';
                     statusText = '방장';
@@ -603,7 +617,7 @@
                     statusClass = 'not-ready';
                     statusText = '미준비';
                 }
-                
+
                 // 플레이어 카드 HTML 생성
                 playerCard.innerHTML = `
                     <div class="player-avatar">${initial}</div>
@@ -613,52 +627,52 @@
                         <div class="player-status ${statusClass}">${statusText}</div>
                     </div>
                 `;
-                
+
                 // 방장인 경우 다른 플레이어에 대한 액션 추가
                 if (isHost && !isPlayerHost) {
                     const playerActions = document.createElement('div');
                     playerActions.className = 'player-actions';
-                    
+
                     const kickBtn = document.createElement('button');
                     kickBtn.className = 'kick-btn';
                     kickBtn.innerHTML = '강퇴 ⊗';
                     kickBtn.addEventListener('click', () => kickPlayer(player.id));
-                    
+
                     playerActions.appendChild(kickBtn);
                     playerCard.appendChild(playerActions);
                 }
-                
+
                 playersGrid.appendChild(playerCard);
             });
         }
-        
+
         // 액션 버튼 렌더링
         function renderActionButtons() {
             actionButtonsContainer.innerHTML = '';
-            
+
             if (isHost) {
                 // 방장인 경우 게임 시작 버튼
                 const startBtn = document.createElement('button');
                 startBtn.className = 'button primary';
                 startBtn.textContent = '게임 시작';
                 startBtn.addEventListener('click', startGame);
-                
+
                 // 모든 플레이어가 준비 상태인지 확인
-                const canStart = players.length >= 4 && players.every(player => 
+                const canStart = players.length >= 4 && players.every(player =>
                     player.id === room.host.id || player.isReady
                 );
-                
+
                 if (!canStart) {
                     startBtn.disabled = true;
                     startBtn.style.opacity = '0.5';
                     startBtn.style.cursor = 'not-allowed';
                 }
-                
+
                 actionButtonsContainer.appendChild(startBtn);
             } else {
                 // 일반 참가자인 경우 준비/준비취소 버튼
                 const readyBtn = document.createElement('button');
-                
+
                 if (isReady) {
                     readyBtn.className = 'button not-ready-btn';
                     readyBtn.textContent = '준비 취소';
@@ -668,11 +682,11 @@
                     readyBtn.textContent = '준비 완료';
                     readyBtn.addEventListener('click', setReady);
                 }
-                
+
                 actionButtonsContainer.appendChild(readyBtn);
             }
         }
-        
+
         // 준비 상태 설정
         function setReady() {
             isReady = true;
@@ -680,7 +694,7 @@
                 type: 'setReady'
             }, "*");
         }
-        
+
         // 준비 취소
         function cancelReady() {
             isReady = false;
@@ -688,48 +702,48 @@
                 type: 'cancelReady'
             }, "*");
         }
-        
+
         // 게임 시작
         function startGame() {
             window.parent.postMessage({
                 type: 'startGame'
             }, "*");
         }
-        
+
         // 방에서 나가기
         function leaveRoom() {
             window.parent.postMessage({
                 type: 'leaveRoom'
             }, "*");
         }
-        
+
         // 플레이어 강퇴
         function kickPlayer(playerId) {
             if (!isHost) return;
-            
+
             window.parent.postMessage({
                 type: 'kickPlayer',
                 playerId: playerId
             }, "*");
         }
-        
+
         // 채팅 메시지 전송
         function sendChatMessage() {
             const message = chatInput.value.trim();
             if (!message) return;
-            
+
             window.parent.postMessage({
                 type: 'sendChatMessage',
                 content: message
             }, "*");
-            
+
             chatInput.value = '';
         }
-        
+
         // 채팅 메시지 추가
         function addChatMessage(message) {
             const msgElement = document.createElement('div');
-            
+
             if (message.type === 'system') {
                 msgElement.className = 'message system';
                 msgElement.textContent = message.content;
@@ -743,16 +757,23 @@
                     ${message.content}
                 `;
             }
-            
+
             chatMessages.appendChild(msgElement);
             chatMessages.scrollTop = chatMessages.scrollHeight;
         }
-        
+
         // 메시지 수신 처리
-        window.addEventListener('message', function(e) {
+        window.addEventListener('message', function (e) {
             const data = e.data;
-            
-            if (data.type === 'roomInfo') {
+            if (data.type === 'init') {
+                _isMobile = e.data.isMobile;
+                _isTablet = e.data.isTablet;
+
+                _languageCode = e.data.languageCode;
+                _localizeContainer = e.data.localizeContainer;
+                document.body.classList.remove("hidden");
+                revealWidget();
+            } else if (data.type === 'roomInfo') {
                 updateRoomInfo(data.roomData);
             } else if (data.type === 'gameModeDetails') {
                 updateGameModeInfo(data.modeData);
@@ -761,7 +782,7 @@
                     type: 'system',
                     content: `${data.playerName}님이 입장했습니다.`
                 });
-                
+
                 // 방 정보 업데이트 요청
                 window.parent.postMessage({ type: 'requestRoomInfo' }, "*");
             } else if (data.type === 'playerLeft') {
@@ -769,7 +790,7 @@
                     type: 'system',
                     content: `${data.playerName}님이 퇴장했습니다.`
                 });
-                
+
                 // 방 정보 업데이트 요청
                 window.parent.postMessage({ type: 'requestRoomInfo' }, "*");
             } else if (data.type === 'playerKicked') {
@@ -777,7 +798,7 @@
                     type: 'system',
                     content: `${data.playerName}님이 강퇴되었습니다.`
                 });
-                
+
                 // 방 정보 업데이트 요청
                 window.parent.postMessage({ type: 'requestRoomInfo' }, "*");
             } else if (data.type === 'readyStatusChanged') {
@@ -788,7 +809,7 @@
                     type: 'system',
                     content: `${data.newHostName}님이 새로운 방장이 되었습니다.`
                 });
-                
+
                 // 방 정보 업데이트 요청
                 window.parent.postMessage({ type: 'requestRoomInfo' }, "*");
             } else if (data.type === 'gameStarting') {
@@ -807,10 +828,34 @@
                 alert(data.message);
             }
         });
-        
+
+        function revealWidget(moveScrollToBottom = false) {
+            if (moveScrollToBottom) {
+                $contentWrapper.scrollTop = $contentWrapper.scrollHeight;
+            }
+            if (_isMobile) {
+                const rtcAndNotchHeight = 160 + parseInt(getComputedStyle(document.documentElement,).getPropertyValue("--sat"));
+                window.parent.postMessage({
+                    type: 'WidgetRearrange',
+                    anchor: 'middle',
+                    height: '100%',
+                    width: '100%',
+                    top: `-${parseInt(0)}px`
+                }, '*')
+            } else {
+                // document.querySelector("html").style.background = "rgba(0, 0, 0, 0.24)";
+                window.parent.postMessage({
+                    type: "WidgetRearrange",
+                    anchor: "middle",
+                    width: `100%`,
+                    height: `100%`,
+                }, "*")
+            }
+        }
+
         // 초기화
         initializeRoom();
     </script>
 </body>
 
-</html> 
+</html>

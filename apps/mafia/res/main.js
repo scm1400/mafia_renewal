@@ -2,138 +2,1055 @@
 /******/ 	"use strict";
 /******/ 	var __webpack_modules__ = ({
 
-/***/ 169:
+/***/ 96:
+/***/ ((__unused_webpack_module, exports) => {
+
+
+
+Object.defineProperty(exports, "__esModule", ({
+  value: true
+}));
+exports.GameBase = void 0;
+var GameBase = /** @class */function () {
+  function GameBase() {
+    this.onStartCallbacks = [];
+    this.onDestroyCallbacks = [];
+    this.onJoinPlayerCallbacks = [];
+    this.onLeavePlayerCallbacks = [];
+    this.onUpdateCallbacks = [];
+    this.onTriggerObjectCallbacks = [];
+    this.initEventListeners();
+  }
+  GameBase.prototype.initEventListeners = function () {
+    var _this = this;
+    App.onStart.Add(function () {
+      _this.onStartCallbacks.forEach(function (callback) {
+        try {
+          callback();
+        } catch (error) {
+          //*
+        }
+      });
+    });
+    App.onJoinPlayer.Add(function (player) {
+      _this.onJoinPlayerCallbacks.forEach(function (callback) {
+        try {
+          callback(player);
+        } catch (error) {
+          //*
+        }
+      });
+    });
+    App.onLeavePlayer.Add(function (player) {
+      _this.onLeavePlayerCallbacks.forEach(function (callback) {
+        try {
+          callback(player);
+        } catch (error) {
+          //*
+        }
+      });
+    });
+    App.onUpdate.Add(function (dt) {
+      _this.onUpdateCallbacks.forEach(function (callback) {
+        try {
+          callback(dt);
+        } catch (error) {
+          //*
+        }
+      });
+    });
+    App.onDestroy.Add(function () {
+      _this.onDestroyCallbacks.forEach(function (callback) {
+        try {
+          callback();
+        } catch (error) {
+          //*
+        }
+      });
+    });
+    App.onTriggerObject.Add(function (sender, layerId, x, y, key) {
+      _this.onTriggerObjectCallbacks.forEach(function (callback) {
+        try {
+          callback(sender, layerId, x, y, key);
+        } catch (error) {
+          //*
+        }
+      });
+    });
+  };
+  GameBase.prototype.addOnStartCallback = function (callback) {
+    this.onStartCallbacks.push(callback);
+  };
+  GameBase.prototype.addOnDestroyCallback = function (callback) {
+    this.onDestroyCallbacks.push(callback);
+  };
+  GameBase.prototype.addOnJoinPlayerCallback = function (callback) {
+    this.onJoinPlayerCallbacks.push(callback);
+  };
+  GameBase.prototype.addOnLeavePlayerCallback = function (callback) {
+    this.onLeavePlayerCallbacks.push(callback);
+  };
+  GameBase.prototype.addOnUpdateCallback = function (callback) {
+    this.onUpdateCallbacks.push(callback);
+  };
+  GameBase.prototype.addOnTriggerObjectCallback = function (callback) {
+    this.onTriggerObjectCallbacks.push(callback);
+  };
+  return GameBase;
+}();
+exports.GameBase = GameBase;
+
+/***/ }),
+
+/***/ 230:
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 
 
-var __spreadArray = this && this.__spreadArray || function (to, from, pack) {
-  if (pack || arguments.length === 2) for (var i = 0, l = from.length, ar; i < l; i++) {
-    if (ar || !(i in from)) {
-      if (!ar) ar = Array.prototype.slice.call(from, 0, i);
-      ar[i] = from[i];
+var __extends = this && this.__extends || function () {
+  var extendStatics = function (d, b) {
+    extendStatics = Object.setPrototypeOf || {
+      __proto__: []
+    } instanceof Array && function (d, b) {
+      d.__proto__ = b;
+    } || function (d, b) {
+      for (var p in b) if (Object.prototype.hasOwnProperty.call(b, p)) d[p] = b[p];
+    };
+    return extendStatics(d, b);
+  };
+  return function (d, b) {
+    if (typeof b !== "function" && b !== null) throw new TypeError("Class extends value " + String(b) + " is not a constructor or null");
+    extendStatics(d, b);
+    function __() {
+      this.constructor = d;
     }
-  }
-  return to.concat(ar || Array.prototype.slice.call(from));
-};
+    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+  };
+}();
 Object.defineProperty(exports, "__esModule", ({
   value: true
 }));
-exports.log = void 0;
-exports.isDevServer = isDevServer;
-exports.parseJsonString = parseJsonString;
-exports.isEmpty = isEmpty;
-exports.sendConsoleMessage = sendConsoleMessage;
-exports.getPlayerId = getPlayerId;
-exports.getPlayerById = getPlayerById;
-exports.actionToAllPlayers = actionToAllPlayers;
-exports.getCurrentTimeString = getCurrentTimeString;
-exports.msToTime = msToTime;
-exports.shuffleAndSplit = shuffleAndSplit;
-exports.hexTo0xColor = hexTo0xColor;
-exports.getLocationAreaCoordinates = getLocationAreaCoordinates;
-var Localizer_1 = __webpack_require__(773);
-function isDevServer() {
-  //@ts-ignore
-  return App.getServerEnv() !== "live";
-}
-function parseJsonString(str) {
-  if (!str) return false;
-  try {
-    // JSON으로 파싱을 시도하고 결과를 반환합니다.
-    return JSON.parse(str);
-  } catch (e) {
-    // 파싱 중 오류가 발생하면 false를 반환합니다.
-    return false;
+exports.Game = void 0;
+var Common_1 = __webpack_require__(224);
+var Localizer_1 = __webpack_require__(778);
+var GameBase_1 = __webpack_require__(96);
+var GameRoomManager_1 = __webpack_require__(193);
+var JobTypes_1 = __webpack_require__(662);
+var defaultGameModes_1 = __webpack_require__(565);
+var ROOM_COUNT = 8;
+var Game = /** @class */function (_super) {
+  __extends(Game, _super);
+  function Game() {
+    var _this = _super.call(this) || this;
+    _this.mafiaGameRoomManager = new GameRoomManager_1.GameRoomManager();
+    _this.addOnStartCallback(_this.onStart.bind(_this));
+    _this.addOnJoinPlayerCallback(_this.onJoinPlayer.bind(_this));
+    _this.addOnLeavePlayerCallback(_this.onLeavePlayer.bind(_this));
+    _this.addOnUpdateCallback(_this.update.bind(_this));
+    _this.addOnDestroyCallback(_this.onDestroy.bind(_this));
+    // 게임 모드 등록
+    var gameModes = (0, defaultGameModes_1.createDefaultGameModes)();
+    gameModes.forEach(function (mode) {
+      _this.mafiaGameRoomManager.registerGameMode(mode);
+    });
+    // 게임룸 매니저 이벤트 리스너 설정
+    _this.setupGameRoomManagerListeners();
+    return _this;
   }
-}
-function isEmpty(obj) {
-  for (var key in obj) {
-    if (Object.prototype.hasOwnProperty.call(obj, key)) {
-      return false;
+  Game.create = function () {
+    if (!Game._instance) {
+      Game._instance = new Game();
     }
-  }
-  return true;
-}
-function sendConsoleMessage(player, message) {
-  var playerId = getPlayerId(player);
-  setTimeout(function () {
-    if (!getPlayerById(playerId)) return;
-  }, 500);
-}
-function getPlayerId(player) {
-  var _a;
-  return player.isGuest ? (_a = player.tag.guestId) !== null && _a !== void 0 ? _a : player.id : player.id;
-  // return player.id;
-}
-function getPlayerById(playerId) {
-  return App.players.find(function (player) {
-    return getPlayerId(player) === playerId;
-  });
-  // return ScriptApp.getPlayerByID(playerId);
-}
-function actionToAllPlayers(action) {
-  var args = [];
-  for (var _i = 1; _i < arguments.length; _i++) {
-    args[_i - 1] = arguments[_i];
-  }
-  for (var _a = 0, _b = App.players; _a < _b.length; _a++) {
-    var player = _b[_a];
-    if (!player) continue;
-    try {
-      action.apply(void 0, __spreadArray([player], args, false));
-    } catch (error) {}
-  }
-}
-function getCurrentTimeString() {
-  var date = new Date();
-  var utc = date.getTime() + date.getTimezoneOffset() * 60 * 1000;
-  var kstGap = 9 * 60 * 60 * 1000;
-  var today = new Date(utc + kstGap);
-  return today.toISOString();
-}
-function msToTime(player, duration) {
-  var milliseconds = parseInt((duration % 1000 / 100).toString(), 10),
-    seconds = Math.floor(duration / 1000 % 60),
-    minutes = Math.floor(duration / (1000 * 60) % 60);
-  var minutesStr = minutes < 10 ? "0" + minutes : minutes.toString();
-  var secondsStr = seconds < 10 ? "0" + seconds : seconds.toString();
-  return Localizer_1.Localizer.getLocalizeString(player, "game_quiz_builder_dashboard_info_solve_time").replace("((MM))", minutesStr).replace("((SS))", secondsStr);
-}
-function shuffleAndSplit(arr) {
-  var _a;
-  // Fisher-Yates 알고리즘으로 배열 섞기
-  var shuffledArr = __spreadArray([], arr, true);
-  for (var i = shuffledArr.length - 1; i > 0; i--) {
-    var j = Math.floor(Math.random() * (i + 1));
-    _a = [shuffledArr[j], shuffledArr[i]], shuffledArr[i] = _a[0], shuffledArr[j] = _a[1];
-  }
-  var midIndex = Math.floor(shuffledArr.length / 2);
-  // 배열을 반으로 나누기
-  var firstHalf = shuffledArr.slice(0, midIndex);
-  var secondHalf = shuffledArr.slice(midIndex);
-  return [firstHalf, secondHalf];
-}
-function hexTo0xColor(hex) {
-  return parseInt(hex.replace("#", ""), 16);
-}
-function getLocationAreaCoordinates(locationName) {
-  if (!Map.hasLocation(locationName)) return null;
-  var locationInfo = Map.getLocationList(locationName)[0];
-  var coordinates = [];
-  if (locationInfo) {
-    for (var x = locationInfo.x; x < locationInfo.x + locationInfo.width; x++) {
-      for (var y = locationInfo.y; y < locationInfo.y + locationInfo.height; y++) {
-        coordinates.push([x, y]);
+  };
+  Game.prototype.onStart = function () {
+    App.enableFreeView = false;
+    App.sendUpdated();
+  };
+  Game.prototype.onJoinPlayer = function (player) {
+    player.tag = {
+      widget: {},
+      mafiaPlayer: null,
+      isReady: false,
+      profile: {
+        id: player.id,
+        nickname: player.name,
+        level: 1,
+        experience: 0,
+        avatar: ''
+      }
+    };
+    // 로컬라이징
+    Localizer_1.Localizer.prepareLocalizationContainer(player);
+    //@ts-ignore
+    var customData = (0, Common_1.parseJsonString)(player.customData);
+    // 로비 위젯 표시
+    this.showLobbyWidget(player);
+  };
+  /**
+   * 로비 위젯을 표시합니다.
+   * @param player 플레이어
+   */
+  Game.prototype.showLobbyWidget = function (player) {
+    var _this = this;
+    // 이미 메인 위젯이 있으면 제거
+    if (player.tag.widget.main) {
+      player.tag.widget.main.destroy();
+    }
+    // 로비 위젯 생성
+    player.tag.widget.main = player.showWidget("widgets/lobby_widget.html", "middle", 0, 0);
+    // 초기화 메시지 전송
+    player.tag.widget.main.sendMessage({
+      type: "init",
+      isMobile: player.isMobile,
+      isTablet: player.isTablet,
+      languageCode: player.language
+    });
+    // 게임 모드 정보 전송
+    player.tag.widget.main.sendMessage({
+      type: "gameModes",
+      modes: this.getGameModesForUI()
+    });
+    // 유저 목록 전송
+    this.sendUsersList(player);
+    // 방 목록 전송
+    this.sendRoomsList(player);
+    // 로비 위젯 메시지 처리 설정
+    player.tag.widget.main.onMessage.Add(function (player, data) {
+      if (data.type === "requestGameModes") {
+        player.tag.widget.main.sendMessage({
+          type: "gameModes",
+          modes: _this.getGameModesForUI()
+        });
+      } else if (data.type === "requestRooms") {
+        _this.sendRoomsList(player);
+      } else if (data.type === "requestUsers") {
+        _this.sendUsersList(player);
+      } else if (data.type === "createRoom" && data.data) {
+        var _a = data.data,
+          title = _a.title,
+          maxPlayers = _a.maxPlayers,
+          gameMode = _a.gameMode;
+        var gameModeObj = _this.mafiaGameRoomManager.getGameMode(gameMode);
+        if (gameModeObj) {
+          var room = _this.mafiaGameRoomManager.createRoom({
+            title: title,
+            maxPlayers: maxPlayers,
+            gameMode: gameModeObj
+          });
+          if (room) {
+            // 방 생성 후 해당 방에 플레이어 입장
+            room.joinPlayer(player);
+            // 로비 위젯 닫고 방 위젯 표시
+            _this.showRoomWidget(player, room);
+            // 모든 플레이어에게 방 목록 업데이트
+            _this.updateRoomInfo();
+          }
+        }
+      } else if (data.type === "joinRoom" && data.roomId) {
+        var room = _this.mafiaGameRoomManager.getRoom(data.roomId);
+        if (room) {
+          var joinResult = room.joinPlayer(player);
+          if (joinResult) {
+            // 로비 위젯 닫고 방 위젯 표시
+            _this.showRoomWidget(player, room);
+            // 모든 플레이어에게 방 목록 업데이트
+            _this.updateRoomInfo();
+          } else {
+            // 방 참가 실패 메시지 전송
+            player.tag.widget.main.sendMessage({
+              type: "error",
+              message: "방에 입장할 수 없습니다."
+            });
+          }
+        }
+      } else if (data.type === "leaveRoom") {
+        if (player.tag.roomInfo) {
+          var roomNum = player.tag.roomInfo.roomNum;
+          var room = _this.mafiaGameRoomManager.getRoom(roomNum.toString());
+          if (room) {
+            room.leavePlayer(player.id);
+            // 방 위젯 닫고 로비 위젯 표시
+            _this.showLobbyWidget(player);
+            // 모든 플레이어에게 방 정보 업데이트 전송
+            _this.updateRoomInfo();
+          }
+        }
+      }
+    });
+  };
+  /**
+   * 방 위젯을 표시합니다.
+   * @param player 플레이어
+   * @param room 게임 방
+   */
+  Game.prototype.showRoomWidget = function (player, room) {
+    var _this = this;
+    // 이미 메인 위젯이 있으면 제거
+    if (player.tag.widget.main) {
+      player.tag.widget.main.destroy();
+    }
+    // 방 위젯 생성
+    player.tag.widget.room = player.showWidget("widgets/room_widget.html", "middle", 0, 0);
+    // 초기화 메시지 전송
+    player.tag.widget.room.sendMessage({
+      type: "init",
+      isMobile: player.isMobile,
+      isTablet: player.isTablet,
+      languageCode: player.language
+    });
+    // 방 정보 전송
+    this.sendRoomInfoToPlayer(player, room);
+    // 게임 모드 상세 정보 전송
+    this.sendGameModeDetailsToPlayer(player, room.gameMode);
+    // 방에 있는 다른 플레이어들에게 새 플레이어 입장 알림
+    this.notifyPlayerJoinedRoom(room, player);
+    // 방 위젯 메시지 처리 설정
+    player.tag.widget.room.onMessage.Add(function (player, data) {
+      var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k;
+      if (data.type === "requestRoomInfo") {
+        var roomId = (_a = player.tag.roomInfo) === null || _a === void 0 ? void 0 : _a.roomNum;
+        if (roomId) {
+          var room_1 = _this.mafiaGameRoomManager.getRoom(roomId.toString());
+          if (room_1) {
+            _this.sendRoomInfoToPlayer(player, room_1);
+          }
+        }
+      } else if (data.type === "requestGameModeDetails") {
+        var roomId = (_b = player.tag.roomInfo) === null || _b === void 0 ? void 0 : _b.roomNum;
+        if (roomId) {
+          var room_2 = _this.mafiaGameRoomManager.getRoom(roomId.toString());
+          if (room_2) {
+            _this.sendGameModeDetailsToPlayer(player, room_2.gameMode);
+          }
+        }
+      } else if (data.type === "leaveRoom") {
+        var roomId = (_c = player.tag.roomInfo) === null || _c === void 0 ? void 0 : _c.roomNum;
+        if (roomId) {
+          var room_3 = _this.mafiaGameRoomManager.getRoom(roomId.toString());
+          if (room_3) {
+            room_3.leavePlayer(player.id);
+            // 방 위젯 닫고 로비 위젯 표시
+            if (player.tag.widget.room) {
+              player.tag.widget.room.destroy();
+              player.tag.widget.room = null;
+            }
+            _this.showLobbyWidget(player);
+            // 모든 플레이어에게 방 정보 업데이트 전송
+            _this.updateRoomInfo();
+            // 방에 남아있는 플레이어들에게 퇴장 메시지 전송
+            _this.notifyPlayerLeftRoom(room_3, player);
+          }
+        }
+      } else if (data.type === "setReady") {
+        var roomId = (_d = player.tag.roomInfo) === null || _d === void 0 ? void 0 : _d.roomNum;
+        if (roomId) {
+          var room_4 = _this.mafiaGameRoomManager.getRoom(roomId.toString());
+          if (room_4) {
+            // 플레이어 준비 상태 설정
+            player.tag.isReady = true;
+            // 방의 모든 플레이어에게 준비 상태 변경 알림
+            _this.notifyReadyStatusChanged(room_4, player);
+          }
+        }
+      } else if (data.type === "cancelReady") {
+        var roomId = (_e = player.tag.roomInfo) === null || _e === void 0 ? void 0 : _e.roomNum;
+        if (roomId) {
+          var room_5 = _this.mafiaGameRoomManager.getRoom(roomId.toString());
+          if (room_5) {
+            // 플레이어 준비 상태 해제
+            player.tag.isReady = false;
+            // 방의 모든 플레이어에게 준비 상태 변경 알림
+            _this.notifyReadyStatusChanged(room_5, player);
+          }
+        }
+      } else if (data.type === "startGame") {
+        var roomId = (_f = player.tag.roomInfo) === null || _f === void 0 ? void 0 : _f.roomNum;
+        if (roomId) {
+          var room_6 = _this.mafiaGameRoomManager.getRoom(roomId.toString());
+          if (room_6) {
+            // 게임 시작 조건 확인
+            var canStart = _this.canStartGame(room_6);
+            if (canStart) {
+              // 게임 시작
+              room_6.flowManager.startGame();
+              // 방의 모든 플레이어에게 게임 시작 알림
+              _this.notifyGameStarting(room_6);
+              // 모든 플레이어에게 방 정보 업데이트 전송
+              _this.updateRoomInfo();
+            } else {
+              // 게임 시작 실패 메시지 전송
+              player.tag.widget.room.sendMessage({
+                type: "error",
+                message: "모든 플레이어가 준비 상태여야 합니다."
+              });
+            }
+          }
+        }
+      } else if (data.type === "kickPlayer" && data.playerId) {
+        var roomId = (_g = player.tag.roomInfo) === null || _g === void 0 ? void 0 : _g.roomNum;
+        if (roomId) {
+          var room_7 = _this.mafiaGameRoomManager.getRoom(roomId.toString());
+          if (room_7) {
+            // 방장 권한 확인
+            var isHost = room_7.hostId === player.id;
+            if (isHost) {
+              // 강퇴할 플레이어 찾기
+              var targetPlayer = App.getPlayerByID(data.playerId);
+              if (targetPlayer) {
+                // 플레이어 강퇴
+                room_7.leavePlayer(targetPlayer.id);
+                // 강퇴된 플레이어에게 로비 위젯 표시
+                if ((_j = (_h = targetPlayer.tag) === null || _h === void 0 ? void 0 : _h.widget) === null || _j === void 0 ? void 0 : _j.room) {
+                  targetPlayer.tag.widget.room.destroy();
+                  targetPlayer.tag.widget.room = null;
+                }
+                _this.showLobbyWidget(targetPlayer);
+                // 방의 모든 플레이어에게 강퇴 알림
+                _this.notifyPlayerKicked(room_7, targetPlayer);
+                // 모든 플레이어에게 방 정보 업데이트 전송
+                _this.updateRoomInfo();
+              }
+            }
+          }
+        }
+      } else if (data.type === "sendChatMessage" && data.content) {
+        var roomId = (_k = player.tag.roomInfo) === null || _k === void 0 ? void 0 : _k.roomNum;
+        if (roomId) {
+          var room_8 = _this.mafiaGameRoomManager.getRoom(roomId.toString());
+          if (room_8) {
+            // 채팅 메시지 전송
+            _this.sendChatMessageToRoom(room_8, player, data.content);
+          }
+        }
+      }
+    });
+  };
+  /**
+   * 방 정보를 플레이어에게 전송합니다.
+   */
+  Game.prototype.sendRoomInfoToPlayer = function (player, room) {
+    var _a;
+    var players = room.getPlayers();
+    // host 정보 가져오기 (타입 안전하게 처리)
+    var hostName = '알 수 없음';
+    var hostId = '';
+    if (room.hostId) {
+      hostId = room.hostId; // 이제 room.host는 이미 string 타입
+      var hostPlayer = players.find(function (p) {
+        return p.id === hostId;
+      });
+      if (hostPlayer) {
+        hostName = hostPlayer.name;
       }
     }
+    // 플레이어 정보 구성
+    var playersList = players.map(function (p) {
+      var _a, _b, _c;
+      // MafiaPlayer에서 필요한 정보만 추출하고, GamePlayer에서 추가 정보 가져오기
+      var gamePlayer = (0, Common_1.getPlayerById)(p.id);
+      return {
+        id: p.id,
+        name: p.name,
+        level: ((_b = (_a = gamePlayer === null || gamePlayer === void 0 ? void 0 : gamePlayer.tag) === null || _a === void 0 ? void 0 : _a.profile) === null || _b === void 0 ? void 0 : _b.level) || 1,
+        // 플레이어 프로필에서 레벨 가져오기
+        isReady: ((_c = gamePlayer === null || gamePlayer === void 0 ? void 0 : gamePlayer.tag) === null || _c === void 0 ? void 0 : _c.isReady) || false
+      };
+    });
+    // 방 정보 전송
+    player.tag.widget.room.sendMessage({
+      type: "roomInfo",
+      roomData: {
+        id: room.id,
+        title: room.title,
+        maxPlayers: room.maxPlayers,
+        gameMode: room.gameMode.getName(),
+        host: {
+          id: hostId,
+          name: hostName
+        },
+        players: playersList,
+        currentUser: {
+          id: player.id,
+          name: player.name,
+          isReady: ((_a = player.tag) === null || _a === void 0 ? void 0 : _a.isReady) || false
+        }
+      }
+    });
+  };
+  /**
+   * 게임 모드 상세 정보를 플레이어에게 전송합니다.
+   */
+  Game.prototype.sendGameModeDetailsToPlayer = function (player, gameMode) {
+    // 게임 모드 직업 정보 구성
+    var jobs = gameMode.getJobs();
+    var jobsData = jobs.map(function (job) {
+      return {
+        id: job.id,
+        name: job.name,
+        description: job.description,
+        team: job.team
+      };
+    });
+    // 게임 모드 정보 전송
+    player.tag.widget.room.sendMessage({
+      type: "gameModeDetails",
+      modeData: {
+        id: gameMode.getId(),
+        name: gameMode.getName(),
+        description: gameMode.getDescription(),
+        jobs: jobsData
+      }
+    });
+  };
+  /**
+   * 플레이어가 방에 입장했음을 알립니다.
+   */
+  Game.prototype.notifyPlayerJoinedRoom = function (room, player) {
+    var _this = this;
+    var players = room.getPlayers();
+    players.forEach(function (p) {
+      var _a, _b;
+      // 자기 자신에게는 알림을 보내지 않음
+      if (p.id !== player.id) {
+        var gamePlayer = App.getPlayerByID(p.id);
+        if ((_b = (_a = gamePlayer === null || gamePlayer === void 0 ? void 0 : gamePlayer.tag) === null || _a === void 0 ? void 0 : _a.widget) === null || _b === void 0 ? void 0 : _b.room) {
+          gamePlayer.tag.widget.room.sendMessage({
+            type: "playerJoined",
+            playerId: player.id,
+            playerName: player.name
+          });
+          // 방 정보 업데이트
+          _this.sendRoomInfoToPlayer(gamePlayer, room);
+        }
+      }
+    });
+  };
+  /**
+   * 플레이어가 방을 나갔음을 알립니다.
+   */
+  Game.prototype.notifyPlayerLeftRoom = function (room, player) {
+    var _this = this;
+    var players = room.getPlayers();
+    players.forEach(function (p) {
+      var _a, _b;
+      var gamePlayer = App.getPlayerByID(p.id);
+      if ((_b = (_a = gamePlayer === null || gamePlayer === void 0 ? void 0 : gamePlayer.tag) === null || _a === void 0 ? void 0 : _a.widget) === null || _b === void 0 ? void 0 : _b.room) {
+        gamePlayer.tag.widget.room.sendMessage({
+          type: "playerLeft",
+          playerId: player.id,
+          playerName: player.name
+        });
+        // 방 정보 업데이트
+        _this.sendRoomInfoToPlayer(gamePlayer, room);
+      }
+    });
+  };
+  /**
+   * 플레이어가 강퇴되었음을 알립니다.
+   */
+  Game.prototype.notifyPlayerKicked = function (room, player) {
+    var _this = this;
+    var players = room.getPlayers();
+    players.forEach(function (p) {
+      var _a, _b;
+      var gamePlayer = App.getPlayerByID(p.id);
+      if ((_b = (_a = gamePlayer === null || gamePlayer === void 0 ? void 0 : gamePlayer.tag) === null || _a === void 0 ? void 0 : _a.widget) === null || _b === void 0 ? void 0 : _b.room) {
+        gamePlayer.tag.widget.room.sendMessage({
+          type: "playerKicked",
+          playerId: player.id,
+          playerName: player.name
+        });
+        // 방 정보 업데이트
+        _this.sendRoomInfoToPlayer(gamePlayer, room);
+      }
+    });
+  };
+  /**
+   * 준비 상태 변경을 알립니다.
+   */
+  Game.prototype.notifyReadyStatusChanged = function (room, player) {
+    var _this = this;
+    var players = room.getPlayers();
+    players.forEach(function (p) {
+      var _a, _b;
+      var gamePlayer = App.getPlayerByID(p.id);
+      if ((_b = (_a = gamePlayer === null || gamePlayer === void 0 ? void 0 : gamePlayer.tag) === null || _a === void 0 ? void 0 : _a.widget) === null || _b === void 0 ? void 0 : _b.room) {
+        gamePlayer.tag.widget.room.sendMessage({
+          type: "readyStatusChanged",
+          playerId: player.id,
+          isReady: player.tag.isReady
+        });
+        // 방 정보 업데이트
+        _this.sendRoomInfoToPlayer(gamePlayer, room);
+      }
+    });
+  };
+  /**
+   * 게임 시작을 알립니다.
+   */
+  Game.prototype.notifyGameStarting = function (room) {
+    var players = room.getPlayers();
+    players.forEach(function (p) {
+      var _a, _b;
+      var gamePlayer = App.getPlayerByID(p.id);
+      if ((_b = (_a = gamePlayer === null || gamePlayer === void 0 ? void 0 : gamePlayer.tag) === null || _a === void 0 ? void 0 : _a.widget) === null || _b === void 0 ? void 0 : _b.room) {
+        gamePlayer.tag.widget.room.sendMessage({
+          type: "gameStarting"
+        });
+      }
+    });
+  };
+  /**
+   * 채팅 메시지를 방의 모든 플레이어에게 전송합니다.
+   */
+  Game.prototype.sendChatMessageToRoom = function (room, sender, content) {
+    var players = room.getPlayers();
+    players.forEach(function (p) {
+      var _a, _b;
+      var gamePlayer = App.getPlayerByID(p.id);
+      if ((_b = (_a = gamePlayer === null || gamePlayer === void 0 ? void 0 : gamePlayer.tag) === null || _a === void 0 ? void 0 : _a.widget) === null || _b === void 0 ? void 0 : _b.room) {
+        gamePlayer.tag.widget.room.sendMessage({
+          type: "chatMessage",
+          senderId: sender.id,
+          senderName: sender.name,
+          content: content
+        });
+      }
+    });
+  };
+  /**
+   * 게임 시작 가능 여부를 확인합니다.
+   */
+  Game.prototype.canStartGame = function (room) {
+    var _a;
+    var players = room.getPlayers();
+    // 최소 인원 확인 (4명 이상)
+    if (players.length < 4) {
+      return false;
+    }
+    // 모든 플레이어가 준비 상태인지 확인 (방장 제외)
+    var hostId = room.hostId;
+    for (var _i = 0, players_1 = players; _i < players_1.length; _i++) {
+      var mafiaPlayer = players_1[_i];
+      if (mafiaPlayer.id !== hostId) {
+        var gamePlayer = App.getPlayerByID(mafiaPlayer.id);
+        if (!((_a = gamePlayer === null || gamePlayer === void 0 ? void 0 : gamePlayer.tag) === null || _a === void 0 ? void 0 : _a.isReady)) {
+          return false;
+        }
+      }
+    }
+    return true;
+  };
+  /**
+   * 게임 모드 선택 위젯을 표시합니다.
+   * @param player 플레이어
+   */
+  Game.prototype.showGameModeSelect = function (player) {
+    var _this = this;
+    // 이미 게임 모드 선택 위젯이 있으면 제거
+    if (player.tag.widget.gameModeSelect) {
+      player.tag.widget.gameModeSelect.destroy();
+    }
+    // 게임 모드 선택 위젯 생성
+    player.tag.widget.gameModeSelect = player.showWidget("widgets/game_mode_select.html", "middle", 0, 0);
+    // 초기화 메시지 전송
+    player.tag.widget.gameModeSelect.sendMessage({
+      type: 'init',
+      isMobile: player.isMobile,
+      isTablet: player.isTablet
+    });
+    // 게임 모드 정보 전송
+    player.tag.widget.gameModeSelect.sendMessage({
+      type: 'init_game_modes',
+      modes: JobTypes_1.GAME_MODES,
+      jobs: JobTypes_1.JOBS
+    });
+    // 게임 모드 선택 위젯 메시지 처리
+    player.tag.widget.gameModeSelect.onMessage.Add(function (player, data) {
+      if (data.type === "cancel_mode_select") {
+        player.tag.widget.gameModeSelect.destroy();
+        player.tag.widget.gameModeSelect = null;
+      } else if (data.type === "select_game_mode") {
+        var modeId = data.modeId;
+        var room = _this.mafiaGameRoomManager.getRoom("1");
+        // 게임 모드 설정
+        room.flowManager.setGameMode(modeId);
+        // 게임 시작
+        room.flowManager.startGame();
+        // 위젯 제거
+        player.tag.widget.gameModeSelect.destroy();
+        player.tag.widget.gameModeSelect = null;
+        // 모든 플레이어에게 방 정보 업데이트 전송
+        _this.updateRoomInfo();
+      }
+    });
+  };
+  /**
+   * 역할 카드 위젯을 표시합니다.
+   * @param player 플레이어
+   * @param role 역할
+   */
+  Game.prototype.showRoleCard = function (player, role) {
+    // 이미 역할 카드 위젯이 있으면 제거
+    if (player.tag.widget.roleCard) {
+      player.tag.widget.roleCard.destroy();
+    }
+    // 역할 카드 위젯 생성
+    player.tag.widget.roleCard = player.showWidget("widgets/role_card.html", "middle", 0, 0);
+    // 초기화 메시지 전송
+    player.tag.widget.roleCard.sendMessage({
+      type: 'init',
+      isMobile: player.isMobile,
+      isTablet: player.isTablet
+    });
+    // 역할 정보 전송
+    player.tag.widget.roleCard.sendMessage({
+      type: 'setRole',
+      role: role
+    });
+    // 역할 카드 위젯 메시지 처리
+    player.tag.widget.roleCard.onMessage.Add(function (player, data) {
+      if (data.type === "close") {
+        player.tag.widget.roleCard.destroy();
+        player.tag.widget.roleCard = null;
+      }
+    });
+  };
+  Game.prototype.onLeavePlayer = function (player) {
+    // 플레이어가 속한 방이 있으면 해당 방에서 제거
+    if (player.tag.roomInfo) {
+      var roomNum = player.tag.roomInfo.roomNum;
+      var room = this.mafiaGameRoomManager.getRoom(roomNum.toString());
+      if (room) {
+        // 방에서 플레이어 제거
+        room.leavePlayer(player.id);
+        // 위젯 정리
+        if (player.tag.widget) {
+          if (player.tag.widget.room) {
+            player.tag.widget.room.destroy();
+            player.tag.widget.room = null;
+          }
+          if (player.tag.widget.main) {
+            player.tag.widget.main.destroy();
+            player.tag.widget.main = null;
+          }
+        }
+        // 모든 플레이어에게 방 정보 업데이트 전송
+        this.updateRoomInfo();
+      }
+    }
+  };
+  Game.prototype.update = function (dt) {
+    // 각 방의 게임 상태 업데이트
+    for (var i = 1; i <= ROOM_COUNT; i++) {
+      var room = this.mafiaGameRoomManager.getRoom(i.toString());
+      if (room && room.flowManager.isGameInProgress()) {
+        // 타이머 업데이트
+        if (room.flowManager.phaseTimer > 0) {
+          room.flowManager.phaseTimer -= dt;
+          // 타이머가 0 이하가 되면 다음 단계로 진행
+          if (room.flowManager.phaseTimer <= 0) {
+            room.flowManager.nextPhase();
+          }
+        }
+      }
+    }
+  };
+  Game.prototype.onDestroy = function () {
+    // 게임 종료 시 필요한 정리 작업
+  };
+  /**
+   * 게임 모드 정보를 UI에 맞게 변환합니다.
+   */
+  Game.prototype.getGameModesForUI = function () {
+    // 등록된 모든 게임 모드 가져오기
+    var gameModes = [];
+    var defaultModes = (0, defaultGameModes_1.createDefaultGameModes)();
+    defaultModes.forEach(function (mode) {
+      gameModes.push({
+        id: mode.getId(),
+        name: mode.getName(),
+        description: mode.getDescription()
+      });
+    });
+    return gameModes;
+  };
+  /**
+   * 방 목록을 플레이어에게 전송합니다.
+   */
+  Game.prototype.sendRoomsList = function (player) {
+    var rooms = [];
+    var _loop_1 = function (i) {
+      var room = this_1.mafiaGameRoomManager.getRoom(i.toString());
+      if (room) {
+        var players = room.getPlayers();
+        // host 정보 가져오기 (타입 안전하게 처리)
+        var hostName = '알 수 없음';
+        var hostId_1 = '';
+        if (room.hostId) {
+          hostId_1 = room.hostId; // 이제 room.host는 이미 string 타입
+          var hostPlayer = players.find(function (p) {
+            return p.id === hostId_1;
+          });
+          if (hostPlayer) {
+            hostName = hostPlayer.name;
+          }
+        }
+        rooms.push({
+          id: room.id,
+          title: room.title,
+          state: room.flowManager.isGameInProgress() ? 'IN_PROGRESS' : 'WAITING',
+          host: {
+            id: hostId_1,
+            name: hostName
+          },
+          players: players.map(function (p) {
+            return {
+              id: p.id,
+              name: p.name
+            };
+          }),
+          maxPlayers: room.maxPlayers,
+          gameMode: room.gameMode.getName()
+        });
+      }
+    };
+    var this_1 = this;
+    for (var i = 1; i <= ROOM_COUNT; i++) {
+      _loop_1(i);
+    }
+    player.tag.widget.main.sendMessage({
+      type: "updateRooms",
+      rooms: rooms
+    });
+  };
+  /**
+   * 유저 목록을 플레이어에게 전송합니다.
+   */
+  Game.prototype.sendUsersList = function (player) {
+    var users = [];
+    // 모든 플레이어를 순회하며 필요한 정보만 추출
+    App.players.forEach(function (p) {
+      var _a, _b;
+      var gamePlayer = p;
+      users.push({
+        id: p.id,
+        name: p.name,
+        level: ((_b = (_a = gamePlayer === null || gamePlayer === void 0 ? void 0 : gamePlayer.tag) === null || _a === void 0 ? void 0 : _a.profile) === null || _b === void 0 ? void 0 : _b.level) || 1 // 플레이어 프로필에서 레벨 가져오기
+      });
+    });
+    player.tag.widget.main.sendMessage({
+      type: "updateUsers",
+      users: users
+    });
+  };
+  /**
+   * 모든 플레이어에게 방 정보를 업데이트합니다.
+   */
+  Game.prototype.updateRoomInfo = function () {
+    var _this = this;
+    // 모든 플레이어에게 방 정보와 유저 목록 전송
+    App.players.forEach(function (p) {
+      var _a, _b;
+      // GamePlayer 타입으로 변환 (타입 단언 사용)
+      var gamePlayer = p;
+      if ((_b = (_a = gamePlayer.tag) === null || _a === void 0 ? void 0 : _a.widget) === null || _b === void 0 ? void 0 : _b.main) {
+        _this.sendRoomsList(gamePlayer);
+        _this.sendUsersList(gamePlayer);
+      }
+    });
+  };
+  /**
+   * 게임룸 매니저 이벤트 리스너를 설정합니다.
+   */
+  Game.prototype.setupGameRoomManagerListeners = function () {
+    var _this = this;
+    // 플레이어가 방에서 나갔을 때
+    this.mafiaGameRoomManager.on("playerLeftRoom", function (room, player) {
+      // 방에 남아있는 플레이어들에게 퇴장 메시지 전송
+      _this.notifyPlayerLeftRoom(room, player);
+      // 방장이 변경되었을 때 (방에 플레이어가 남아있는 경우)
+      if (room.getPlayersCount() > 0 && room.host) {
+        var hostPlayer = (0, Common_1.getPlayerById)(room.host);
+        if (hostPlayer) {
+          _this.notifyHostChanged(room, hostPlayer);
+        }
+      }
+    });
+    // 플레이어가 강퇴되었을 때
+    this.mafiaGameRoomManager.on("playerKicked", function (room, player) {
+      var _a, _b;
+      // 강퇴된 플레이어에게 로비 위젯 표시
+      if ((_b = (_a = player.tag) === null || _a === void 0 ? void 0 : _a.widget) === null || _b === void 0 ? void 0 : _b.room) {
+        player.tag.widget.room.destroy();
+        player.tag.widget.room = null;
+      }
+      _this.showLobbyWidget(player);
+      // 방에 남아있는 플레이어들에게 강퇴 메시지 전송
+      _this.notifyPlayerKicked(room, player);
+    });
+    // 호스트가 변경되었을 때
+    this.mafiaGameRoomManager.on("hostChanged", function (room, newHost) {
+      _this.notifyHostChanged(room, newHost);
+    });
+    // 준비 상태가 변경되었을 때
+    this.mafiaGameRoomManager.on("readyStatusChanged", function (room, player, isReady) {
+      // 플레이어의 준비 상태 업데이트
+      player.tag.isReady = isReady;
+      // 방의 모든 플레이어에게 준비 상태 변경 알림
+      _this.notifyReadyStatusChanged(room, player);
+    });
+  };
+  /**
+   * 호스트 변경을 알립니다.
+   */
+  Game.prototype.notifyHostChanged = function (room, newHost) {
+    var _this = this;
+    var players = room.getPlayers();
+    players.forEach(function (p) {
+      var _a, _b;
+      var gamePlayer = App.getPlayerByID(p.id);
+      if ((_b = (_a = gamePlayer === null || gamePlayer === void 0 ? void 0 : gamePlayer.tag) === null || _a === void 0 ? void 0 : _a.widget) === null || _b === void 0 ? void 0 : _b.room) {
+        gamePlayer.tag.widget.room.sendMessage({
+          type: "hostChanged",
+          newHostId: newHost.id,
+          newHostName: newHost.name
+        });
+        // 방 정보 업데이트
+        _this.sendRoomInfoToPlayer(gamePlayer, room);
+      }
+    });
+  };
+  return Game;
+}(GameBase_1.GameBase);
+exports.Game = Game;
+
+/***/ }),
+
+/***/ 905:
+/***/ ((__unused_webpack_module, exports) => {
+
+
+
+Object.defineProperty(exports, "__esModule", ({
+  value: true
+}));
+exports.GameMode = void 0;
+/**
+ * 게임 모드 클래스
+ * 마피아 게임의 모드를 정의합니다. (클래식, 확장, 커스텀 등)
+ */
+var GameMode = /** @class */function () {
+  function GameMode(config) {
+    this.jobs = [];
+    this.id = config.id;
+    this.name = config.name;
+    this.description = config.description;
+    this.jobIds = config.jobIds;
+    this.minPlayers = config.minPlayers;
+    this.maxPlayers = config.maxPlayers;
   }
-  return coordinates;
+  /**
+   * 게임 모드 ID 반환
+   */
+  GameMode.prototype.getId = function () {
+    return this.id;
+  };
+  /**
+   * 게임 모드 이름 반환
+   */
+  GameMode.prototype.getName = function () {
+    return this.name;
+  };
+  /**
+   * 게임 모드 설명 반환
+   */
+  GameMode.prototype.getDescription = function () {
+    return this.description;
+  };
+  /**
+   * 최소 인원 반환
+   */
+  GameMode.prototype.getMinPlayers = function () {
+    return this.minPlayers;
+  };
+  /**
+   * 최대 인원 반환
+   */
+  GameMode.prototype.getMaxPlayers = function () {
+    return this.maxPlayers;
+  };
+  /**
+   * 직업 목록 설정
+   */
+  GameMode.prototype.setJobs = function (jobs) {
+    this.jobs = jobs;
+  };
+  /**
+   * 직업 목록 반환
+   */
+  GameMode.prototype.getJobs = function () {
+    return this.jobs;
+  };
+  /**
+   * JSON 변환
+   */
+  GameMode.prototype.toJSON = function () {
+    return {
+      id: this.id,
+      name: this.name,
+      description: this.description,
+      minPlayers: this.minPlayers,
+      maxPlayers: this.maxPlayers,
+      jobIds: this.jobIds
+    };
+  };
+  return GameMode;
+}();
+exports.GameMode = GameMode;
+
+/***/ }),
+
+/***/ 565:
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+
+
+
+Object.defineProperty(exports, "__esModule", ({
+  value: true
+}));
+exports.createDefaultGameModes = createDefaultGameModes;
+var GameMode_1 = __webpack_require__(905);
+var JobTypes_1 = __webpack_require__(662);
+/**
+ * 기존 게임 모드 정보를 사용하여 GameMode 클래스 생성
+ */
+function createDefaultGameModes() {
+  var modes = [];
+  // 기존 JobTypes의 게임 모드 설정을 활용
+  JobTypes_1.GAME_MODES.forEach(function (modeData) {
+    var modeConfig = {
+      id: modeData.id,
+      name: modeData.name,
+      description: modeData.description,
+      jobIds: modeData.jobIds,
+      minPlayers: modeData.minPlayers,
+      maxPlayers: modeData.maxPlayers
+    };
+    var gameMode = new GameMode_1.GameMode(modeConfig);
+    // 직업 정보 설정
+    var jobs = (0, JobTypes_1.getJobsByGameMode)(modeData.id);
+    if (jobs.length > 0) {
+      gameMode.setJobs(jobs);
+    }
+    modes.push(gameMode);
+  });
+  return modes;
 }
 
 /***/ }),
 
-/***/ 206:
+/***/ 871:
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 
@@ -152,8 +1069,8 @@ Object.defineProperty(exports, "__esModule", ({
   value: true
 }));
 exports.GameFlowManager = exports.phaseDurations = exports.MafiaPhase = exports.GameState = void 0;
-var Common_1 = __webpack_require__(169);
-var JobTypes_1 = __webpack_require__(669);
+var Common_1 = __webpack_require__(224);
+var JobTypes_1 = __webpack_require__(662);
 // GameState Enum: 게임의 주요 상태를 정의
 var GameState;
 (function (GameState) {
@@ -209,7 +1126,7 @@ var GameFlowManager = /** @class */function () {
   GameFlowManager.prototype.startGame = function () {
     var _this = this;
     if (!this.room) {
-      console.error("게임 룸이 설정되지 않았습니다.");
+      App.sayToAll("게임 룸이 설정되지 않았습니다.");
       return;
     }
     if (this.room.players.length < 4) {
@@ -877,325 +1794,501 @@ exports.GameFlowManager = GameFlowManager;
 
 /***/ }),
 
-/***/ 401:
-/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+/***/ 352:
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
 
 
-var __extends = this && this.__extends || function () {
-  var extendStatics = function (d, b) {
-    extendStatics = Object.setPrototypeOf || {
-      __proto__: []
-    } instanceof Array && function (d, b) {
-      d.__proto__ = b;
-    } || function (d, b) {
-      for (var p in b) if (Object.prototype.hasOwnProperty.call(b, p)) d[p] = b[p];
-    };
-    return extendStatics(d, b);
-  };
-  return function (d, b) {
-    if (typeof b !== "function" && b !== null) throw new TypeError("Class extends value " + String(b) + " is not a constructor or null");
-    extendStatics(d, b);
-    function __() {
-      this.constructor = d;
-    }
-    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-  };
-}();
 Object.defineProperty(exports, "__esModule", ({
   value: true
 }));
-exports.Game = void 0;
-var Common_1 = __webpack_require__(169);
-var Localizer_1 = __webpack_require__(773);
-var GameBase_1 = __webpack_require__(771);
-var GameRoomManager_1 = __webpack_require__(500);
-var JobTypes_1 = __webpack_require__(669);
-var defaultGameModes_1 = __webpack_require__(764);
-var ROOM_COUNT = 1;
-var Game = /** @class */function (_super) {
-  __extends(Game, _super);
-  function Game() {
-    var _this = _super.call(this) || this;
-    _this.mafiaGameRoomManager = new GameRoomManager_1.GameRoomManager();
-    _this.addOnStartCallback(_this.onStart.bind(_this));
-    _this.addOnJoinPlayerCallback(_this.onJoinPlayer.bind(_this));
-    _this.addOnLeavePlayerCallback(_this.onLeavePlayer.bind(_this));
-    _this.addOnUpdateCallback(_this.update.bind(_this));
-    _this.addOnDestroyCallback(_this.onDestroy.bind(_this));
-    // 게임 모드 등록
-    var gameModes = (0, defaultGameModes_1.createDefaultGameModes)();
-    gameModes.forEach(function (mode) {
-      _this.mafiaGameRoomManager.registerGameMode(mode);
-    });
-    // 기본 게임방 생성
-    var defaultGameMode = gameModes.find(function (mode) {
-      return mode.getId() === "classic";
-    }) || gameModes[0];
-    _this.mafiaGameRoomManager.createRoom({
-      title: "기본 게임방",
-      gameMode: defaultGameMode,
-      maxPlayers: 8
-    });
-    return _this;
+exports.GameRoom = exports.WaitingRoomEvent = exports.GameRoomState = void 0;
+var GameFlowManager_1 = __webpack_require__(871);
+var Common_1 = __webpack_require__(224);
+var JobTypes_1 = __webpack_require__(662);
+// GameRoomState 열거형
+var GameRoomState;
+(function (GameRoomState) {
+  /** 대기 중 */
+  GameRoomState["WAITING"] = "waiting";
+  /** 게임 진행 중 */
+  GameRoomState["PLAYING"] = "playing";
+  /** 게임 종료 */
+  GameRoomState["ENDED"] = "ended";
+})(GameRoomState || (exports.GameRoomState = GameRoomState = {}));
+// WaitingRoomEvent 열거형
+var WaitingRoomEvent;
+(function (WaitingRoomEvent) {
+  /** 플레이어 입장 */
+  WaitingRoomEvent["PLAYER_JOIN"] = "playerJoin";
+  /** 플레이어 퇴장 */
+  WaitingRoomEvent["PLAYER_LEAVE"] = "playerLeave";
+  /** 플레이어 강퇴 */
+  WaitingRoomEvent["PLAYER_KICK"] = "playerKick";
+  /** 호스트 변경 */
+  WaitingRoomEvent["HOST_CHANGE"] = "hostChange";
+  /** 준비 상태 변경 */
+  WaitingRoomEvent["READY_STATUS_CHANGE"] = "readyStatusChange";
+  /** 게임 시작 */
+  WaitingRoomEvent["GAME_START"] = "gameStart";
+  /** 게임 종료 */
+  WaitingRoomEvent["GAME_END"] = "gameEnd";
+  /** 채팅 메시지 */
+  WaitingRoomEvent["CHAT_MESSAGE"] = "chatMessage";
+})(WaitingRoomEvent || (exports.WaitingRoomEvent = WaitingRoomEvent = {}));
+// Define constants based on your code (placeholder values assumed)
+var STATE_INIT = "INIT";
+var GAMEROOM_LOCATIONS = {
+  1: Map.getLocation("GameRoom_1") ? Map.getLocationList("GameRoom_1")[0] : null,
+  2: Map.getLocation("GameRoom_2") ? Map.getLocationList("GameRoom_2")[0] : null,
+  3: Map.getLocation("GameRoom_3") ? Map.getLocationList("GameRoom_3")[0] : null,
+  4: Map.getLocation("GameRoom_4") ? Map.getLocationList("GameRoom_4")[0] : null,
+  5: Map.getLocation("GameRoom_5") ? Map.getLocationList("GameRoom_5")[0] : null,
+  6: Map.getLocation("GameRoom_6") ? Map.getLocationList("GameRoom_6")[0] : null,
+  7: Map.getLocation("GameRoom_7") ? Map.getLocationList("GameRoom_7")[0] : null,
+  8: Map.getLocation("GameRoom_8") ? Map.getLocationList("GameRoom_8")[0] : null
+};
+var START_WAIT_TIME = 30;
+var GameRoom = /** @class */function () {
+  function GameRoom(config) {
+    this.hostId = null;
+    this.players = [];
+    this.readyPlayers = new Set();
+    this.state = GameRoomState.WAITING;
+    /**
+     * 이벤트 처리를 위한 콜백 함수 등록
+     */
+    this.callbacks = {};
+    this.id = config.id;
+    this.title = config.title;
+    this.gameMode = config.gameMode;
+    this.maxPlayers = config.maxPlayers;
+    this.password = config.password;
+    this.createdAt = Date.now();
+    // 기존 코드와 호환되도록 수정
+    this.flowManager = new GameFlowManager_1.GameFlowManager(parseInt(this.id));
+    this.flowManager.setGameRoom(this);
   }
-  Game.create = function () {
-    if (!Game._instance) {
-      Game._instance = new Game();
+  /**
+   * 게임 플레이어 조회 (GameFlowManager 호환용)
+   */
+  GameRoom.prototype.getGamePlayer = function (playerId) {
+    return (0, Common_1.getPlayerById)(playerId);
+  };
+  /**
+   * 방 플레이어들에게 액션 전송 (GameFlowManager 호환용)
+   */
+  GameRoom.prototype.actionToRoomPlayers = function (action, data) {
+    if (typeof action === 'function') {
+      // 콜백 함수로 처리
+      this.players.forEach(function (player) {
+        action(player);
+      });
+    } else {
+      // 문자열 액션으로 처리
+      this.players.forEach(function (player) {
+        var gamePlayer = (0, Common_1.getPlayerById)(player.id);
+        if (gamePlayer) {
+          gamePlayer.tag[action] = data;
+          gamePlayer.sendUpdated();
+        }
+      });
     }
   };
-  Game.prototype.onStart = function () {
-    App.enableFreeView = false;
-    App.sendUpdated();
+  /**
+   * 특정 플레이어 조회 (GameFlowManager 호환용)
+   */
+  GameRoom.prototype.getPlayer = function (playerId) {
+    return this.players.find(function (p) {
+      return p.id === playerId;
+    });
   };
-  Game.prototype.onJoinPlayer = function (player) {
-    player.tag = {
-      widget: {},
-      mafiaPlayer: null
+  GameRoom.prototype.getId = function () {
+    return this.id;
+  };
+  GameRoom.prototype.getTitle = function () {
+    return this.title;
+  };
+  GameRoom.prototype.getGameMode = function () {
+    return this.gameMode;
+  };
+  GameRoom.prototype.getMaxPlayers = function () {
+    return this.maxPlayers;
+  };
+  GameRoom.prototype.getPlayers = function () {
+    return this.players;
+  };
+  GameRoom.prototype.getPlayersCount = function () {
+    return this.players.length;
+  };
+  GameRoom.prototype.isFull = function () {
+    return this.players.length >= this.maxPlayers;
+  };
+  GameRoom.prototype.getState = function () {
+    return this.state;
+  };
+  GameRoom.prototype.getHost = function () {
+    return this.hostId;
+  };
+  GameRoom.prototype.getCreatedAt = function () {
+    return this.createdAt;
+  };
+  GameRoom.prototype.hasPassword = function () {
+    return !!this.password;
+  };
+  GameRoom.prototype.isPasswordCorrect = function (password) {
+    return this.password === password;
+  };
+  GameRoom.prototype.isPlayerReady = function (playerId) {
+    return this.readyPlayers.has(playerId);
+  };
+  GameRoom.prototype.areAllPlayersReady = function () {
+    // 호스트는 준비 상태가 필요 없음
+    if (this.players.length < 4) return false;
+    // 모든 플레이어가 준비 상태인지 확인
+    for (var _i = 0, _a = this.players; _i < _a.length; _i++) {
+      var player = _a[_i];
+      if (this.hostId && player.id === this.hostId) continue;
+      if (!this.readyPlayers.has(player.id)) return false;
+    }
+    return true;
+  };
+  /**
+   * 이벤트 리스너 등록
+   */
+  GameRoom.prototype.on = function (event, listener) {
+    var _a;
+    if (!this.callbacks[event]) {
+      this.callbacks[event] = [];
+    }
+    (_a = this.callbacks[event]) === null || _a === void 0 ? void 0 : _a.push(listener);
+  };
+  /**
+   * 이벤트 리스너 제거
+   */
+  GameRoom.prototype.off = function (event, listener) {
+    var callbacks = this.callbacks[event];
+    if (!callbacks) return;
+    var index = callbacks.indexOf(listener);
+    if (index !== -1) {
+      callbacks.splice(index, 1);
+    }
+  };
+  /**
+   * 이벤트 발생
+   */
+  GameRoom.prototype.emit = function (event) {
+    var args = [];
+    for (var _i = 1; _i < arguments.length; _i++) {
+      args[_i - 1] = arguments[_i];
+    }
+    var callbacks = this.callbacks[event];
+    if (!callbacks) return;
+    callbacks.forEach(function (callback) {
+      try {
+        callback.apply(void 0, args);
+      } catch (error) {
+        App.sayToAll("Error in event listener for ".concat(event, ":"), error);
+      }
+    });
+  };
+  /**
+   * 유저 입장
+   */
+  GameRoom.prototype.joinPlayer = function (player) {
+    // 이미 방에 있는 플레이어인지 확인
+    if (this.players.some(function (p) {
+      return p.id === player.id;
+    })) {
+      return false;
+    }
+    // 방이 꽉 찼는지 확인
+    if (this.isFull()) {
+      return false;
+    }
+    // 게임 중인지 확인
+    if (this.state !== GameRoomState.WAITING) {
+      return false;
+    }
+    // 플레이어 추가 (기존 코드와 호환되도록 수정)
+    var mafiaPlayer = {
+      id: player.id,
+      name: player.name,
+      jobId: JobTypes_1.JobId.CITIZEN,
+      // 기본 직업은 시민
+      isAlive: true,
+      emoji: "👤" // 기본 이모지
     };
-    // 로컬라이징
-    Localizer_1.Localizer.prepareLocalizationContainer(player);
-    //@ts-ignore
-    var customData = (0, Common_1.parseJsonString)(player.customData);
-    // 로비 위젯 표시
-    this.showLobbyWidget(player);
+    this.players.push(mafiaPlayer);
+    // 플레이어 태그에 마피아 플레이어 정보 저장
+    player.tag.mafiaPlayer = mafiaPlayer;
+    // 플레이어 위치 설정
+    var locationInfo = GAMEROOM_LOCATIONS[parseInt(this.id)];
+    if (locationInfo) {
+      player.spawnAtLocation("GameRoom_".concat(this.id));
+      player.setCameraTarget(Math.floor(locationInfo.x + locationInfo.width / 2), Math.floor(locationInfo.y + locationInfo.height / 2), 0);
+      player.displayRatio = 1.5;
+      player.sendUpdated();
+    }
+    // 방 정보 저장
+    player.tag.roomInfo = {
+      roomNum: parseInt(this.id)
+    };
+    // 첫 플레이어인 경우 호스트로 지정
+    if (!this.hostId) {
+      this.hostId = player.id;
+    }
+    // 입장 이벤트 발생
+    this.emit(WaitingRoomEvent.PLAYER_JOIN, player);
+    return true;
   };
   /**
-   * 로비 위젯을 표시합니다.
-   * @param player 플레이어
+   * 유저 퇴장
    */
-  Game.prototype.showLobbyWidget = function (player) {
+  GameRoom.prototype.leavePlayer = function (playerId) {
+    var playerIndex = this.players.findIndex(function (p) {
+      return p.id === playerId;
+    });
+    if (playerIndex === -1) {
+      return false;
+    }
+    var player = (0, Common_1.getPlayerById)(playerId);
+    if (!player) {
+      return false;
+    }
+    // 플레이어 목록에서 제거
+    this.players.splice(playerIndex, 1);
+    // 준비 상태도 삭제
+    this.readyPlayers.delete(playerId);
+    // 플레이어 태그 정보 초기화
+    player.tag.roomInfo = null;
+    player.tag.mafiaPlayer = null;
+    // 플레이어 위치 이동
+    player.spawnAtLocation("Lobby");
+    // 위젯 제거
+    if (player.tag.widget) {
+      if (player.tag.widget.gameStatus) {
+        player.tag.widget.gameStatus.destroy();
+        player.tag.widget.gameStatus = null;
+      }
+      if (player.tag.widget.nightAction) {
+        player.tag.widget.nightAction.destroy();
+        player.tag.widget.nightAction = null;
+      }
+      if (player.tag.widget.voteWidget) {
+        player.tag.widget.voteWidget.destroy();
+        player.tag.widget.voteWidget = null;
+      }
+    }
+    // 호스트가 나간 경우 새로운 호스트 지정
+    if (this.hostId && this.hostId === playerId) {
+      this.assignNewHost();
+    }
+    // 퇴장 이벤트 발생
+    this.emit(WaitingRoomEvent.PLAYER_LEAVE, player);
+    return true;
+  };
+  /**
+   * 유저 강퇴
+   */
+  GameRoom.prototype.kickPlayer = function (hostId, targetId) {
+    // 호스트인지 확인
+    if (!this.hostId || this.hostId !== hostId) {
+      return false;
+    }
+    // 자기 자신은 강퇴할 수 없음
+    if (hostId === targetId) {
+      return false;
+    }
+    var targetPlayer = (0, Common_1.getPlayerById)(targetId);
+    if (!targetPlayer) {
+      return false;
+    }
+    // 플레이어 퇴장 처리
+    var result = this.leavePlayer(targetId);
+    if (!result) {
+      return false;
+    }
+    // 강퇴 이벤트 발생
+    this.emit(WaitingRoomEvent.PLAYER_KICK, targetPlayer);
+    return true;
+  };
+  /**
+   * 새로운 호스트 지정
+   */
+  GameRoom.prototype.assignNewHost = function () {
+    if (this.players.length === 0) {
+      this.hostId = null;
+      return;
+    }
+    // 첫 번째 플레이어를 호스트로 지정
+    var firstPlayerId = this.players[0].id;
+    this.hostId = firstPlayerId;
+    // 새 호스트 이벤트 발생
+    var newHost = (0, Common_1.getPlayerById)(firstPlayerId);
+    if (newHost) {
+      this.emit(WaitingRoomEvent.HOST_CHANGE, newHost);
+    }
+  };
+  /**
+   * 호스트 변경
+   */
+  GameRoom.prototype.changeHost = function (hostId, newHostId) {
+    // 현재 호스트인지 확인
+    if (!this.hostId || this.hostId !== hostId) {
+      return false;
+    }
+    var newHost = (0, Common_1.getPlayerById)(newHostId);
+    if (!newHost) {
+      return false;
+    }
+    // 플레이어가 방에 있는지 확인
+    if (!this.players.some(function (p) {
+      return p.id === newHostId;
+    })) {
+      return false;
+    }
+    this.hostId = newHostId;
+    // 새 호스트 이벤트 발생
+    this.emit(WaitingRoomEvent.HOST_CHANGE, newHost);
+    return true;
+  };
+  /**
+   * 준비 상태 변경
+   */
+  GameRoom.prototype.toggleReady = function (playerId) {
+    // 호스트는 준비 상태가 필요 없음
+    if (this.hostId && this.hostId === playerId) {
+      return false;
+    }
+    // 존재하는 플레이어인지 확인
+    if (!this.players.some(function (p) {
+      return p.id === playerId;
+    })) {
+      return false;
+    }
+    var player = (0, Common_1.getPlayerById)(playerId);
+    if (!player) {
+      return false;
+    }
+    // 현재 준비 상태 확인 후 토글
+    var isCurrentlyReady = this.readyPlayers.has(playerId);
+    if (isCurrentlyReady) {
+      this.readyPlayers.delete(playerId);
+    } else {
+      this.readyPlayers.add(playerId);
+    }
+    // 준비 상태 변경 이벤트 발생
+    this.emit(WaitingRoomEvent.READY_STATUS_CHANGE, player, !isCurrentlyReady);
+    return true;
+  };
+  /**
+   * 게임 시작
+   */
+  GameRoom.prototype.startGame = function (hostId) {
+    // 호스트인지 확인
+    if (!this.hostId || this.hostId !== hostId) {
+      return false;
+    }
+    // 최소 인원 확인 (마피아 게임은 일반적으로 최소 4명)
+    if (this.players.length < 4) {
+      return false;
+    }
+    // 모든 플레이어가 준비 상태인지 확인 
+    if (!this.areAllPlayersReady()) {
+      return false;
+    }
+    // 게임 상태 변경
+    this.state = GameRoomState.PLAYING;
+    // 게임 시작 처리
+    try {
+      this.flowManager.startGame();
+    } catch (error) {
+      App.sayToAll("Error starting game:", error);
+      this.state = GameRoomState.WAITING;
+      return false;
+    }
+    // 게임 시작 이벤트 발생
+    this.emit(WaitingRoomEvent.GAME_START);
+    return true;
+  };
+  /**
+   * 게임 종료
+   */
+  GameRoom.prototype.endGame = function () {
+    this.state = GameRoomState.WAITING;
+    this.readyPlayers.clear();
+    // 게임 종료 이벤트 발생
+    this.emit(WaitingRoomEvent.GAME_END);
+  };
+  /**
+   * 방 초기화
+   */
+  GameRoom.prototype.reset = function () {
+    // 모든 플레이어의 위젯 제거
+    this.players.forEach(function (player) {
+      var gamePlayer = (0, Common_1.getPlayerById)(player.id);
+      if (!gamePlayer) return;
+      if (gamePlayer.tag.widget) {
+        if (gamePlayer.tag.widget.gameStatus) {
+          gamePlayer.tag.widget.gameStatus.destroy();
+          gamePlayer.tag.widget.gameStatus = null;
+        }
+        if (gamePlayer.tag.widget.nightAction) {
+          gamePlayer.tag.widget.nightAction.destroy();
+          gamePlayer.tag.widget.nightAction = null;
+        }
+        if (gamePlayer.tag.widget.voteWidget) {
+          gamePlayer.tag.widget.voteWidget.destroy();
+          gamePlayer.tag.widget.voteWidget = null;
+        }
+      }
+    });
+    // 플레이어 목록 초기화
+    this.players = [];
+    this.readyPlayers.clear();
+    this.hostId = null;
+    this.state = GameRoomState.WAITING;
+    // 게임 플로우 매니저 초기화
+    this.flowManager = new GameFlowManager_1.GameFlowManager(parseInt(this.id));
+    this.flowManager.setGameRoom(this);
+  };
+  /**
+   * 방 정보 JSON 변환
+   */
+  GameRoom.prototype.toJSON = function () {
     var _this = this;
-    // 이미 메인 위젯이 있으면 제거
-    if (player.tag.widget.main) {
-      player.tag.widget.main.destroy();
-    }
-    // 로비 위젯 생성
-    player.tag.widget.main = player.showWidget("widgets/lobby_widget.html", "middle", 0, 0);
-    // 초기화 메시지 전송
-    player.tag.widget.main.sendMessage({
-      type: "init",
-      message: "코드 마피아",
-      isMobile: player.isMobile,
-      isTablet: player.isTablet
-    });
-    // 게임 방 정보 전송
-    var rooms = [];
-    for (var i = 1; i <= ROOM_COUNT; i++) {
-      var room = this.mafiaGameRoomManager.getRoom(i.toString());
-      if (room) {
-        rooms.push({
-          id: room.id,
-          title: room.title,
-          playerCount: room.getPlayersCount(),
-          maxPlayers: room.maxPlayers,
-          gameMode: room.gameMode.getName(),
-          isInProgress: room.flowManager.isGameInProgress()
-        });
-      }
-    }
-    player.tag.widget.main.sendMessage({
-      type: "updateRooms",
-      rooms: rooms
-    });
-    // 로비 위젯 메시지 처리 설정
-    player.tag.widget.main.onMessage.Add(function (player, data) {
-      if (data.type === "showRoleDetail" && data.role) {
-        _this.showRoleCard(player, data.role);
-      } else if (data.type === "startGame") {
-        _this.showGameModeSelect(player);
-      } else if (data.type === "joinRoom" && data.roomId) {
-        var room = _this.mafiaGameRoomManager.getRoom(data.roomId);
-        if (room) {
-          room.joinPlayer(player);
-          // 방 참가 후 UI 업데이트
-          player.tag.widget.main.sendMessage({
-            type: "joinedRoom",
-            roomId: data.roomId,
-            roomInfo: {
-              id: room.id,
-              title: room.title,
-              playerCount: room.getPlayersCount(),
-              maxPlayers: room.maxPlayers,
-              gameMode: room.gameMode.getName(),
-              isInProgress: room.flowManager.isGameInProgress()
-            }
-          });
-          // 모든 플레이어에게 방 정보 업데이트 전송
-          _this.updateRoomInfo();
-        }
-      } else if (data.type === "leaveRoom") {
-        if (player.tag.roomInfo) {
-          var roomNum = player.tag.roomInfo.roomNum;
-          _this.mafiaGameRoomManager.getRoom(roomNum.toString()).leavePlayer(player.id);
-          // 방 퇴장 후 UI 업데이트
-          player.tag.widget.main.sendMessage({
-            type: "leftRoom"
-          });
-          // 모든 플레이어에게 방 정보 업데이트 전송
-          _this.updateRoomInfo();
-        }
-      } else if (data.type === "refreshRooms") {
-        // 게임 방 정보 업데이트 전송
-        var rooms_1 = [];
-        for (var i = 1; i <= ROOM_COUNT; i++) {
-          var room = _this.mafiaGameRoomManager.getRoom(i.toString());
-          if (room) {
-            rooms_1.push({
-              id: room.id,
-              title: room.title,
-              playerCount: room.getPlayersCount(),
-              maxPlayers: room.maxPlayers,
-              gameMode: room.gameMode.getName(),
-              isInProgress: room.flowManager.isGameInProgress()
-            });
-          }
-        }
-        player.tag.widget.main.sendMessage({
-          type: "updateRooms",
-          rooms: rooms_1
-        });
-      }
-    });
+    var hostPlayer = this.hostId ? (0, Common_1.getPlayerById)(this.hostId) : null;
+    return {
+      id: this.id,
+      title: this.title,
+      gameMode: this.gameMode.getName(),
+      maxPlayers: this.maxPlayers,
+      hasPassword: this.hasPassword(),
+      playersCount: this.getPlayersCount(),
+      host: this.hostId ? {
+        id: this.hostId,
+        name: hostPlayer ? hostPlayer.name : '알 수 없음'
+      } : null,
+      state: this.state,
+      players: this.players.map(function (player) {
+        return {
+          id: player.id,
+          name: player.name,
+          isReady: _this.isPlayerReady(player.id),
+          isHost: _this.hostId ? player.id === _this.hostId : false
+        };
+      }),
+      createdAt: new Date(this.createdAt).toISOString()
+    };
   };
-  /**
-   * 게임 모드 선택 위젯을 표시합니다.
-   * @param player 플레이어
-   */
-  Game.prototype.showGameModeSelect = function (player) {
-    var _this = this;
-    // 이미 게임 모드 선택 위젯이 있으면 제거
-    if (player.tag.widget.gameModeSelect) {
-      player.tag.widget.gameModeSelect.destroy();
-    }
-    // 게임 모드 선택 위젯 생성
-    player.tag.widget.gameModeSelect = player.showWidget("widgets/game_mode_select.html", "middle", 0, 0);
-    // 초기화 메시지 전송
-    player.tag.widget.gameModeSelect.sendMessage({
-      type: 'init',
-      isMobile: player.isMobile,
-      isTablet: player.isTablet
-    });
-    // 게임 모드 정보 전송
-    player.tag.widget.gameModeSelect.sendMessage({
-      type: 'init_game_modes',
-      modes: JobTypes_1.GAME_MODES,
-      jobs: JobTypes_1.JOBS
-    });
-    // 게임 모드 선택 위젯 메시지 처리
-    player.tag.widget.gameModeSelect.onMessage.Add(function (player, data) {
-      if (data.type === "cancel_mode_select") {
-        player.tag.widget.gameModeSelect.destroy();
-        player.tag.widget.gameModeSelect = null;
-      } else if (data.type === "select_game_mode") {
-        var modeId = data.modeId;
-        var room = _this.mafiaGameRoomManager.getRoom("1");
-        // 게임 모드 설정
-        room.flowManager.setGameMode(modeId);
-        // 게임 시작
-        room.flowManager.startGame();
-        // 위젯 제거
-        player.tag.widget.gameModeSelect.destroy();
-        player.tag.widget.gameModeSelect = null;
-        // 모든 플레이어에게 방 정보 업데이트 전송
-        _this.updateRoomInfo();
-      }
-    });
-  };
-  /**
-   * 역할 카드 위젯을 표시합니다.
-   * @param player 플레이어
-   * @param role 역할
-   */
-  Game.prototype.showRoleCard = function (player, role) {
-    // 이미 역할 카드 위젯이 있으면 제거
-    if (player.tag.widget.roleCard) {
-      player.tag.widget.roleCard.destroy();
-    }
-    // 역할 카드 위젯 생성
-    player.tag.widget.roleCard = player.showWidget("widgets/role_card.html", "middle", 0, 0);
-    // 초기화 메시지 전송
-    player.tag.widget.roleCard.sendMessage({
-      type: 'init',
-      isMobile: player.isMobile,
-      isTablet: player.isTablet
-    });
-    // 역할 정보 전송
-    player.tag.widget.roleCard.sendMessage({
-      type: 'setRole',
-      role: role
-    });
-    // 역할 카드 위젯 메시지 처리
-    player.tag.widget.roleCard.onMessage.Add(function (player, data) {
-      if (data.type === "close") {
-        player.tag.widget.roleCard.destroy();
-        player.tag.widget.roleCard = null;
-      }
-    });
-  };
-  Game.prototype.onLeavePlayer = function (player) {
-    // 플레이어가 속한 방이 있으면 해당 방에서 제거
-    if (player.tag.roomInfo) {
-      var roomNum = player.tag.roomInfo.roomNum;
-      this.mafiaGameRoomManager.getRoom(roomNum.toString()).leavePlayer(player.id);
-    }
-  };
-  Game.prototype.update = function (dt) {
-    // 각 방의 게임 상태 업데이트
-    for (var i = 1; i <= ROOM_COUNT; i++) {
-      var room = this.mafiaGameRoomManager.getRoom(i.toString());
-      if (room && room.flowManager.isGameInProgress()) {
-        // 타이머 업데이트
-        if (room.flowManager.phaseTimer > 0) {
-          room.flowManager.phaseTimer -= dt;
-          // 타이머가 0 이하가 되면 다음 단계로 진행
-          if (room.flowManager.phaseTimer <= 0) {
-            room.flowManager.nextPhase();
-          }
-        }
-      }
-    }
-  };
-  Game.prototype.onDestroy = function () {
-    // 게임 종료 시 필요한 정리 작업
-  };
-  /**
-   * 모든 플레이어에게 방 정보를 업데이트합니다.
-   */
-  Game.prototype.updateRoomInfo = function () {
-    // 게임 방 정보 수집
-    var rooms = [];
-    for (var i = 1; i <= ROOM_COUNT; i++) {
-      var room = this.mafiaGameRoomManager.getRoom(i.toString());
-      if (room) {
-        rooms.push({
-          id: room.id,
-          title: room.title,
-          playerCount: room.getPlayersCount(),
-          maxPlayers: room.maxPlayers,
-          gameMode: room.gameMode.getName(),
-          isInProgress: room.flowManager.isGameInProgress()
-        });
-      }
-    }
-    // 모든 플레이어에게 업데이트된 방 정보 전송
-    App.players.forEach(function (player) {
-      var _a, _b;
-      if ((_b = (_a = player.tag) === null || _a === void 0 ? void 0 : _a.widget) === null || _b === void 0 ? void 0 : _b.main) {
-        player.tag.widget.main.sendMessage({
-          type: "updateRooms",
-          rooms: rooms
-        });
-      }
-    });
-  };
-  return Game;
-}(GameBase_1.GameBase);
-exports.Game = Game;
+  return GameRoom;
+}();
+exports.GameRoom = GameRoom;
 
 /***/ }),
 
-/***/ 500:
+/***/ 193:
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 
@@ -1214,7 +2307,7 @@ Object.defineProperty(exports, "__esModule", ({
   value: true
 }));
 exports.GameRoomManager = void 0;
-var GameRoom_1 = __webpack_require__(727);
+var GameRoom_1 = __webpack_require__(352);
 /**
  * 게임방 관리자 클래스
  * 여러 게임방을 생성하고 관리합니다.
@@ -1391,7 +2484,7 @@ var GameRoomManager = /** @class */function () {
       try {
         callback.apply(void 0, args);
       } catch (error) {
-        console.error("Error in event listener for ".concat(event, ":"), error);
+        App.sayToAll("Error in event listener for ".concat(event, ":"), error);
       }
     });
   };
@@ -1421,91 +2514,7 @@ exports.GameRoomManager = GameRoomManager;
 
 /***/ }),
 
-/***/ 668:
-/***/ ((__unused_webpack_module, exports) => {
-
-
-
-Object.defineProperty(exports, "__esModule", ({
-  value: true
-}));
-exports.GameMode = void 0;
-/**
- * 게임 모드 클래스
- * 마피아 게임의 모드를 정의합니다. (클래식, 확장, 커스텀 등)
- */
-var GameMode = /** @class */function () {
-  function GameMode(config) {
-    this.jobs = [];
-    this.id = config.id;
-    this.name = config.name;
-    this.description = config.description;
-    this.jobIds = config.jobIds;
-    this.minPlayers = config.minPlayers;
-    this.maxPlayers = config.maxPlayers;
-  }
-  /**
-   * 게임 모드 ID 반환
-   */
-  GameMode.prototype.getId = function () {
-    return this.id;
-  };
-  /**
-   * 게임 모드 이름 반환
-   */
-  GameMode.prototype.getName = function () {
-    return this.name;
-  };
-  /**
-   * 게임 모드 설명 반환
-   */
-  GameMode.prototype.getDescription = function () {
-    return this.description;
-  };
-  /**
-   * 최소 인원 반환
-   */
-  GameMode.prototype.getMinPlayers = function () {
-    return this.minPlayers;
-  };
-  /**
-   * 최대 인원 반환
-   */
-  GameMode.prototype.getMaxPlayers = function () {
-    return this.maxPlayers;
-  };
-  /**
-   * 직업 목록 설정
-   */
-  GameMode.prototype.setJobs = function (jobs) {
-    this.jobs = jobs;
-  };
-  /**
-   * 직업 목록 반환
-   */
-  GameMode.prototype.getJobs = function () {
-    return this.jobs;
-  };
-  /**
-   * JSON 변환
-   */
-  GameMode.prototype.toJSON = function () {
-    return {
-      id: this.id,
-      name: this.name,
-      description: this.description,
-      minPlayers: this.minPlayers,
-      maxPlayers: this.maxPlayers,
-      jobIds: this.jobIds
-    };
-  };
-  return GameMode;
-}();
-exports.GameMode = GameMode;
-
-/***/ }),
-
-/***/ 669:
+/***/ 662:
 /***/ ((__unused_webpack_module, exports) => {
 
 
@@ -1792,639 +2801,138 @@ function getJobsByGameMode(modeId) {
 
 /***/ }),
 
-/***/ 727:
-/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+/***/ 224:
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 
 
-Object.defineProperty(exports, "__esModule", ({
-  value: true
-}));
-exports.GameRoom = exports.WaitingRoomEvent = exports.GameRoomState = void 0;
-var GameFlowManager_1 = __webpack_require__(206);
-var Common_1 = __webpack_require__(169);
-var JobTypes_1 = __webpack_require__(669);
-// GameRoomState 열거형
-var GameRoomState;
-(function (GameRoomState) {
-  /** 대기 중 */
-  GameRoomState["WAITING"] = "waiting";
-  /** 게임 진행 중 */
-  GameRoomState["PLAYING"] = "playing";
-  /** 게임 종료 */
-  GameRoomState["ENDED"] = "ended";
-})(GameRoomState || (exports.GameRoomState = GameRoomState = {}));
-// WaitingRoomEvent 열거형
-var WaitingRoomEvent;
-(function (WaitingRoomEvent) {
-  /** 플레이어 입장 */
-  WaitingRoomEvent["PLAYER_JOIN"] = "playerJoin";
-  /** 플레이어 퇴장 */
-  WaitingRoomEvent["PLAYER_LEAVE"] = "playerLeave";
-  /** 플레이어 강퇴 */
-  WaitingRoomEvent["PLAYER_KICK"] = "playerKick";
-  /** 호스트 변경 */
-  WaitingRoomEvent["HOST_CHANGE"] = "hostChange";
-  /** 준비 상태 변경 */
-  WaitingRoomEvent["READY_STATUS_CHANGE"] = "readyStatusChange";
-  /** 게임 시작 */
-  WaitingRoomEvent["GAME_START"] = "gameStart";
-  /** 게임 종료 */
-  WaitingRoomEvent["GAME_END"] = "gameEnd";
-  /** 채팅 메시지 */
-  WaitingRoomEvent["CHAT_MESSAGE"] = "chatMessage";
-})(WaitingRoomEvent || (exports.WaitingRoomEvent = WaitingRoomEvent = {}));
-// Define constants based on your code (placeholder values assumed)
-var STATE_INIT = "INIT";
-var GAMEROOM_LOCATIONS = {
-  1: Map.getLocation("GameRoom_1") ? Map.getLocationList("GameRoom_1")[0] : null,
-  2: Map.getLocation("GameRoom_2") ? Map.getLocationList("GameRoom_2")[0] : null,
-  3: Map.getLocation("GameRoom_3") ? Map.getLocationList("GameRoom_3")[0] : null,
-  4: Map.getLocation("GameRoom_4") ? Map.getLocationList("GameRoom_4")[0] : null,
-  5: Map.getLocation("GameRoom_5") ? Map.getLocationList("GameRoom_5")[0] : null,
-  6: Map.getLocation("GameRoom_6") ? Map.getLocationList("GameRoom_6")[0] : null,
-  7: Map.getLocation("GameRoom_7") ? Map.getLocationList("GameRoom_7")[0] : null,
-  8: Map.getLocation("GameRoom_8") ? Map.getLocationList("GameRoom_8")[0] : null
-};
-var START_WAIT_TIME = 30;
-var GameRoom = /** @class */function () {
-  function GameRoom(config) {
-    this.host = null;
-    this.players = [];
-    this.readyPlayers = new Set();
-    this.state = GameRoomState.WAITING;
-    /**
-     * 이벤트 처리를 위한 콜백 함수 등록
-     */
-    this.callbacks = {};
-    this.id = config.id;
-    this.title = config.title;
-    this.gameMode = config.gameMode;
-    this.maxPlayers = config.maxPlayers;
-    this.password = config.password;
-    this.createdAt = Date.now();
-    // 기존 코드와 호환되도록 수정
-    this.flowManager = new GameFlowManager_1.GameFlowManager(parseInt(this.id));
-    this.flowManager.setGameRoom(this);
+var __spreadArray = this && this.__spreadArray || function (to, from, pack) {
+  if (pack || arguments.length === 2) for (var i = 0, l = from.length, ar; i < l; i++) {
+    if (ar || !(i in from)) {
+      if (!ar) ar = Array.prototype.slice.call(from, 0, i);
+      ar[i] = from[i];
+    }
   }
-  /**
-   * 게임 플레이어 조회 (GameFlowManager 호환용)
-   */
-  GameRoom.prototype.getGamePlayer = function (playerId) {
-    return (0, Common_1.getPlayerById)(playerId);
-  };
-  /**
-   * 방 플레이어들에게 액션 전송 (GameFlowManager 호환용)
-   */
-  GameRoom.prototype.actionToRoomPlayers = function (action, data) {
-    if (typeof action === 'function') {
-      // 콜백 함수로 처리
-      this.players.forEach(function (player) {
-        action(player);
-      });
-    } else {
-      // 문자열 액션으로 처리
-      this.players.forEach(function (player) {
-        var gamePlayer = (0, Common_1.getPlayerById)(player.id);
-        if (gamePlayer) {
-          gamePlayer.tag[action] = data;
-          gamePlayer.sendUpdated();
-        }
-      });
-    }
-  };
-  /**
-   * 특정 플레이어 조회 (GameFlowManager 호환용)
-   */
-  GameRoom.prototype.getPlayer = function (playerId) {
-    return this.players.find(function (p) {
-      return p.id === playerId;
-    });
-  };
-  GameRoom.prototype.getId = function () {
-    return this.id;
-  };
-  GameRoom.prototype.getTitle = function () {
-    return this.title;
-  };
-  GameRoom.prototype.getGameMode = function () {
-    return this.gameMode;
-  };
-  GameRoom.prototype.getMaxPlayers = function () {
-    return this.maxPlayers;
-  };
-  GameRoom.prototype.getPlayers = function () {
-    return this.players;
-  };
-  GameRoom.prototype.getPlayersCount = function () {
-    return this.players.length;
-  };
-  GameRoom.prototype.isFull = function () {
-    return this.players.length >= this.maxPlayers;
-  };
-  GameRoom.prototype.getState = function () {
-    return this.state;
-  };
-  GameRoom.prototype.getHost = function () {
-    return this.host;
-  };
-  GameRoom.prototype.getCreatedAt = function () {
-    return this.createdAt;
-  };
-  GameRoom.prototype.hasPassword = function () {
-    return !!this.password;
-  };
-  GameRoom.prototype.isPasswordCorrect = function (password) {
-    return this.password === password;
-  };
-  GameRoom.prototype.isPlayerReady = function (playerId) {
-    return this.readyPlayers.has(playerId);
-  };
-  GameRoom.prototype.areAllPlayersReady = function () {
-    // 호스트는 준비 상태가 필요 없음
-    if (this.players.length < 4) return false;
-    // 모든 플레이어가 준비 상태인지 확인
-    for (var _i = 0, _a = this.players; _i < _a.length; _i++) {
-      var player = _a[_i];
-      if (this.host && player.id === this.host.id) continue;
-      if (!this.readyPlayers.has(player.id)) return false;
-    }
-    return true;
-  };
-  /**
-   * 이벤트 리스너 등록
-   */
-  GameRoom.prototype.on = function (event, listener) {
-    var _a;
-    if (!this.callbacks[event]) {
-      this.callbacks[event] = [];
-    }
-    (_a = this.callbacks[event]) === null || _a === void 0 ? void 0 : _a.push(listener);
-  };
-  /**
-   * 이벤트 리스너 제거
-   */
-  GameRoom.prototype.off = function (event, listener) {
-    var callbacks = this.callbacks[event];
-    if (!callbacks) return;
-    var index = callbacks.indexOf(listener);
-    if (index !== -1) {
-      callbacks.splice(index, 1);
-    }
-  };
-  /**
-   * 이벤트 발생
-   */
-  GameRoom.prototype.emit = function (event) {
-    var args = [];
-    for (var _i = 1; _i < arguments.length; _i++) {
-      args[_i - 1] = arguments[_i];
-    }
-    var callbacks = this.callbacks[event];
-    if (!callbacks) return;
-    callbacks.forEach(function (callback) {
-      try {
-        callback.apply(void 0, args);
-      } catch (error) {
-        console.error("Error in event listener for ".concat(event, ":"), error);
-      }
-    });
-  };
-  /**
-   * 유저 입장
-   */
-  GameRoom.prototype.joinPlayer = function (player) {
-    // 이미 방에 있는 플레이어인지 확인
-    if (this.players.some(function (p) {
-      return p.id === player.id;
-    })) {
-      return false;
-    }
-    // 방이 꽉 찼는지 확인
-    if (this.isFull()) {
-      return false;
-    }
-    // 게임 중인지 확인
-    if (this.state !== GameRoomState.WAITING) {
-      return false;
-    }
-    // 플레이어 추가 (기존 코드와 호환되도록 수정)
-    var mafiaPlayer = {
-      id: player.id,
-      name: player.name,
-      jobId: JobTypes_1.JobId.CITIZEN,
-      // 기본 직업은 시민
-      isAlive: true,
-      emoji: "👤" // 기본 이모지
-    };
-    this.players.push(mafiaPlayer);
-    // 플레이어 태그에 마피아 플레이어 정보 저장
-    player.tag.mafiaPlayer = mafiaPlayer;
-    // 플레이어 위치 설정
-    var locationInfo = GAMEROOM_LOCATIONS[parseInt(this.id)];
-    if (locationInfo) {
-      player.spawnAtLocation("GameRoom_".concat(this.id));
-      player.setCameraTarget(Math.floor(locationInfo.x + locationInfo.width / 2), Math.floor(locationInfo.y + locationInfo.height / 2), 0);
-      player.displayRatio = 1.5;
-      player.sendUpdated();
-    }
-    // 방 정보 저장
-    player.tag.roomInfo = {
-      roomNum: parseInt(this.id)
-    };
-    // 첫 플레이어인 경우 호스트로 지정
-    if (!this.host) {
-      this.host = player;
-    }
-    // 입장 이벤트 발생
-    this.emit(WaitingRoomEvent.PLAYER_JOIN, player);
-    return true;
-  };
-  /**
-   * 유저 퇴장
-   */
-  GameRoom.prototype.leavePlayer = function (playerId) {
-    var playerIndex = this.players.findIndex(function (p) {
-      return p.id === playerId;
-    });
-    if (playerIndex === -1) {
-      return false;
-    }
-    var player = (0, Common_1.getPlayerById)(playerId);
-    if (!player) {
-      return false;
-    }
-    // 플레이어 목록에서 제거
-    this.players.splice(playerIndex, 1);
-    // 준비 상태도 삭제
-    this.readyPlayers.delete(playerId);
-    // 플레이어 태그 정보 초기화
-    player.tag.roomInfo = null;
-    player.tag.mafiaPlayer = null;
-    // 플레이어 위치 이동
-    player.spawnAtLocation("Lobby");
-    // 위젯 제거
-    if (player.tag.widget) {
-      if (player.tag.widget.gameStatus) {
-        player.tag.widget.gameStatus.destroy();
-        player.tag.widget.gameStatus = null;
-      }
-      if (player.tag.widget.nightAction) {
-        player.tag.widget.nightAction.destroy();
-        player.tag.widget.nightAction = null;
-      }
-      if (player.tag.widget.voteWidget) {
-        player.tag.widget.voteWidget.destroy();
-        player.tag.widget.voteWidget = null;
-      }
-    }
-    // 호스트가 나간 경우 새로운 호스트 지정
-    if (this.host && this.host.id === playerId) {
-      this.assignNewHost();
-    }
-    // 퇴장 이벤트 발생
-    this.emit(WaitingRoomEvent.PLAYER_LEAVE, player);
-    return true;
-  };
-  /**
-   * 유저 강퇴
-   */
-  GameRoom.prototype.kickPlayer = function (hostId, targetId) {
-    // 호스트인지 확인
-    if (!this.host || this.host.id !== hostId) {
-      return false;
-    }
-    // 자기 자신은 강퇴할 수 없음
-    if (hostId === targetId) {
-      return false;
-    }
-    var targetPlayer = (0, Common_1.getPlayerById)(targetId);
-    if (!targetPlayer) {
-      return false;
-    }
-    // 플레이어 퇴장 처리
-    var result = this.leavePlayer(targetId);
-    if (!result) {
-      return false;
-    }
-    // 강퇴 이벤트 발생
-    this.emit(WaitingRoomEvent.PLAYER_KICK, targetPlayer);
-    return true;
-  };
-  /**
-   * 새로운 호스트 지정
-   */
-  GameRoom.prototype.assignNewHost = function () {
-    if (this.players.length === 0) {
-      this.host = null;
-      return;
-    }
-    // 첫 번째 플레이어를 호스트로 지정
-    var firstPlayerId = this.players[0].id;
-    var newHost = (0, Common_1.getPlayerById)(firstPlayerId);
-    if (newHost) {
-      this.host = newHost;
-      // 새 호스트 이벤트 발생
-      this.emit(WaitingRoomEvent.HOST_CHANGE, newHost);
-    }
-  };
-  /**
-   * 호스트 변경
-   */
-  GameRoom.prototype.changeHost = function (hostId, newHostId) {
-    // 현재 호스트인지 확인
-    if (!this.host || this.host.id !== hostId) {
-      return false;
-    }
-    var newHost = (0, Common_1.getPlayerById)(newHostId);
-    if (!newHost) {
-      return false;
-    }
-    // 플레이어가 방에 있는지 확인
-    if (!this.players.some(function (p) {
-      return p.id === newHostId;
-    })) {
-      return false;
-    }
-    this.host = newHost;
-    // 새 호스트 이벤트 발생
-    this.emit(WaitingRoomEvent.HOST_CHANGE, newHost);
-    return true;
-  };
-  /**
-   * 준비 상태 변경
-   */
-  GameRoom.prototype.toggleReady = function (playerId) {
-    // 호스트는 준비 상태가 필요 없음
-    if (this.host && this.host.id === playerId) {
-      return false;
-    }
-    // 존재하는 플레이어인지 확인
-    if (!this.players.some(function (p) {
-      return p.id === playerId;
-    })) {
-      return false;
-    }
-    var player = (0, Common_1.getPlayerById)(playerId);
-    if (!player) {
-      return false;
-    }
-    // 현재 준비 상태 확인 후 토글
-    var isCurrentlyReady = this.readyPlayers.has(playerId);
-    if (isCurrentlyReady) {
-      this.readyPlayers.delete(playerId);
-    } else {
-      this.readyPlayers.add(playerId);
-    }
-    // 준비 상태 변경 이벤트 발생
-    this.emit(WaitingRoomEvent.READY_STATUS_CHANGE, player, !isCurrentlyReady);
-    return true;
-  };
-  /**
-   * 게임 시작
-   */
-  GameRoom.prototype.startGame = function (hostId) {
-    // 호스트인지 확인
-    if (!this.host || this.host.id !== hostId) {
-      return false;
-    }
-    // 최소 인원 확인 (마피아 게임은 일반적으로 최소 4명)
-    if (this.players.length < 4) {
-      return false;
-    }
-    // 모든 플레이어가 준비 상태인지 확인 
-    if (!this.areAllPlayersReady()) {
-      return false;
-    }
-    // 게임 상태 변경
-    this.state = GameRoomState.PLAYING;
-    // 게임 시작 처리
-    try {
-      this.flowManager.startGame();
-    } catch (error) {
-      console.error("Error starting game:", error);
-      this.state = GameRoomState.WAITING;
-      return false;
-    }
-    // 게임 시작 이벤트 발생
-    this.emit(WaitingRoomEvent.GAME_START);
-    return true;
-  };
-  /**
-   * 게임 종료
-   */
-  GameRoom.prototype.endGame = function () {
-    this.state = GameRoomState.WAITING;
-    this.readyPlayers.clear();
-    // 게임 종료 이벤트 발생
-    this.emit(WaitingRoomEvent.GAME_END);
-  };
-  /**
-   * 방 초기화
-   */
-  GameRoom.prototype.reset = function () {
-    // 모든 플레이어의 위젯 제거
-    this.players.forEach(function (player) {
-      var gamePlayer = (0, Common_1.getPlayerById)(player.id);
-      if (!gamePlayer) return;
-      if (gamePlayer.tag.widget) {
-        if (gamePlayer.tag.widget.gameStatus) {
-          gamePlayer.tag.widget.gameStatus.destroy();
-          gamePlayer.tag.widget.gameStatus = null;
-        }
-        if (gamePlayer.tag.widget.nightAction) {
-          gamePlayer.tag.widget.nightAction.destroy();
-          gamePlayer.tag.widget.nightAction = null;
-        }
-        if (gamePlayer.tag.widget.voteWidget) {
-          gamePlayer.tag.widget.voteWidget.destroy();
-          gamePlayer.tag.widget.voteWidget = null;
-        }
-      }
-    });
-    // 플레이어 목록 초기화
-    this.players = [];
-    this.readyPlayers.clear();
-    this.host = null;
-    this.state = GameRoomState.WAITING;
-    // 게임 플로우 매니저 초기화
-    this.flowManager = new GameFlowManager_1.GameFlowManager(parseInt(this.id));
-    this.flowManager.setGameRoom(this);
-  };
-  /**
-   * 방 정보 JSON 변환
-   */
-  GameRoom.prototype.toJSON = function () {
-    var _this = this;
-    return {
-      id: this.id,
-      title: this.title,
-      gameMode: this.gameMode.getName(),
-      maxPlayers: this.maxPlayers,
-      hasPassword: this.hasPassword(),
-      playersCount: this.getPlayersCount(),
-      host: this.host ? {
-        id: this.host.id,
-        name: this.host.name
-      } : null,
-      state: this.state,
-      players: this.players.map(function (player) {
-        return {
-          id: player.id,
-          name: player.name,
-          isReady: _this.isPlayerReady(player.id),
-          isHost: _this.host ? player.id === _this.host.id : false
-        };
-      }),
-      createdAt: new Date(this.createdAt).toISOString()
-    };
-  };
-  return GameRoom;
-}();
-exports.GameRoom = GameRoom;
-
-/***/ }),
-
-/***/ 764:
-/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
-
-
-
+  return to.concat(ar || Array.prototype.slice.call(from));
+};
 Object.defineProperty(exports, "__esModule", ({
   value: true
 }));
-exports.createDefaultGameModes = createDefaultGameModes;
-var GameMode_1 = __webpack_require__(668);
-var JobTypes_1 = __webpack_require__(669);
-/**
- * 기존 게임 모드 정보를 사용하여 GameMode 클래스 생성
- */
-function createDefaultGameModes() {
-  var modes = [];
-  // 기존 JobTypes의 게임 모드 설정을 활용
-  JobTypes_1.GAME_MODES.forEach(function (modeData) {
-    var modeConfig = {
-      id: modeData.id,
-      name: modeData.name,
-      description: modeData.description,
-      jobIds: modeData.jobIds,
-      minPlayers: modeData.minPlayers,
-      maxPlayers: modeData.maxPlayers
-    };
-    var gameMode = new GameMode_1.GameMode(modeConfig);
-    // 직업 정보 설정
-    var jobs = (0, JobTypes_1.getJobsByGameMode)(modeData.id);
-    if (jobs.length > 0) {
-      gameMode.setJobs(jobs);
+exports.log = void 0;
+exports.isDevServer = isDevServer;
+exports.parseJsonString = parseJsonString;
+exports.isEmpty = isEmpty;
+exports.sendConsoleMessage = sendConsoleMessage;
+exports.getPlayerId = getPlayerId;
+exports.getPlayerById = getPlayerById;
+exports.actionToAllPlayers = actionToAllPlayers;
+exports.getCurrentTimeString = getCurrentTimeString;
+exports.msToTime = msToTime;
+exports.shuffleAndSplit = shuffleAndSplit;
+exports.hexTo0xColor = hexTo0xColor;
+exports.getLocationAreaCoordinates = getLocationAreaCoordinates;
+var Localizer_1 = __webpack_require__(778);
+function isDevServer() {
+  //@ts-ignore
+  return App.getServerEnv() !== "live";
+}
+function parseJsonString(str) {
+  if (!str) return false;
+  try {
+    // JSON으로 파싱을 시도하고 결과를 반환합니다.
+    return JSON.parse(str);
+  } catch (e) {
+    // 파싱 중 오류가 발생하면 false를 반환합니다.
+    return false;
+  }
+}
+function isEmpty(obj) {
+  for (var key in obj) {
+    if (Object.prototype.hasOwnProperty.call(obj, key)) {
+      return false;
     }
-    modes.push(gameMode);
+  }
+  return true;
+}
+function sendConsoleMessage(player, message) {
+  var playerId = getPlayerId(player);
+  setTimeout(function () {
+    if (!getPlayerById(playerId)) return;
+  }, 500);
+}
+function getPlayerId(player) {
+  var _a;
+  return player.isGuest ? (_a = player.tag.guestId) !== null && _a !== void 0 ? _a : player.id : player.id;
+  // return player.id;
+}
+function getPlayerById(playerId) {
+  return App.players.find(function (player) {
+    return getPlayerId(player) === playerId;
   });
-  return modes;
+  // return ScriptApp.getPlayerByID(playerId);
+}
+function actionToAllPlayers(action) {
+  var args = [];
+  for (var _i = 1; _i < arguments.length; _i++) {
+    args[_i - 1] = arguments[_i];
+  }
+  for (var _a = 0, _b = App.players; _a < _b.length; _a++) {
+    var player = _b[_a];
+    if (!player) continue;
+    try {
+      action.apply(void 0, __spreadArray([player], args, false));
+    } catch (error) {}
+  }
+}
+function getCurrentTimeString() {
+  var date = new Date();
+  var utc = date.getTime() + date.getTimezoneOffset() * 60 * 1000;
+  var kstGap = 9 * 60 * 60 * 1000;
+  var today = new Date(utc + kstGap);
+  return today.toISOString();
+}
+function msToTime(player, duration) {
+  var milliseconds = parseInt((duration % 1000 / 100).toString(), 10),
+    seconds = Math.floor(duration / 1000 % 60),
+    minutes = Math.floor(duration / (1000 * 60) % 60);
+  var minutesStr = minutes < 10 ? "0" + minutes : minutes.toString();
+  var secondsStr = seconds < 10 ? "0" + seconds : seconds.toString();
+  return Localizer_1.Localizer.getLocalizeString(player, "game_quiz_builder_dashboard_info_solve_time").replace("((MM))", minutesStr).replace("((SS))", secondsStr);
+}
+function shuffleAndSplit(arr) {
+  var _a;
+  // Fisher-Yates 알고리즘으로 배열 섞기
+  var shuffledArr = __spreadArray([], arr, true);
+  for (var i = shuffledArr.length - 1; i > 0; i--) {
+    var j = Math.floor(Math.random() * (i + 1));
+    _a = [shuffledArr[j], shuffledArr[i]], shuffledArr[i] = _a[0], shuffledArr[j] = _a[1];
+  }
+  var midIndex = Math.floor(shuffledArr.length / 2);
+  // 배열을 반으로 나누기
+  var firstHalf = shuffledArr.slice(0, midIndex);
+  var secondHalf = shuffledArr.slice(midIndex);
+  return [firstHalf, secondHalf];
+}
+function hexTo0xColor(hex) {
+  return parseInt(hex.replace("#", ""), 16);
+}
+function getLocationAreaCoordinates(locationName) {
+  if (!Map.hasLocation(locationName)) return null;
+  var locationInfo = Map.getLocationList(locationName)[0];
+  var coordinates = [];
+  if (locationInfo) {
+    for (var x = locationInfo.x; x < locationInfo.x + locationInfo.width; x++) {
+      for (var y = locationInfo.y; y < locationInfo.y + locationInfo.height; y++) {
+        coordinates.push([x, y]);
+      }
+    }
+  }
+  return coordinates;
 }
 
 /***/ }),
 
-/***/ 771:
-/***/ ((__unused_webpack_module, exports) => {
-
-
-
-Object.defineProperty(exports, "__esModule", ({
-  value: true
-}));
-exports.GameBase = void 0;
-var GameBase = /** @class */function () {
-  function GameBase() {
-    this.onStartCallbacks = [];
-    this.onDestroyCallbacks = [];
-    this.onJoinPlayerCallbacks = [];
-    this.onLeavePlayerCallbacks = [];
-    this.onUpdateCallbacks = [];
-    this.onTriggerObjectCallbacks = [];
-    this.initEventListeners();
-  }
-  GameBase.prototype.initEventListeners = function () {
-    var _this = this;
-    App.onStart.Add(function () {
-      _this.onStartCallbacks.forEach(function (callback) {
-        try {
-          callback();
-        } catch (error) {
-          //*
-        }
-      });
-    });
-    App.onJoinPlayer.Add(function (player) {
-      _this.onJoinPlayerCallbacks.forEach(function (callback) {
-        try {
-          callback(player);
-        } catch (error) {
-          //*
-        }
-      });
-    });
-    App.onLeavePlayer.Add(function (player) {
-      _this.onLeavePlayerCallbacks.forEach(function (callback) {
-        try {
-          callback(player);
-        } catch (error) {
-          //*
-        }
-      });
-    });
-    App.onUpdate.Add(function (dt) {
-      _this.onUpdateCallbacks.forEach(function (callback) {
-        try {
-          callback(dt);
-        } catch (error) {
-          //*
-        }
-      });
-    });
-    App.onDestroy.Add(function () {
-      _this.onDestroyCallbacks.forEach(function (callback) {
-        try {
-          callback();
-        } catch (error) {
-          //*
-        }
-      });
-    });
-    App.onTriggerObject.Add(function (sender, layerId, x, y, key) {
-      _this.onTriggerObjectCallbacks.forEach(function (callback) {
-        try {
-          callback(sender, layerId, x, y, key);
-        } catch (error) {
-          //*
-        }
-      });
-    });
-  };
-  GameBase.prototype.addOnStartCallback = function (callback) {
-    this.onStartCallbacks.push(callback);
-  };
-  GameBase.prototype.addOnDestroyCallback = function (callback) {
-    this.onDestroyCallbacks.push(callback);
-  };
-  GameBase.prototype.addOnJoinPlayerCallback = function (callback) {
-    this.onJoinPlayerCallbacks.push(callback);
-  };
-  GameBase.prototype.addOnLeavePlayerCallback = function (callback) {
-    this.onLeavePlayerCallbacks.push(callback);
-  };
-  GameBase.prototype.addOnUpdateCallback = function (callback) {
-    this.onUpdateCallbacks.push(callback);
-  };
-  GameBase.prototype.addOnTriggerObjectCallback = function (callback) {
-    this.onTriggerObjectCallbacks.push(callback);
-  };
-  return GameBase;
-}();
-exports.GameBase = GameBase;
-
-/***/ }),
-
-/***/ 773:
+/***/ 778:
 /***/ ((__unused_webpack_module, exports) => {
 
 
@@ -2497,7 +3005,7 @@ exports.Localizer = Localizer;
 /******/ 	
 /************************************************************************/
 var __webpack_exports__ = {};
-// This entry needs to be wrapped in an IIFE because it uses a non-standard name for the exports (exports).
+// This entry need to be wrapped in an IIFE because it uses a non-standard name for the exports (exports).
 (() => {
 var exports = __webpack_exports__;
 var __webpack_unused_export__;
@@ -2506,7 +3014,7 @@ var __webpack_unused_export__;
 __webpack_unused_export__ = ({
   value: true
 });
-var Game_1 = __webpack_require__(401);
+var Game_1 = __webpack_require__(230);
 App.onInit.Add(function () {
   App.cameraEffect = 1; // 1 = 비네팅 효과
   App.cameraEffectParam1 = 2000;

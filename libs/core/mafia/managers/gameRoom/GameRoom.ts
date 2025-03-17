@@ -72,7 +72,7 @@ export class GameRoom {
 	public gameMode: GameMode;
 	public maxPlayers: number;
 	private password?: string;
-	public host: GamePlayer | null = null;
+	public hostId: string | null = null;
 	public players: MafiaPlayer[] = [];
 	private readyPlayers: Set<string> = new Set();
 	public state: GameRoomState = GameRoomState.WAITING;
@@ -159,8 +159,8 @@ export class GameRoom {
 		return this.state;
 	}
 	
-	public getHost(): GamePlayer | null {
-		return this.host;
+	public getHost(): string | null {
+		return this.hostId;
 	}
 	
 	public getCreatedAt(): number {
@@ -185,7 +185,7 @@ export class GameRoom {
 		
 		// 모든 플레이어가 준비 상태인지 확인
 		for (const player of this.players) {
-			if (this.host && player.id === this.host.id) continue;
+			if (this.hostId && player.id === this.hostId) continue;
 			if (!this.readyPlayers.has(player.id)) return false;
 		}
 		
@@ -231,7 +231,7 @@ export class GameRoom {
 			try {
 				callback(...args);
 			} catch (error) {
-				console.error(`Error in event listener for ${event}:`, error);
+				ScriptApp.sayToAll(`Error in event listener for ${event}:`, error);
 			}
 		});
 	}
@@ -284,8 +284,8 @@ export class GameRoom {
 		};
 		
 		// 첫 플레이어인 경우 호스트로 지정
-		if (!this.host) {
-			this.host = player;
+		if (!this.hostId) {
+			this.hostId = player.id;
 		}
 		
 		// 입장 이벤트 발생
@@ -305,7 +305,16 @@ export class GameRoom {
 		
 		const player = getPlayerById(playerId);
 		if (!player) {
-			return false;
+			// 플레이어 객체를 찾을 수 없는 경우에도 플레이어 목록에서는 제거
+			this.players.splice(playerIndex, 1);
+			this.readyPlayers.delete(playerId);
+			
+			// 호스트가 나간 경우 새로운 호스트 지정
+			if (this.hostId && this.hostId === playerId) {
+				this.assignNewHost();
+			}
+			
+			return true;
 		}
 		
 		// 플레이어 목록에서 제거
@@ -314,33 +323,35 @@ export class GameRoom {
 		// 준비 상태도 삭제
 		this.readyPlayers.delete(playerId);
 		
-		// 플레이어 태그 정보 초기화
-		player.tag.roomInfo = null;
-		player.tag.mafiaPlayer = null;
-		
-		// 플레이어 위치 이동
-		player.spawnAtLocation("Lobby");
-		
-		// 위젯 제거
-		if (player.tag.widget) {
-			if (player.tag.widget.gameStatus) {
-				player.tag.widget.gameStatus.destroy();
-				player.tag.widget.gameStatus = null;
-			}
+		// 플레이어 태그 정보 초기화 (태그가 있는 경우에만)
+		if (player.tag) {
+			player.tag.roomInfo = null;
+			player.tag.mafiaPlayer = null;
 			
-			if (player.tag.widget.nightAction) {
-				player.tag.widget.nightAction.destroy();
-				player.tag.widget.nightAction = null;
-			}
+			// 플레이어 위치 이동
+			player.spawnAtLocation("Lobby");
 			
-			if (player.tag.widget.voteWidget) {
-				player.tag.widget.voteWidget.destroy();
-				player.tag.widget.voteWidget = null;
+			// 위젯 제거
+			if (player.tag.widget) {
+				if (player.tag.widget.gameStatus) {
+					player.tag.widget.gameStatus.destroy();
+					player.tag.widget.gameStatus = null;
+				}
+				
+				if (player.tag.widget.nightAction) {
+					player.tag.widget.nightAction.destroy();
+					player.tag.widget.nightAction = null;
+				}
+				
+				if (player.tag.widget.voteWidget) {
+					player.tag.widget.voteWidget.destroy();
+					player.tag.widget.voteWidget = null;
+				}
 			}
 		}
 		
 		// 호스트가 나간 경우 새로운 호스트 지정
-		if (this.host && this.host.id === playerId) {
+		if (this.hostId && this.hostId === playerId) {
 			this.assignNewHost();
 		}
 		
@@ -355,7 +366,7 @@ export class GameRoom {
 	 */
 	public kickPlayer(hostId: string, targetId: string): boolean {
 		// 호스트인지 확인
-		if (!this.host || this.host.id !== hostId) {
+		if (!this.hostId || this.hostId !== hostId) {
 			return false;
 		}
 		
@@ -386,18 +397,17 @@ export class GameRoom {
 	 */
 	private assignNewHost(): void {
 		if (this.players.length === 0) {
-			this.host = null;
+			this.hostId = null;
 			return;
 		}
 		
 		// 첫 번째 플레이어를 호스트로 지정
 		const firstPlayerId = this.players[0].id;
-		const newHost = getPlayerById(firstPlayerId);
+		this.hostId = firstPlayerId;
 		
+		// 새 호스트 이벤트 발생
+		const newHost = getPlayerById(firstPlayerId);
 		if (newHost) {
-			this.host = newHost;
-			
-			// 새 호스트 이벤트 발생
 			this.emit(WaitingRoomEvent.HOST_CHANGE, newHost);
 		}
 	}
@@ -407,7 +417,7 @@ export class GameRoom {
 	 */
 	public changeHost(hostId: string, newHostId: string): boolean {
 		// 현재 호스트인지 확인
-		if (!this.host || this.host.id !== hostId) {
+		if (!this.hostId || this.hostId !== hostId) {
 			return false;
 		}
 		
@@ -421,7 +431,7 @@ export class GameRoom {
 			return false;
 		}
 		
-		this.host = newHost;
+		this.hostId = newHostId;
 		
 		// 새 호스트 이벤트 발생
 		this.emit(WaitingRoomEvent.HOST_CHANGE, newHost);
@@ -434,7 +444,7 @@ export class GameRoom {
 	 */
 	public toggleReady(playerId: string): boolean {
 		// 호스트는 준비 상태가 필요 없음
-		if (this.host && this.host.id === playerId) {
+		if (this.hostId && this.hostId === playerId) {
 			return false;
 		}
 		
@@ -472,7 +482,7 @@ export class GameRoom {
 	 */
 	public startGame(hostId: string): boolean {
 		// 호스트인지 확인
-		if (!this.host || this.host.id !== hostId) {
+		if (!this.hostId || this.hostId !== hostId) {
 			return false;
 		}
 		
@@ -493,7 +503,7 @@ export class GameRoom {
 		try {
 			this.flowManager.startGame();
 		} catch (error) {
-			console.error("Error starting game:", error);
+			ScriptApp.sayToAll("Error starting game:", error);
 			this.state = GameRoomState.WAITING;
 			return false;
 		}
@@ -545,7 +555,7 @@ export class GameRoom {
 		// 플레이어 목록 초기화
 		this.players = [];
 		this.readyPlayers.clear();
-		this.host = null;
+		this.hostId = null;
 		this.state = GameRoomState.WAITING;
 		
 		// 게임 플로우 매니저 초기화
@@ -557,6 +567,8 @@ export class GameRoom {
 	 * 방 정보 JSON 변환
 	 */
 	public toJSON() {
+		const hostPlayer = this.hostId ? getPlayerById(this.hostId) : null;
+		
 		return {
 			id: this.id,
 			title: this.title,
@@ -564,16 +576,16 @@ export class GameRoom {
 			maxPlayers: this.maxPlayers,
 			hasPassword: this.hasPassword(),
 			playersCount: this.getPlayersCount(),
-			host: this.host ? {
-				id: this.host.id,
-				name: this.host.name
+			host: this.hostId ? {
+				id: this.hostId,
+				name: hostPlayer ? hostPlayer.name : '알 수 없음'
 			} : null,
 			state: this.state,
 			players: this.players.map(player => ({
 				id: player.id,
 				name: player.name,
 				isReady: this.isPlayerReady(player.id),
-				isHost: this.host ? player.id === this.host.id : false
+				isHost: this.hostId ? player.id === this.hostId : false
 			})),
 			createdAt: new Date(this.createdAt).toISOString()
 		};
