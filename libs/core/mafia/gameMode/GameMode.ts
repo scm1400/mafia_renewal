@@ -1,4 +1,4 @@
-import { Job, GameMode as GameModeInterface } from "../types/JobTypes";
+import { Job, GameMode as GameModeInterface, JobId } from "../types/JobTypes";
 
 /**
  * 게임 모드 설정
@@ -14,7 +14,7 @@ export interface GameModeConfig {
   description: string;
   
   /** 직업 ID 목록 */
-  jobIds: string[];
+  jobIds: JobId[];
   
   /** 최소 인원 */
   minPlayers: number;
@@ -31,7 +31,7 @@ export class GameMode implements GameModeInterface {
   public id: string;
   public name: string;
   public description: string;
-  public jobIds: string[];
+  public jobIds: JobId[];
   public minPlayers: number;
   public maxPlayers: number;
   private jobs: Job[] = [];

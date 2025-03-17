@@ -184,6 +184,13 @@ export class GameFlowManager {
 		// 역할 카드 위젯 표시
 		player.tag.widget.roleCard = player.showWidget("widgets/role_card.html", "popup", 300, 400);
 		
+		// 초기화 메시지 전송
+		player.tag.widget.roleCard.sendMessage({
+			type: "init",
+			isMobile: player.isMobile,
+			isTablet: player.isTablet
+		});
+		
 		// 역할 정보 전송
 		player.tag.widget.roleCard.sendMessage({
 			type: "role_info",
@@ -212,6 +219,13 @@ export class GameFlowManager {
 			
 			// 게임 상태 위젯 생성
 			gamePlayer.tag.widget.gameStatus = gamePlayer.showWidget("widgets/game_status.html", "middleright", 10, 10);
+			
+			// 초기화 메시지 전송
+			gamePlayer.tag.widget.gameStatus.sendMessage({
+				type: "init",
+				isMobile: gamePlayer.isMobile,
+				isTablet: gamePlayer.isTablet
+			});
 			
 			// 게임 상태 정보 전송
 			this.updateGameStatusWidget(gamePlayer, player);
@@ -301,6 +315,13 @@ export class GameFlowManager {
 							// 밤 액션 위젯 생성
 							gamePlayer.tag.widget.nightAction = gamePlayer.showWidget("widgets/night_action.html", "middle", 0, 0);
 							
+							// 초기화 메시지 전송
+							gamePlayer.tag.widget.nightAction.sendMessage({
+								type: 'init',
+								isMobile: gamePlayer.isMobile,
+								isTablet: gamePlayer.isTablet
+							});
+							
 							// 밤 액션 위젯에 데이터 전송
 							gamePlayer.tag.widget.nightAction.sendMessage({
 								type: 'init',
@@ -375,6 +396,13 @@ export class GameFlowManager {
 						if (player.isAlive) {
 							// 투표 위젯 생성
 							gamePlayer.tag.widget.voteWidget = gamePlayer.showWidget("widgets/vote_widget.html", "middle", 0, 0);
+							
+							// 초기화 메시지 전송
+							gamePlayer.tag.widget.voteWidget.sendMessage({
+								type: 'init',
+								isMobile: gamePlayer.isMobile,
+								isTablet: gamePlayer.isTablet
+							});
 							
 							// 투표 위젯에 데이터 전송
 							gamePlayer.tag.widget.voteWidget.sendMessage({

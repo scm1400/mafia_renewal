@@ -61,32 +61,116 @@ export class Game extends GameBase {
 		//@ts-ignore
 		const customData = parseJsonString(player.customData);
 
-		player.tag.widget.main = player.showWidget("widgets/fullscreen_widget.html", "middle", 0, 0);
-		player.tag.widget.main.sendMessage({ type: "init", message: "코드 마피아" });
+		// 로비 위젯 표시
+		this.showLobbyWidget(player);
+	}
 
-		// 메인 위젯 메시지 처리 설정
+	/**
+	 * 로비 위젯을 표시합니다.
+	 * @param player 플레이어
+	 */
+	private showLobbyWidget(player: GamePlayer) {
+		// 이미 메인 위젯이 있으면 제거
+		if (player.tag.widget.main) {
+			player.tag.widget.main.destroy();
+		}
+		
+		// 로비 위젯 생성
+		player.tag.widget.main = player.showWidget("widgets/lobby_widget.html", "middle", 0, 0);
+		
+		// 초기화 메시지 전송
+		player.tag.widget.main.sendMessage({ 
+			type: "init", 
+			message: "코드 마피아",
+			isMobile: player.isMobile,
+			isTablet: player.isTablet
+		});
+		
+		// 게임 방 정보 전송
+		const rooms = [];
+		for (let i = 1; i <= ROOM_COUNT; i++) {
+			const room = this.mafiaGameRoomManager.getRoom(i.toString());
+			if (room) {
+				rooms.push({
+					id: room.id,
+					title: room.title,
+					playerCount: room.getPlayersCount(),
+					maxPlayers: room.maxPlayers,
+					gameMode: room.gameMode.getName(),
+					isInProgress: room.flowManager.isGameInProgress()
+				});
+			}
+		}
+		
+		player.tag.widget.main.sendMessage({
+			type: "updateRooms",
+			rooms: rooms
+		});
+
+		// 로비 위젯 메시지 처리 설정
 		player.tag.widget.main.onMessage.Add((player, data) => {
 			if (data.type === "showRoleDetail" && data.role) {
 				this.showRoleCard(player, data.role);
 			} else if (data.type === "startGame") {
 				this.showGameModeSelect(player);
+			} else if (data.type === "joinRoom" && data.roomId) {
+				const room = this.mafiaGameRoomManager.getRoom(data.roomId);
+				if (room) {
+					room.joinPlayer(player);
+					
+					// 방 참가 후 UI 업데이트
+					player.tag.widget.main.sendMessage({
+						type: "joinedRoom",
+						roomId: data.roomId,
+						roomInfo: {
+							id: room.id,
+							title: room.title,
+							playerCount: room.getPlayersCount(),
+							maxPlayers: room.maxPlayers,
+							gameMode: room.gameMode.getName(),
+							isInProgress: room.flowManager.isGameInProgress()
+						}
+					});
+					
+					// 모든 플레이어에게 방 정보 업데이트 전송
+					this.updateRoomInfo();
+				}
+			} else if (data.type === "leaveRoom") {
+				if (player.tag.roomInfo) {
+					const roomNum = player.tag.roomInfo.roomNum;
+					this.mafiaGameRoomManager.getRoom(roomNum.toString()).leavePlayer(player.id);
+					
+					// 방 퇴장 후 UI 업데이트
+					player.tag.widget.main.sendMessage({
+						type: "leftRoom"
+					});
+					
+					// 모든 플레이어에게 방 정보 업데이트 전송
+					this.updateRoomInfo();
+				}
+			} else if (data.type === "refreshRooms") {
+				// 게임 방 정보 업데이트 전송
+				const rooms = [];
+				for (let i = 1; i <= ROOM_COUNT; i++) {
+					const room = this.mafiaGameRoomManager.getRoom(i.toString());
+					if (room) {
+						rooms.push({
+							id: room.id,
+							title: room.title,
+							playerCount: room.getPlayersCount(),
+							maxPlayers: room.maxPlayers,
+							gameMode: room.gameMode.getName(),
+							isInProgress: room.flowManager.isGameInProgress()
+						});
+					}
+				}
+				
+				player.tag.widget.main.sendMessage({
+					type: "updateRooms",
+					rooms: rooms
+				});
 			}
 		});
-
-		const playerId = player.id;
-		ScriptApp.runLater(() => {
-			player.showConfirm(
-				"게임에 참가하시겠습니까?",
-				(res) => {
-					if (res) {
-						this.mafiaGameRoomManager.getRoom("1").joinPlayer(player);
-					}
-				},
-				{
-					content: "게임에 참가하시려면 '확인'을 눌러주세요.",
-				}
-			);
-		}, 3);
 	}
 
 	/**
@@ -101,6 +185,13 @@ export class Game extends GameBase {
 		
 		// 게임 모드 선택 위젯 생성
 		player.tag.widget.gameModeSelect = player.showWidget("widgets/game_mode_select.html", "middle", 0, 0);
+		
+		// 초기화 메시지 전송
+		player.tag.widget.gameModeSelect.sendMessage({
+			type: 'init',
+			isMobile: player.isMobile,
+			isTablet: player.isTablet
+		});
 		
 		// 게임 모드 정보 전송
 		player.tag.widget.gameModeSelect.sendMessage({
@@ -127,6 +218,9 @@ export class Game extends GameBase {
 				// 위젯 제거
 				player.tag.widget.gameModeSelect.destroy();
 				player.tag.widget.gameModeSelect = null;
+				
+				// 모든 플레이어에게 방 정보 업데이트 전송
+				this.updateRoomInfo();
 			}
 		});
 	}
@@ -144,6 +238,13 @@ export class Game extends GameBase {
 		
 		// 역할 카드 위젯 생성
 		player.tag.widget.roleCard = player.showWidget("widgets/role_card.html", "middle", 0, 0);
+		
+		// 초기화 메시지 전송
+		player.tag.widget.roleCard.sendMessage({
+			type: 'init',
+			isMobile: player.isMobile,
+			isTablet: player.isTablet
+		});
 		
 		// 역할 정보 전송
 		player.tag.widget.roleCard.sendMessage({
@@ -188,5 +289,36 @@ export class Game extends GameBase {
 
 	private onDestroy() {
 		// 게임 종료 시 필요한 정리 작업
+	}
+
+	/**
+	 * 모든 플레이어에게 방 정보를 업데이트합니다.
+	 */
+	private updateRoomInfo() {
+		// 게임 방 정보 수집
+		const rooms = [];
+		for (let i = 1; i <= ROOM_COUNT; i++) {
+			const room = this.mafiaGameRoomManager.getRoom(i.toString());
+			if (room) {
+				rooms.push({
+					id: room.id,
+					title: room.title,
+					playerCount: room.getPlayersCount(),
+					maxPlayers: room.maxPlayers,
+					gameMode: room.gameMode.getName(),
+					isInProgress: room.flowManager.isGameInProgress()
+				});
+			}
+		}
+		
+		// 모든 플레이어에게 업데이트된 방 정보 전송
+		ScriptApp.players.forEach(player => {
+			if (player.tag?.widget?.main) {
+				player.tag.widget.main.sendMessage({
+					type: "updateRooms",
+					rooms: rooms
+				});
+			}
+		});
 	}
 }

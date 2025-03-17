@@ -479,10 +479,63 @@
             }
         }
 
+        let _isMobile = false;
+        let _isTablet = false;
+        let $contentWrapper;
+
+        function hideWidget() {
+            window.parent.postMessage({
+                type: "WidgetRearrange",
+                width: "0px",
+                height: "0px",
+            }, "*")
+            window.parent.focus();
+        }
+
+        function revealWidget(moveScrollToBottom = false) {
+            if (moveScrollToBottom && $contentWrapper) {
+                $contentWrapper.scrollTop = $contentWrapper.scrollHeight;
+            }
+            if (_isMobile) {
+                const rtcAndNotchHeight = 160 + parseInt(getComputedStyle(document.documentElement,).getPropertyValue("--sat"));
+                window.parent.postMessage({
+                    type: 'WidgetRearrange',
+                    anchor: 'middle',
+                    height: '100%',
+                    width: '100%',
+                    top: `-${parseInt(0)}px`
+                }, '*')
+            } else {
+                window.parent.postMessage({
+                    type: "WidgetRearrange",
+                    anchor: "middle",
+                    width: `400px`,
+                    height: `500px`,
+                }, "*")
+            }
+        }
+
+        function fitTheSize() {
+            window.parent.postMessage({
+                type: "WidgetRearrange",
+                width: document.body.offsetWidth + 10,
+                height: document.body.offsetHeight + 10,
+            }, "*")
+        }
+
         window.addEventListener('message', function(e) {
             const data = e.data;
             
             if (data.type === 'init') {
+                try {
+                    _isMobile = data.isMobile;
+                    _isTablet = data.isTablet;
+                    document.body.classList.remove("hidden");
+                    revealWidget();
+                } catch (error) {
+                    alert("An error occurred:", error);
+                }
+                
                 players = data.players;
                 myPlayerId = data.myPlayerId;
                 myRole = data.role;
@@ -500,7 +553,15 @@
                 document.getElementById('action-button').addEventListener('click', submitAction);
             } else if (data.type === 'investigationResult') {
                 showInvestigationResult(data.isMafia);
+            } else if (data.type === "hide") {
+                hideWidget();
+            } else if (data.type === "reveal") {
+                revealWidget(true);
             }
+        });
+
+        window.addEventListener('unload', function () {
+            window.parent.focus();
         });
 
         // 모바일 환경 감지
