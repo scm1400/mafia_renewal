@@ -450,13 +450,13 @@
                     <span>새로고침</span> 🔄
                 </button>
             </div>
-            
+
             <div class="room-filters">
                 <button class="filter-btn active" data-filter="all">전체</button>
                 <button class="filter-btn" data-filter="waiting">대기중</button>
                 <button class="filter-btn" data-filter="in-progress">게임중</button>
             </div>
-            
+
             <div id="roomsList">
                 <!-- 방 목록이 동적으로 추가됩니다 -->
                 <div class="empty-state">
@@ -481,19 +481,19 @@
                 <h2 class="modal-title">새 방 만들기</h2>
                 <button class="close-btn" id="closeModalBtn">&times;</button>
             </div>
-            
+
             <div class="form-group">
                 <label class="form-label" for="roomTitle">방 제목</label>
                 <input type="text" id="roomTitle" class="form-input" placeholder="방 제목을 입력하세요">
             </div>
-            
+
             <div class="form-group">
                 <label class="form-label">게임 모드</label>
                 <div class="game-mode-list" id="gameModeList">
                     <!-- 게임 모드 목록이 동적으로 추가됩니다 -->
                 </div>
             </div>
-            
+
             <div class="form-group">
                 <label class="form-label" for="maxPlayers">최대 인원</label>
                 <select id="maxPlayers" class="form-input">
@@ -505,7 +505,7 @@
                     <option value="15">15명</option>
                 </select>
             </div>
-            
+
             <div class="modal-footer">
                 <button class="button secondary" id="cancelCreateBtn">취소</button>
                 <button class="button primary" id="confirmCreateBtn">생성하기</button>
@@ -521,7 +521,7 @@
         let gameModes = [];
         let filteredRooms = [];
         let currentFilter = 'all';
-        
+
         // DOM 요소 접근
         const roomsList = document.getElementById('roomsList');
         const usersList = document.getElementById('usersList');
@@ -534,7 +534,7 @@
         const searchInput = document.getElementById('searchInput');
         const refreshBtn = document.getElementById('refreshBtn');
         const filterBtns = document.querySelectorAll('.filter-btn');
-        
+
         // 이벤트 리스너 설정
         createRoomBtn.addEventListener('click', openCreateRoomModal);
         closeModalBtn.addEventListener('click', closeCreateRoomModal);
@@ -542,7 +542,7 @@
         confirmCreateBtn.addEventListener('click', createRoom);
         refreshBtn.addEventListener('click', refreshRooms);
         searchInput.addEventListener('input', searchRooms);
-        
+
         // 필터 버튼 이벤트 설정
         filterBtns.forEach(btn => {
             btn.addEventListener('click', () => {
@@ -552,17 +552,17 @@
                 applyFilter();
             });
         });
-        
+
         // 초기화 함수
         function initializeLobby() {
             // 게임 모드 데이터 로드
             loadGameModes();
-            
+
             // 방 목록과 유저 목록 로드
             refreshRooms();
             refreshUsers();
         }
-        
+
         // 게임 모드 로드
         function loadGameModes() {
             // 여기에서는 부모 창에서 게임 모드 데이터를 받아옵니다
@@ -570,11 +570,11 @@
                 type: 'requestGameModes'
             }, "*");
         }
-        
+
         // 게임 모드 목록 렌더링
         function renderGameModes(modes) {
             gameModeList.innerHTML = '';
-            
+
             modes.forEach(mode => {
                 const modeItem = document.createElement('div');
                 modeItem.className = 'game-mode-item';
@@ -583,7 +583,7 @@
                     <div class="mode-name">${mode.name}</div>
                     <div class="mode-desc">${mode.description}</div>
                 `;
-                
+
                 modeItem.addEventListener('click', () => {
                     document.querySelectorAll('.game-mode-item').forEach(item => {
                         item.classList.remove('selected');
@@ -591,31 +591,31 @@
                     modeItem.classList.add('selected');
                     selectedGameMode = mode.id;
                 });
-                
+
                 gameModeList.appendChild(modeItem);
             });
         }
-        
+
         // 방 목록 새로고침
         function refreshRooms() {
             window.parent.postMessage({
                 type: 'requestRooms'
             }, "*");
         }
-        
+
         // 유저 목록 새로고침
         function refreshUsers() {
             window.parent.postMessage({
                 type: 'requestUsers'
             }, "*");
         }
-        
+
         // 방 목록 렌더링
         function renderRooms(roomsData) {
             rooms = roomsData;
             applyFilter();
         }
-        
+
         // 필터 적용
         function applyFilter() {
             if (currentFilter === 'all') {
@@ -625,31 +625,31 @@
             } else if (currentFilter === 'in-progress') {
                 filteredRooms = rooms.filter(room => room.state === 'IN_PROGRESS');
             }
-            
+
             updateRoomsList();
         }
-        
+
         // 검색 기능
         function searchRooms() {
             const searchTerm = searchInput.value.toLowerCase().trim();
-            
+
             if (searchTerm === '') {
                 applyFilter();
                 return;
             }
-            
-            filteredRooms = rooms.filter(room => 
-                room.title.toLowerCase().includes(searchTerm) || 
+
+            filteredRooms = rooms.filter(room =>
+                room.title.toLowerCase().includes(searchTerm) ||
                 room.host.name.toLowerCase().includes(searchTerm)
             );
-            
+
             updateRoomsList();
         }
-        
+
         // 방 목록 업데이트 (UI)
         function updateRoomsList() {
             roomsList.innerHTML = '';
-            
+
             if (filteredRooms.length === 0) {
                 roomsList.innerHTML = `
                     <div class="empty-state">
@@ -659,15 +659,15 @@
                 `;
                 return;
             }
-            
+
             filteredRooms.forEach(room => {
                 const roomCard = document.createElement('div');
                 roomCard.className = 'room-card';
                 roomCard.dataset.roomId = room.id;
-                
+
                 let statusClass = 'waiting';
                 let statusText = '대기중';
-                
+
                 if (room.state === 'IN_PROGRESS') {
                     statusClass = 'in-progress';
                     statusText = '게임중';
@@ -675,7 +675,7 @@
                     statusClass = 'full';
                     statusText = '정원초과';
                 }
-                
+
                 roomCard.innerHTML = `
                     <div class="room-header">
                         <div class="room-title">${room.title}</div>
@@ -698,27 +698,27 @@
                         </div>
                     </div>
                 `;
-                
+
                 roomCard.addEventListener('click', () => {
                     joinRoom(room.id);
                 });
-                
+
                 roomsList.appendChild(roomCard);
             });
         }
-        
+
         // 유저 목록 렌더링
         function renderUsers(usersData) {
             users = usersData;
             usersList.innerHTML = '';
-            
+
             users.forEach(user => {
                 const userItem = document.createElement('div');
                 userItem.className = 'user-item';
-                
+
                 // 이니셜 생성 (이름의 첫 글자)
                 const initial = user.name.charAt(0).toUpperCase();
-                
+
                 userItem.innerHTML = `
                     <div class="user-avatar">${initial}</div>
                     <div class="user-info">
@@ -726,43 +726,43 @@
                         <div class="user-level">Lv. ${user.level || 1}</div>
                     </div>
                 `;
-                
+
                 usersList.appendChild(userItem);
             });
         }
-        
+
         // 방 생성 모달 열기
         function openCreateRoomModal() {
             createRoomModal.style.display = 'flex';
             document.getElementById('roomTitle').value = '';
             document.getElementById('maxPlayers').value = '8';
             selectedGameMode = null;
-            
+
             document.querySelectorAll('.game-mode-item').forEach(item => {
                 item.classList.remove('selected');
             });
         }
-        
+
         // 방 생성 모달 닫기
         function closeCreateRoomModal() {
             createRoomModal.style.display = 'none';
         }
-        
+
         // 방 생성
         function createRoom() {
             const title = document.getElementById('roomTitle').value.trim();
             const maxPlayers = parseInt(document.getElementById('maxPlayers').value);
-            
+
             if (!title) {
                 alert('방 제목을 입력해주세요.');
                 return;
             }
-            
+
             if (!selectedGameMode) {
                 alert('게임 모드를 선택해주세요.');
                 return;
             }
-            
+
             window.parent.postMessage({
                 type: 'createRoom',
                 data: {
@@ -771,10 +771,10 @@
                     gameMode: selectedGameMode
                 }
             }, "*");
-            
+
             closeCreateRoomModal();
         }
-        
+
         // 방 입장
         function joinRoom(roomId) {
             window.parent.postMessage({
@@ -782,11 +782,20 @@
                 roomId
             }, "*");
         }
-        
+
         // 메시지 수신 처리
-        window.addEventListener('message', function(e) {
+        window.addEventListener('message', function (e) {
             const data = e.data;
-            
+
+            if (data.type === 'init') {
+                _isMobile = e.data.isMobile;
+                _isTablet = e.data.isTablet;
+
+                _languageCode = e.data.languageCode;
+                _localizeContainer = e.data.localizeContainer;
+                document.body.classList.remove("hidden");
+                revealWidget();
+            }
             if (data.type === 'updateRooms') {
                 renderRooms(data.rooms);
             } else if (data.type === 'updateUsers') {
@@ -804,10 +813,34 @@
                 alert(data.message);
             }
         });
-        
+
+        function revealWidget(moveScrollToBottom = false) {
+            if (moveScrollToBottom) {
+                $contentWrapper.scrollTop = $contentWrapper.scrollHeight;
+            }
+            if (_isMobile) {
+                const rtcAndNotchHeight = 160 + parseInt(getComputedStyle(document.documentElement,).getPropertyValue("--sat"));
+                window.parent.postMessage({
+                    type: 'WidgetRearrange',
+                    anchor: 'middle',
+                    height: '100%',
+                    width: '100%',
+                    top: `-${parseInt(0)}px`
+                }, '*')
+            } else {
+                // document.querySelector("html").style.background = "rgba(0, 0, 0, 0.24)";
+                window.parent.postMessage({
+                    type: "WidgetRearrange",
+                    anchor: "middle",
+                    width: `100%`,
+                    height: `100%`,
+                }, "*")
+            }
+        }
+
         // 초기화
         initializeLobby();
     </script>
 </body>
 
-</html> 
+</html>
