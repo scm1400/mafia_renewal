@@ -523,12 +523,12 @@
         // 초기화 함수
         function initializeRoom() {
             // 방 정보 및 플레이어 정보 요청
-            window.parent.sendMessage({
+            window.parent.postMessage({
                 type: 'requestRoomInfo'
             }, "*");
             
             // 게임 모드 정보 요청
-            window.parent.sendMessage({
+            window.parent.postMessage({
                 type: 'requestGameModeDetails'
             }, "*");
         }
@@ -676,7 +676,7 @@
         // 준비 상태 설정
         function setReady() {
             isReady = true;
-            window.parent.sendMessage({
+            window.parent.postMessage({
                 type: 'setReady'
             }, "*");
         }
@@ -684,21 +684,21 @@
         // 준비 취소
         function cancelReady() {
             isReady = false;
-            window.parent.sendMessage({
+            window.parent.postMessage({
                 type: 'cancelReady'
             }, "*");
         }
         
         // 게임 시작
         function startGame() {
-            window.parent.sendMessage({
+            window.parent.postMessage({
                 type: 'startGame'
             }, "*");
         }
         
         // 방에서 나가기
         function leaveRoom() {
-            window.parent.sendMessage({
+            window.parent.postMessage({
                 type: 'leaveRoom'
             }, "*");
         }
@@ -707,7 +707,7 @@
         function kickPlayer(playerId) {
             if (!isHost) return;
             
-            window.parent.sendMessage({
+            window.parent.postMessage({
                 type: 'kickPlayer',
                 playerId: playerId
             }, "*");
@@ -718,7 +718,7 @@
             const message = chatInput.value.trim();
             if (!message) return;
             
-            window.parent.sendMessage({
+            window.parent.postMessage({
                 type: 'sendChatMessage',
                 content: message
             }, "*");
@@ -763,7 +763,7 @@
                 });
                 
                 // 방 정보 업데이트 요청
-                window.parent.sendMessage({ type: 'requestRoomInfo' }, "*");
+                window.parent.postMessage({ type: 'requestRoomInfo' }, "*");
             } else if (data.type === 'playerLeft') {
                 addChatMessage({
                     type: 'system',
@@ -771,7 +771,7 @@
                 });
                 
                 // 방 정보 업데이트 요청
-                window.parent.sendMessage({ type: 'requestRoomInfo' }, "*");
+                window.parent.postMessage({ type: 'requestRoomInfo' }, "*");
             } else if (data.type === 'playerKicked') {
                 addChatMessage({
                     type: 'system',
@@ -779,10 +779,10 @@
                 });
                 
                 // 방 정보 업데이트 요청
-                window.parent.sendMessage({ type: 'requestRoomInfo' }, "*");
+                window.parent.postMessage({ type: 'requestRoomInfo' }, "*");
             } else if (data.type === 'readyStatusChanged') {
                 // 방 정보 업데이트 요청
-                window.parent.sendMessage({ type: 'requestRoomInfo' }, "*");
+                window.parent.postMessage({ type: 'requestRoomInfo' }, "*");
             } else if (data.type === 'hostChanged') {
                 addChatMessage({
                     type: 'system',
@@ -790,7 +790,7 @@
                 });
                 
                 // 방 정보 업데이트 요청
-                window.parent.sendMessage({ type: 'requestRoomInfo' }, "*");
+                window.parent.postMessage({ type: 'requestRoomInfo' }, "*");
             } else if (data.type === 'gameStarting') {
                 addChatMessage({
                     type: 'system',

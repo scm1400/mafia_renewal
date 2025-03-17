@@ -566,7 +566,7 @@
         // 게임 모드 로드
         function loadGameModes() {
             // 여기에서는 부모 창에서 게임 모드 데이터를 받아옵니다
-            window.parent.sendMessage({
+            window.parent.postMessage({
                 type: 'requestGameModes'
             }, "*");
         }
@@ -598,14 +598,14 @@
         
         // 방 목록 새로고침
         function refreshRooms() {
-            window.parent.sendMessage({
+            window.parent.postMessage({
                 type: 'requestRooms'
             }, "*");
         }
         
         // 유저 목록 새로고침
         function refreshUsers() {
-            window.parent.sendMessage({
+            window.parent.postMessage({
                 type: 'requestUsers'
             }, "*");
         }
@@ -763,7 +763,7 @@
                 return;
             }
             
-            window.parent.sendMessage({
+            window.parent.postMessage({
                 type: 'createRoom',
                 data: {
                     title,
@@ -777,7 +777,7 @@
         
         // 방 입장
         function joinRoom(roomId) {
-            window.parent.sendMessage({
+            window.parent.postMessage({
                 type: 'joinRoom',
                 roomId
             }, "*");

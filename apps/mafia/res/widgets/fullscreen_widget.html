@@ -253,7 +253,7 @@
 
         // 게임 시작 버튼 클릭 이벤트
         document.getElementById('startButton').addEventListener('click', function() {
-            window.parent.sendMessage({
+            window.parent.postMessage({
                 type: 'startGame'
             }, "*");
         });

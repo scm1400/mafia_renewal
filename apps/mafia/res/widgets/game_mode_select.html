@@ -368,7 +368,7 @@
 
         // 취소 버튼 클릭 이벤트
         document.getElementById('cancelButton').addEventListener('click', function() {
-            window.parent.sendMessage({
+            window.parent.postMessage({
                 type: 'cancel_mode_select'
             },"*");
         });
@@ -376,7 +376,7 @@
         // 선택 버튼 클릭 이벤트
         document.getElementById('selectButton').addEventListener('click', function() {
             if (selectedModeId) {
-                window.parent.sendMessage({
+                window.parent.postMessage({
                     type: 'select_game_mode',
                     modeId: selectedModeId
                 },"*");
