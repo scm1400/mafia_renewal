@@ -35,6 +35,7 @@ export class Game extends GameBase {
 	private onJoinPlayer(player: GamePlayer) {
 		player.tag = {
 			widget: {},
+			mafiaPlayer: null
 		};
 		// 로컬라이징
 		Localizer.prepareLocalizationContainer(player);
@@ -42,8 +43,15 @@ export class Game extends GameBase {
 		//@ts-ignore
 		const customData = parseJsonString(player.customData);
 
-		player.tag.widget.main = player.showWidget("widgets/fullscreen_widget.html", "middel", 0, 0);
+		player.tag.widget.main = player.showWidget("widgets/fullscreen_widget.html", "middle", 0, 0);
 		player.tag.widget.main.sendMessage({ type: "init", message: "코드 마피아" });
+
+		// 역할 카드 위젯 메시지 처리 설정
+		player.tag.widget.main.onMessage.Add((player, data) => {
+			if (data.type === "showRoleDetail" && data.role) {
+				this.showRoleCard(player, data.role);
+			}
+		});
 
 		const playerId = player.id;
 		ScriptApp.runLater(() => {
@@ -61,7 +69,46 @@ export class Game extends GameBase {
 		}, 3);
 	}
 
-	private onLeavePlayer(player: GamePlayer) {}
+	/**
+	 * 역할 카드 위젯을 표시합니다.
+	 * @param player 플레이어
+	 * @param role 역할
+	 */
+	private showRoleCard(player: GamePlayer, role: string) {
+		// 이미 역할 카드 위젯이 있으면 제거
+		if (player.tag.widget.roleCard) {
+			player.tag.widget.roleCard.destroy();
+		}
+		
+		// 역할 카드 위젯 생성
+		player.tag.widget.roleCard = player.showWidget("widgets/role_card.html", "middle", 0, 0);
+		
+		// 역할 정보 전송
+		player.tag.widget.roleCard.sendMessage({
+			type: 'setRole',
+			role: role
+		});
+		
+		// 역할 카드 위젯 메시지 처리
+		player.tag.widget.roleCard.onMessage.Add((player, data) => {
+			if (data.type === "close") {
+				player.tag.widget.roleCard.destroy();
+				player.tag.widget.roleCard = null;
+			}
+		});
+	}
+
+	private onLeavePlayer(player: GamePlayer) {
+		// 플레이어가 속한 방에서 제거
+		const rooms = this.mafiaGameRoomManager.getAllRooms();
+		for (const [, room] of Object.entries(rooms)) {
+			const playerIndex = room.players.findIndex(p => p.id === player.id);
+			if (playerIndex !== -1) {
+				room.players.splice(playerIndex, 1);
+				break;
+			}
+		}
+	}
 
 	private update(dt: number) {
 		const rooms = this.mafiaGameRoomManager.getAllRooms();

@@ -1,4 +1,6 @@
 ﻿import { Localizer } from "./Localizer";
+import { GamePlayer } from "../core/mafia/types/GamePlayer";
+
 
 export let log: (message: string) => void;
 
@@ -39,8 +41,8 @@ export function getPlayerId(player) {
 	// return player.id;
 }
 
-export function getPlayerById(playerId) {
-	return ScriptApp.players.find((player) => getPlayerId(player) === playerId);
+export function getPlayerById(playerId: string): GamePlayer | undefined {
+	return ScriptApp.players.find((player) => getPlayerId(player) === playerId) as GamePlayer;
 	// return ScriptApp.getPlayerByID(playerId);
 }
 
@@ -49,7 +51,7 @@ export function actionToAllPlayers(action, ...args) {
 		if (!player) continue;
 		try {
 			action(player, ...args);
-		} catch (error) {}
+		} catch (error) { }
 	}
 }
 

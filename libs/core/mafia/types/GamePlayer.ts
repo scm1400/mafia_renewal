@@ -1,7 +1,29 @@
 import { ScriptPlayer, ScriptWidget } from "zep-script";
+import { MafiaPlayer } from "../managers/gameFlow/GameFlowManager";
+import { ComponentInfo } from "../../@common/types/phaserGo";
 
-export interface GamePlayer extends Omit<ScriptPlayer, "tag"> {
+export interface PlayerTag {
+	widget: {
+		[key: string]: any;
+	};
+	mafiaPlayer?: MafiaPlayer;
+	roomInfo?: {
+		roomNum: number;
+	};
+	guestId?: string;
+}
+
+export interface GamePlayer extends ScriptPlayer {
 	tag: PlayerTag;
+	showWidget(
+		widgetSrc: string, 
+		align: 'popup' | 'sidebar' | 'top' | 'topleft' | 'topright' | 'middle' | 'middleleft' | 'middleright' | 'bottom' | 'bottomleft' | 'bottomright', 
+		width: number, 
+		height: number
+	): ScriptWidget;
+	disappearObject(key: string): void;
+	putIndividualObject(key: string, x: number, y: number): void;
+	addPhaserGo(componentInfo: ComponentInfo):void;
 }
 
 export interface PlayerProfile {
@@ -10,10 +32,4 @@ export interface PlayerProfile {
 	level: number; // 플레이어의 레벨
 	experience: number; // 플레이어의 경험치
 	avatar: string; // 아바타 URL 또는 이미지 경로
-}
-
-export interface PlayerTag {
-	roomInfo?: { roomNum: number; };
-	profile?: PlayerProfile;
-	widget: Record<string, ScriptWidget>;
 }

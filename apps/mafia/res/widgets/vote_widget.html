@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html style="overflow: hidden">
+
+<head>
+    <script>
+        /* create style sheet */
+        const newFontStylePath = document.URL.includes('https://zep.us') ? "https://cdn-static.zep.us/static/zep-script/css/typography.css" : "https://cdn-static-stage.zep.us/static/zep-script/css/typography.css";
+
+        document.head.appendChild(Object.assign(document.createElement("link"), {
+            rel: "stylesheet",
+            type: "text/css",
+            href: newFontStylePath
+        }));
+    </script>
+    <style type="text/css">
+        :root {
+            --sat: env(safe-area-inset-top);
+            --sar: env(safe-area-inset-right);
+            --sab: env(safe-area-inset-bottom);
+            --sal: env(safe-area-inset-left);
+        }
+
+        * {
+            padding: 0;
+            margin: 0;
+            box-sizing: border-box;
+            user-select: none !important;
+            font-family: 'Pretendard JP', 'Pretendard', sans-serif, Arial;
+            color: #27262E;
+        }
+
+        html {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(28, 27, 31, 0.80);
+            backdrop-filter: blur(2px);
+        }
+
+        body {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            width: 400px;
+            max-width: 100%;
+            align-items: center;
+            height: max-content;
+        }
+
+        .vote-container {
+            width: 100%;
+            background-color: #fff;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .vote-header {
+            width: 100%;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .vote-title {
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 5px;
+            color: #333;
+        }
+
+        .vote-subtitle {
+            font-size: 14px;
+            color: #666;
+        }
+
+        .timer {
+            font-size: 18px;
+            font-weight: 600;
+            color: #d32f2f;
+            margin-bottom: 15px;
+        }
+
+        .players-list {
+            width: 100%;
+            max-height: 300px;
+            overflow-y: auto;
+            margin-bottom: 20px;
+        }
+
+        .player-item {
+            display: flex;
+            align-items: center;
+            padding: 10px 15px;
+            border-radius: 8px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            background-color: #f5f5f5;
+        }
+
+        .player-item:hover {
+            background-color: #e0e0e0;
+        }
+
+        .player-item.selected {
+            background-color: #e3f2fd;
+            border: 1px solid #1976d2;
+        }
+
+        .player-item.dead {
+            opacity: 0.5;
+            cursor: not-allowed;
+            text-decoration: line-through;
+        }
+
+        .player-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background-color: #ddd;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 15px;
+            font-size: 20px;
+        }
+
+        .player-info {
+            flex: 1;
+        }
+
+        .player-name {
+            font-weight: 600;
+            font-size: 16px;
+            margin-bottom: 2px;
+        }
+
+        .player-status {
+            font-size: 12px;
+            color: #666;
+        }
+
+        .vote-count {
+            font-weight: 600;
+            font-size: 16px;
+            color: #1976d2;
+        }
+
+        .vote-button {
+            width: 100%;
+            padding: 12px;
+            border-radius: 8px;
+            background-color: #1976d2;
+            color: white;
+            font-weight: 600;
+            font-size: 16px;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            margin-top: 10px;
+        }
+
+        .vote-button:hover {
+            background-color: #1565c0;
+        }
+
+        .vote-button:disabled {
+            background-color: #bdbdbd;
+            cursor: not-allowed;
+        }
+
+        .vote-results {
+            width: 100%;
+            margin-top: 20px;
+        }
+
+        .result-title {
+            font-weight: 600;
+            font-size: 18px;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+
+        .result-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 8px 15px;
+            border-radius: 8px;
+            margin-bottom: 8px;
+            background-color: #f5f5f5;
+        }
+
+        .result-name {
+            font-weight: 500;
+        }
+
+        .result-votes {
+            font-weight: 600;
+            color: #1976d2;
+        }
+
+        .close-button {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background-color: #f5f5f5;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 18px;
+            color: #555;
+        }
+
+        /* 모바일 스타일 */
+        .mobile {
+            width: 100%;
+            padding: 15px;
+        }
+
+        .mobile .vote-container {
+            width: 100%;
+            padding: 15px;
+        }
+
+        .mobile .player-item {
+            padding: 8px 10px;
+        }
+
+        .mobile .player-avatar {
+            width: 30px;
+            height: 30px;
+            font-size: 16px;
+            margin-right: 10px;
+        }
+
+        .mobile .player-name {
+            font-size: 14px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="vote-container">
+        <div class="close-button" onclick="closeWidget()">×</div>
+        <div class="vote-header">
+            <div class="vote-title" id="vote-title">투표</div>
+            <div class="vote-subtitle" id="vote-subtitle">마피아로 의심되는 사람에게 투표하세요</div>
+        </div>
+        <div class="timer" id="timer">남은 시간: 30초</div>
+
+        <div class="players-list" id="players-list">
+            <!-- 플레이어 목록이 여기에 동적으로 추가됩니다 -->
+        </div>
+
+        <button class="vote-button" id="vote-button" disabled>투표하기</button>
+
+        <div class="vote-results" id="vote-results" style="display: none;">
+            <div class="result-title">투표 결과</div>
+            <div id="results-list">
+                <!-- 투표 결과가 여기에 동적으로 추가됩니다 -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let players = [];
+        let selectedPlayerId = null;
+        let voteResults = {};
+        let myPlayerId = null;
+        let isVotePhase = true;
+        let hasVoted = false;
+        let remainingTime = 30;
+        let timerInterval;
+
+        function closeWidget() {
+            window.parent.postMessage({ type: "close" }, "*");
+        }
+
+        function renderPlayers() {
+            const playersList = document.getElementById('players-list');
+            playersList.innerHTML = '';
+
+            players.forEach(player => {
+                if (!player.isAlive) return; // 죽은 플레이어는 표시하지 않음
+
+                const playerItem = document.createElement('div');
+                playerItem.className = `player-item ${selectedPlayerId === player.id ? 'selected' : ''}`;
+                playerItem.dataset.id = player.id;
+
+                // 자기 자신은 선택할 수 없음
+                if (player.id === myPlayerId) {
+                    playerItem.classList.add('dead');
+                } else {
+                    playerItem.addEventListener('click', () => selectPlayer(player.id));
+                }
+
+                playerItem.innerHTML = `
+                    <div class="player-avatar">${player.emoji || '👤'}</div>
+                    <div class="player-info">
+                        <div class="player-name">${player.name}</div>
+                        <div class="player-status">${player.id === myPlayerId ? '(나)' : ''}</div>
+                    </div>
+                    <div class="vote-count" id="vote-count-${player.id}">${voteResults[player.id] ? voteResults[player.id] : ''}</div>
+                `;
+
+                playersList.appendChild(playerItem);
+            });
+
+            // 투표 버튼 활성화/비활성화
+            const voteButton = document.getElementById('vote-button');
+            voteButton.disabled = !selectedPlayerId || hasVoted || !isVotePhase || selectedPlayerId === myPlayerId;
+        }
+
+        function selectPlayer(playerId) {
+            if (hasVoted || !isVotePhase || playerId === myPlayerId) return;
+            
+            selectedPlayerId = playerId;
+            renderPlayers();
+        }
+
+        function submitVote() {
+            if (!selectedPlayerId || hasVoted || !isVotePhase) return;
+            
+            hasVoted = true;
+            document.getElementById('vote-button').disabled = true;
+            
+            // 서버에 투표 결과 전송
+            window.parent.postMessage({
+                type: "vote",
+                targetId: selectedPlayerId
+            }, "*");
+            
+            // 투표 결과 UI 업데이트
+            if (!voteResults[selectedPlayerId]) {
+                voteResults[selectedPlayerId] = 1;
+            } else {
+                voteResults[selectedPlayerId]++;
+            }
+            
+            renderPlayers();
+        }
+
+        function showVoteResults(results) {
+            isVotePhase = false;
+            voteResults = results;
+            
+            const voteResultsDiv = document.getElementById('vote-results');
+            voteResultsDiv.style.display = 'block';
+            
+            const resultsList = document.getElementById('results-list');
+            resultsList.innerHTML = '';
+            
+            // 투표 수 기준으로 내림차순 정렬
+            const sortedResults = Object.entries(results).sort((a, b) => b[1] - a[1]);
+            
+            sortedResults.forEach(([playerId, votes]) => {
+                const player = players.find(p => p.id === playerId);
+                if (!player) return;
+                
+                const resultItem = document.createElement('div');
+                resultItem.className = 'result-item';
+                resultItem.innerHTML = `
+                    <div class="result-name">${player.name}</div>
+                    <div class="result-votes">${votes}표</div>
+                `;
+                
+                resultsList.appendChild(resultItem);
+            });
+            
+            document.getElementById('vote-button').disabled = true;
+            document.getElementById('vote-title').textContent = '투표 결과';
+            document.getElementById('vote-subtitle').textContent = '가장 많은 표를 받은 플레이어가 처형됩니다';
+            
+            clearInterval(timerInterval);
+            document.getElementById('timer').style.display = 'none';
+        }
+
+        function updateTimer() {
+            remainingTime--;
+            document.getElementById('timer').textContent = `남은 시간: ${remainingTime}초`;
+            
+            if (remainingTime <= 0) {
+                clearInterval(timerInterval);
+                if (!hasVoted && selectedPlayerId) {
+                    submitVote();
+                }
+            }
+        }
+
+        function startTimer(seconds) {
+            remainingTime = seconds;
+            document.getElementById('timer').textContent = `남은 시간: ${remainingTime}초`;
+            
+            clearInterval(timerInterval);
+            timerInterval = setInterval(updateTimer, 1000);
+        }
+
+        window.addEventListener('message', function(e) {
+            const data = e.data;
+            
+            if (data.type === 'init') {
+                players = data.players;
+                myPlayerId = data.myPlayerId;
+                isVotePhase = true;
+                hasVoted = false;
+                selectedPlayerId = null;
+                voteResults = {};
+                
+                renderPlayers();
+                
+                if (data.timeLimit) {
+                    startTimer(data.timeLimit);
+                }
+                
+                // 투표 버튼 이벤트 리스너 설정
+                document.getElementById('vote-button').addEventListener('click', submitVote);
+            } else if (data.type === 'updateVotes') {
+                voteResults = data.votes;
+                renderPlayers();
+            } else if (data.type === 'showResults') {
+                showVoteResults(data.results);
+            }
+        });
+
+        // 모바일 환경 감지
+        function checkMobile() {
+            if (window.innerWidth <= 768) {
+                document.body.classList.add('mobile');
+            } else {
+                document.body.classList.remove('mobile');
+            }
+        }
+
+        window.addEventListener('resize', checkMobile);
+        checkMobile();
+    </script>
+</body>
+
+</html> 

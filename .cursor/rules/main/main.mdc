@@ -1,0 +1,5 @@
+---
+description: 타입스크립트 문법만 사용 가능하고, web API는 사용할 수 없어.
+globs: 
+alwaysApply: true
+---

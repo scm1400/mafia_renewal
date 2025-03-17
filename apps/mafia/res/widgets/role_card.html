@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html style="overflow: hidden">
+
+<head>
+    <script>
+        /* create style sheet */
+        const newFontStylePath = document.URL.includes('https://zep.us') ? "https://cdn-static.zep.us/static/zep-script/css/typography.css" : "https://cdn-static-stage.zep.us/static/zep-script/css/typography.css";
+
+        document.head.appendChild(Object.assign(document.createElement("link"), {
+            rel: "stylesheet",
+            type: "text/css",
+            href: newFontStylePath
+        }));
+    </script>
+    <style type="text/css">
+        :root {
+            --sat: env(safe-area-inset-top);
+            --sar: env(safe-area-inset-right);
+            --sab: env(safe-area-inset-bottom);
+            --sal: env(safe-area-inset-left);
+        }
+
+        * {
+            padding: 0;
+            margin: 0;
+            box-sizing: border-box;
+            user-select: none !important;
+            font-family: 'Pretendard JP', 'Pretendard', sans-serif, Arial;
+            color: #27262E;
+        }
+
+        html {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        body {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            width: 300px;
+            max-width: 100%;
+            align-items: center;
+            height: max-content;
+        }
+
+        .role-card {
+            width: 100%;
+            background-color: #fff;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            position: relative;
+        }
+
+        .role-header {
+            width: 100%;
+            text-align: center;
+            margin-bottom: 15px;
+        }
+
+        .role-title {
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+
+        .role-icon {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            margin: 10px auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 40px;
+        }
+
+        .role-description {
+            text-align: center;
+            font-size: 14px;
+            line-height: 1.5;
+            margin-bottom: 15px;
+            color: #555;
+        }
+
+        .role-ability {
+            width: 100%;
+            background-color: #f5f5f5;
+            border-radius: 8px;
+            padding: 12px;
+            margin-top: 10px;
+        }
+
+        .ability-title {
+            font-weight: 600;
+            font-size: 16px;
+            margin-bottom: 5px;
+        }
+
+        .ability-description {
+            font-size: 14px;
+            color: #555;
+        }
+
+        /* 역할별 색상 */
+        .mafia {
+            background-color: #ffebee;
+        }
+
+        .mafia .role-title, .mafia .ability-title {
+            color: #d32f2f;
+        }
+
+        .mafia .role-icon {
+            background-color: #d32f2f;
+            color: white;
+        }
+
+        .police {
+            background-color: #e3f2fd;
+        }
+
+        .police .role-title, .police .ability-title {
+            color: #1976d2;
+        }
+
+        .police .role-icon {
+            background-color: #1976d2;
+            color: white;
+        }
+
+        .doctor {
+            background-color: #e8f5e9;
+        }
+
+        .doctor .role-title, .doctor .ability-title {
+            color: #388e3c;
+        }
+
+        .doctor .role-icon {
+            background-color: #388e3c;
+            color: white;
+        }
+
+        .citizen {
+            background-color: #fffde7;
+        }
+
+        .citizen .role-title, .citizen .ability-title {
+            color: #fbc02d;
+        }
+
+        .citizen .role-icon {
+            background-color: #fbc02d;
+            color: white;
+        }
+
+        .close-button {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background-color: #f5f5f5;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 18px;
+            color: #555;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="role-card">
+        <div class="close-button" onclick="closeWidget()">×</div>
+        <div class="role-header">
+            <div class="role-title" id="role-title">역할 이름</div>
+        </div>
+        <div class="role-icon" id="role-icon">🎭</div>
+        <div class="role-description" id="role-description">
+            역할에 대한 설명이 여기에 표시됩니다.
+        </div>
+        <div class="role-ability">
+            <div class="ability-title" id="ability-title">능력</div>
+            <div class="ability-description" id="ability-description">
+                역할의 능력에 대한 설명이 여기에 표시됩니다.
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let roleData = {
+            "MAFIA": {
+                title: "마피아",
+                icon: "🔪",
+                description: "밤에 시민을 죽이는 역할입니다. 다른 마피아와 협력하여 시민들을 모두 제거하세요.",
+                abilityTitle: "암살",
+                abilityDescription: "밤마다 한 명의 시민을 선택하여 제거할 수 있습니다."
+            },
+            "POLICE": {
+                title: "경찰",
+                icon: "🔍",
+                description: "밤에 한 명의 정체를 확인할 수 있는 역할입니다. 마피아를 찾아 시민들을 보호하세요.",
+                abilityTitle: "조사",
+                abilityDescription: "밤마다 한 명을 선택하여 마피아인지 아닌지 확인할 수 있습니다."
+            },
+            "DOCTOR": {
+                title: "의사",
+                icon: "💉",
+                description: "밤에 한 명을 보호할 수 있는 역할입니다. 마피아의 공격으로부터 시민을 구하세요.",
+                abilityTitle: "치료",
+                abilityDescription: "밤마다 한 명을 선택하여 마피아의 공격으로부터 보호할 수 있습니다."
+            },
+            "CITIZEN": {
+                title: "시민",
+                icon: "👨‍👩‍👧‍👦",
+                description: "특별한 능력은 없지만, 투표를 통해 마피아를 찾아내는 역할입니다.",
+                abilityTitle: "투표",
+                abilityDescription: "낮 시간에 의심되는 사람에게 투표하여 마피아를 찾아내세요."
+            }
+        };
+
+        function closeWidget() {
+            window.parent.postMessage({ type: "close" }, "*");
+        }
+
+        window.addEventListener('message', function(e) {
+            const data = e.data;
+            if (data.type === 'setRole') {
+                const role = data.role;
+                const roleInfo = roleData[role];
+                
+                if (roleInfo) {
+                    document.getElementById('role-title').textContent = roleInfo.title;
+                    document.getElementById('role-icon').textContent = roleInfo.icon;
+                    document.getElementById('role-description').textContent = roleInfo.description;
+                    document.getElementById('ability-title').textContent = roleInfo.abilityTitle;
+                    document.getElementById('ability-description').textContent = roleInfo.abilityDescription;
+                    
+                    // 역할에 따른 클래스 추가
+                    const roleCard = document.querySelector('.role-card');
+                    roleCard.classList.remove('mafia', 'police', 'doctor', 'citizen');
+                    roleCard.classList.add(role.toLowerCase());
+                }
+            }
+        });
+
+        // 모바일 환경 감지
+        function checkMobile() {
+            if (window.innerWidth <= 768) {
+                document.body.classList.add('mobile');
+            } else {
+                document.body.classList.remove('mobile');
+            }
+        }
+
+        window.addEventListener('resize', checkMobile);
+        checkMobile();
+    </script>
+</body>
+
+</html> 

@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html style="overflow: hidden">
+
+<head>
+    <script>
+        /* create style sheet */
+        const newFontStylePath = document.URL.includes('https://zep.us') ? "https://cdn-static.zep.us/static/zep-script/css/typography.css" : "https://cdn-static-stage.zep.us/static/zep-script/css/typography.css";
+
+        document.head.appendChild(Object.assign(document.createElement("link"), {
+            rel: "stylesheet",
+            type: "text/css",
+            href: newFontStylePath
+        }));
+    </script>
+    <style type="text/css">
+        :root {
+            --sat: env(safe-area-inset-top);
+            --sar: env(safe-area-inset-right);
+            --sab: env(safe-area-inset-bottom);
+            --sal: env(safe-area-inset-left);
+        }
+
+        * {
+            padding: 0;
+            margin: 0;
+            box-sizing: border-box;
+            user-select: none !important;
+            font-family: 'Pretendard JP', 'Pretendard', sans-serif, Arial;
+            color: #27262E;
+        }
+
+        html {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(28, 27, 31, 0.80);
+            backdrop-filter: blur(2px);
+        }
+
+        body {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            width: 400px;
+            max-width: 100%;
+            align-items: center;
+            height: max-content;
+        }
+
+        .action-container {
+            width: 100%;
+            background-color: #fff;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            position: relative;
+        }
+
+        .action-header {
+            width: 100%;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .action-title {
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+
+        .action-subtitle {
+            font-size: 14px;
+            color: #666;
+        }
+
+        .timer {
+            font-size: 18px;
+            font-weight: 600;
+            color: #d32f2f;
+            margin-bottom: 15px;
+        }
+
+        .players-list {
+            width: 100%;
+            max-height: 300px;
+            overflow-y: auto;
+            margin-bottom: 20px;
+        }
+
+        .player-item {
+            display: flex;
+            align-items: center;
+            padding: 10px 15px;
+            border-radius: 8px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            background-color: #f5f5f5;
+        }
+
+        .player-item:hover {
+            background-color: #e0e0e0;
+        }
+
+        .player-item.selected {
+            background-color: #e3f2fd;
+            border: 1px solid #1976d2;
+        }
+
+        .player-item.dead {
+            opacity: 0.5;
+            cursor: not-allowed;
+            text-decoration: line-through;
+        }
+
+        .player-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background-color: #ddd;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 15px;
+            font-size: 20px;
+        }
+
+        .player-info {
+            flex: 1;
+        }
+
+        .player-name {
+            font-weight: 600;
+            font-size: 16px;
+            margin-bottom: 2px;
+        }
+
+        .player-status {
+            font-size: 12px;
+            color: #666;
+        }
+
+        .action-button {
+            width: 100%;
+            padding: 12px;
+            border-radius: 8px;
+            color: white;
+            font-weight: 600;
+            font-size: 16px;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            margin-top: 10px;
+        }
+
+        .action-button:disabled {
+            background-color: #bdbdbd !important;
+            cursor: not-allowed;
+        }
+
+        .result-container {
+            width: 100%;
+            background-color: #f5f5f5;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 20px;
+            text-align: center;
+            display: none;
+        }
+
+        .result-title {
+            font-weight: 600;
+            font-size: 18px;
+            margin-bottom: 10px;
+        }
+
+        .result-content {
+            font-size: 16px;
+            color: #333;
+        }
+
+        .close-button {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background-color: #f5f5f5;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 18px;
+            color: #555;
+        }
+
+        /* 역할별 스타일 */
+        .mafia .action-title {
+            color: #d32f2f;
+        }
+
+        .mafia .action-button {
+            background-color: #d32f2f;
+        }
+
+        .mafia .action-button:hover {
+            background-color: #b71c1c;
+        }
+
+        .police .action-title {
+            color: #1976d2;
+        }
+
+        .police .action-button {
+            background-color: #1976d2;
+        }
+
+        .police .action-button:hover {
+            background-color: #1565c0;
+        }
+
+        .doctor .action-title {
+            color: #388e3c;
+        }
+
+        .doctor .action-button {
+            background-color: #388e3c;
+        }
+
+        .doctor .action-button:hover {
+            background-color: #2e7d32;
+        }
+
+        /* 모바일 스타일 */
+        .mobile {
+            width: 100%;
+            padding: 15px;
+        }
+
+        .mobile .action-container {
+            width: 100%;
+            padding: 15px;
+        }
+
+        .mobile .player-item {
+            padding: 8px 10px;
+        }
+
+        .mobile .player-avatar {
+            width: 30px;
+            height: 30px;
+            font-size: 16px;
+            margin-right: 10px;
+        }
+
+        .mobile .player-name {
+            font-size: 14px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="action-container" id="action-container">
+        <div class="close-button" onclick="closeWidget()">×</div>
+        <div class="action-header">
+            <div class="action-title" id="action-title">밤 행동</div>
+            <div class="action-subtitle" id="action-subtitle">당신의 역할에 맞는 행동을 선택하세요</div>
+        </div>
+        <div class="timer" id="timer">남은 시간: 30초</div>
+
+        <div class="players-list" id="players-list">
+            <!-- 플레이어 목록이 여기에 동적으로 추가됩니다 -->
+        </div>
+
+        <button class="action-button" id="action-button" disabled>선택 완료</button>
+
+        <div class="result-container" id="result-container">
+            <div class="result-title" id="result-title">결과</div>
+            <div class="result-content" id="result-content"></div>
+        </div>
+    </div>
+
+    <script>
+        let players = [];
+        let selectedPlayerId = null;
+        let myPlayerId = null;
+        let myRole = null;
+        let hasActed = false;
+        let remainingTime = 30;
+        let timerInterval;
+
+        const roleActions = {
+            "MAFIA": {
+                title: "마피아 행동",
+                subtitle: "죽일 플레이어를 선택하세요",
+                buttonText: "살해하기",
+                actionType: "kill",
+                containerClass: "mafia"
+            },
+            "POLICE": {
+                title: "경찰 행동",
+                subtitle: "조사할 플레이어를 선택하세요",
+                buttonText: "조사하기",
+                actionType: "investigate",
+                containerClass: "police"
+            },
+            "DOCTOR": {
+                title: "의사 행동",
+                subtitle: "살릴 플레이어를 선택하세요",
+                buttonText: "치료하기",
+                actionType: "heal",
+                containerClass: "doctor"
+            },
+            "CITIZEN": {
+                title: "시민",
+                subtitle: "당신은 밤에 특별한 행동을 할 수 없습니다",
+                buttonText: "확인",
+                actionType: "none",
+                containerClass: ""
+            }
+        };
+
+        function closeWidget() {
+            window.parent.postMessage({ type: "close" }, "*");
+        }
+
+        function renderPlayers() {
+            const playersList = document.getElementById('players-list');
+            playersList.innerHTML = '';
+
+            // 시민은 선택할 수 없음
+            if (myRole === "CITIZEN") {
+                playersList.innerHTML = '<div style="text-align: center; padding: 20px;">시민은 밤에 특별한 행동을 할 수 없습니다. 낮이 되면 토론과 투표에 참여할 수 있습니다.</div>';
+                document.getElementById('action-button').disabled = false;
+                document.getElementById('action-button').textContent = "확인";
+                return;
+            }
+
+            players.forEach(player => {
+                if (!player.isAlive) return; // 죽은 플레이어는 표시하지 않음
+                if (player.id === myPlayerId && myRole !== "DOCTOR") return; // 의사만 자기 자신을 선택할 수 있음
+
+                const playerItem = document.createElement('div');
+                playerItem.className = `player-item ${selectedPlayerId === player.id ? 'selected' : ''}`;
+                playerItem.dataset.id = player.id;
+                
+                playerItem.addEventListener('click', () => selectPlayer(player.id));
+
+                playerItem.innerHTML = `
+                    <div class="player-avatar">${player.emoji || '👤'}</div>
+                    <div class="player-info">
+                        <div class="player-name">${player.name}${player.id === myPlayerId ? ' (나)' : ''}</div>
+                        <div class="player-status"></div>
+                    </div>
+                `;
+
+                playersList.appendChild(playerItem);
+            });
+
+            // 액션 버튼 활성화/비활성화
+            const actionButton = document.getElementById('action-button');
+            actionButton.disabled = !selectedPlayerId && myRole !== "CITIZEN";
+        }
+
+        function selectPlayer(playerId) {
+            if (hasActed) return;
+            
+            selectedPlayerId = playerId;
+            renderPlayers();
+        }
+
+        function submitAction() {
+            if (myRole === "CITIZEN") {
+                closeWidget();
+                return;
+            }
+            
+            if (!selectedPlayerId && myRole !== "CITIZEN") return;
+            
+            hasActed = true;
+            document.getElementById('action-button').disabled = true;
+            
+            const roleAction = roleActions[myRole];
+            
+            // 서버에 액션 결과 전송
+            window.parent.postMessage({
+                type: roleAction.actionType,
+                targetId: selectedPlayerId
+            }, "*");
+            
+            // 액션 완료 메시지 표시
+            document.getElementById('players-list').style.display = 'none';
+            document.getElementById('action-button').style.display = 'none';
+            
+            const resultContainer = document.getElementById('result-container');
+            resultContainer.style.display = 'block';
+            
+            document.getElementById('result-title').textContent = "행동 완료";
+            
+            let resultMessage = "";
+            switch(myRole) {
+                case "MAFIA":
+                    resultMessage = "살해 대상이 선택되었습니다. 낮이 될 때까지 기다려주세요.";
+                    break;
+                case "POLICE":
+                    resultMessage = "조사 대상이 선택되었습니다. 결과는 곧 알려드립니다.";
+                    break;
+                case "DOCTOR":
+                    resultMessage = "치료 대상이 선택되었습니다. 낮이 될 때까지 기다려주세요.";
+                    break;
+            }
+            
+            document.getElementById('result-content').textContent = resultMessage;
+            
+            clearInterval(timerInterval);
+        }
+
+        function showInvestigationResult(isMafia) {
+            const resultContainer = document.getElementById('result-container');
+            resultContainer.style.display = 'block';
+            
+            document.getElementById('result-title').textContent = "조사 결과";
+            
+            const targetPlayer = players.find(p => p.id === selectedPlayerId);
+            const targetName = targetPlayer ? targetPlayer.name : "선택한 플레이어";
+            
+            const resultMessage = isMafia 
+                ? `${targetName}님은 마피아입니다!` 
+                : `${targetName}님은 마피아가 아닙니다.`;
+            
+            document.getElementById('result-content').textContent = resultMessage;
+        }
+
+        function updateTimer() {
+            remainingTime--;
+            document.getElementById('timer').textContent = `남은 시간: ${remainingTime}초`;
+            
+            if (remainingTime <= 0) {
+                clearInterval(timerInterval);
+                if (!hasActed && selectedPlayerId) {
+                    submitAction();
+                } else if (!hasActed && myRole === "CITIZEN") {
+                    closeWidget();
+                }
+            }
+        }
+
+        function startTimer(seconds) {
+            remainingTime = seconds;
+            document.getElementById('timer').textContent = `남은 시간: ${remainingTime}초`;
+            
+            clearInterval(timerInterval);
+            timerInterval = setInterval(updateTimer, 1000);
+        }
+
+        function initializeRoleUI(role) {
+            myRole = role;
+            const roleAction = roleActions[role];
+            
+            if (!roleAction) return;
+            
+            document.getElementById('action-title').textContent = roleAction.title;
+            document.getElementById('action-subtitle').textContent = roleAction.subtitle;
+            document.getElementById('action-button').textContent = roleAction.buttonText;
+            
+            const container = document.getElementById('action-container');
+            container.className = `action-container ${roleAction.containerClass}`;
+            
+            // 시민인 경우 타이머 숨기기
+            if (role === "CITIZEN") {
+                document.getElementById('timer').style.display = 'none';
+            }
+        }
+
+        window.addEventListener('message', function(e) {
+            const data = e.data;
+            
+            if (data.type === 'init') {
+                players = data.players;
+                myPlayerId = data.myPlayerId;
+                myRole = data.role;
+                hasActed = false;
+                selectedPlayerId = null;
+                
+                initializeRoleUI(myRole);
+                renderPlayers();
+                
+                if (data.timeLimit) {
+                    startTimer(data.timeLimit);
+                }
+                
+                // 액션 버튼 이벤트 리스너 설정
+                document.getElementById('action-button').addEventListener('click', submitAction);
+            } else if (data.type === 'investigationResult') {
+                showInvestigationResult(data.isMafia);
+            }
+        });
+
+        // 모바일 환경 감지
+        function checkMobile() {
+            if (window.innerWidth <= 768) {
+                document.body.classList.add('mobile');
+            } else {
+                document.body.classList.remove('mobile');
+            }
+        }
+
+        window.addEventListener('resize', checkMobile);
+        checkMobile();
+    </script>
+</body>
+
+</html> 
