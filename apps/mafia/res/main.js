@@ -56,9 +56,9 @@ function isEmpty(obj) {
 }
 function sendConsoleMessage(player, message) {
   const playerId = getPlayerId(player);
-  setTimeout(() => {
+  App.runLater(() => {
     if (!getPlayerById(playerId)) return;
-  }, 500);
+  }, 0.5);
 }
 function getPlayerId(player) {
   var _a;
@@ -482,6 +482,12 @@ class GameFlowManager {
     this.nightActions = [];
     this.voteResults = {};
     this.playerVotes = {};
+    this.defenseText = "";
+    this.approvalVoteResults = {
+      approve: 0,
+      reject: 0
+    };
+    this.approvalPlayerVotes = {};
     this.roomNumber = roomNumber;
   }
   setGameRoom(room) {
@@ -519,7 +525,7 @@ class GameFlowManager {
     this.state = GameState.IN_PROGRESS;
     this.dayCount = 1;
     if (this.room.players.length <= 4) {
-      this.phaseCycle = [MafiaPhase.DAY, MafiaPhase.VOTING, MafiaPhase.FINAL_DEFENSE, MafiaPhase.APPROVAL_VOTING];
+      this.phaseCycle = [MafiaPhase.DAY, MafiaPhase.VOTING, MafiaPhase.FINAL_DEFENSE, MafiaPhase.APPROVAL_VOTING, MafiaPhase.NIGHT];
       this.setPhase(MafiaPhase.DAY);
     } else {
       this.phaseCycle = [MafiaPhase.NIGHT, MafiaPhase.DAY, MafiaPhase.VOTING, MafiaPhase.FINAL_DEFENSE, MafiaPhase.APPROVAL_VOTING];
@@ -584,7 +590,8 @@ class GameFlowManager {
       players: ((_a = this.room) === null || _a === void 0 ? void 0 : _a.players) || [],
       myRole: player.jobId,
       myPlayerId: player.id,
-      timeRemaining: this.phaseTimer
+      timeRemaining: this.phaseTimer,
+      serverTime: Date.now()
     });
   }
   updateAllGameStatusWidgets() {
@@ -600,6 +607,7 @@ class GameFlowManager {
       App.sayToAll("게임이 진행 중이 아닙니다.");
       return;
     }
+    this.cleanupPhaseWidgets();
     const currentIndex = this.phaseCycle.indexOf(this.currentPhase);
     const nextIndex = (currentIndex + 1) % this.phaseCycle.length;
     if (nextIndex === 0) {
@@ -609,6 +617,39 @@ class GameFlowManager {
     App.sayToAll(`Room ${this.room.id}: 단계 전환 -> ${this.currentPhase} (Day ${this.dayCount})`);
     this.updateAllGameStatusWidgets();
     this.executePhaseActions();
+  }
+  cleanupPhaseWidgets() {
+    if (!this.room) return;
+    this.room.actionToRoomPlayers(player => {
+      const gamePlayer = getPlayerById(player.id);
+      if (!gamePlayer) return;
+      switch (this.currentPhase) {
+        case MafiaPhase.NIGHT:
+          if (gamePlayer.tag.widget.nightAction) {
+            gamePlayer.tag.widget.nightAction.destroy();
+            gamePlayer.tag.widget.nightAction = null;
+          }
+          break;
+        case MafiaPhase.VOTING:
+          if (gamePlayer.tag.widget.voteWidget) {
+            gamePlayer.tag.widget.voteWidget.destroy();
+            gamePlayer.tag.widget.voteWidget = null;
+          }
+          break;
+        case MafiaPhase.FINAL_DEFENSE:
+          if (gamePlayer.tag.widget.finalDefense) {
+            gamePlayer.tag.widget.finalDefense.destroy();
+            gamePlayer.tag.widget.finalDefense = null;
+          }
+          break;
+        case MafiaPhase.APPROVAL_VOTING:
+          if (gamePlayer.tag.widget.approvalVote) {
+            gamePlayer.tag.widget.approvalVote.destroy();
+            gamePlayer.tag.widget.approvalVote = null;
+          }
+          break;
+      }
+    });
   }
   executePhaseActions() {
     if (!this.room) return;
@@ -625,6 +666,10 @@ class GameFlowManager {
               player.isAlive = false;
               return;
             }
+            if (gamePlayer.tag.widget.approvalVote) {
+              gamePlayer.tag.widget.approvalVote.destroy();
+              gamePlayer.tag.widget.approvalVote = null;
+            }
             if (player.isAlive) {
               gamePlayer.tag.widget.nightAction = gamePlayer.showWidget("widgets/night_action.html", "middle", 0, 0);
               gamePlayer.tag.widget.nightAction.sendMessage({
@@ -637,7 +682,8 @@ class GameFlowManager {
                 players: ((_a = this.room) === null || _a === void 0 ? void 0 : _a.players) || [],
                 myPlayerId: player.id,
                 role: player.jobId,
-                timeLimit: phaseDurations[MafiaPhase.NIGHT]
+                timeLimit: phaseDurations[MafiaPhase.NIGHT],
+                serverTime: Date.now()
               });
               gamePlayer.tag.widget.nightAction.onMessage.Add((player, data) => {
                 const mafiaPlayer = player.tag.mafiaPlayer;
@@ -698,7 +744,8 @@ class GameFlowManager {
                 type: "init",
                 players: ((_a = this.room) === null || _a === void 0 ? void 0 : _a.players) || [],
                 myPlayerId: player.id,
-                timeLimit: phaseDurations[MafiaPhase.VOTING]
+                timeLimit: phaseDurations[MafiaPhase.VOTING],
+                serverTime: Date.now()
               });
               gamePlayer.tag.widget.voteWidget.onMessage.Add((player, data) => {
                 if (data.type === "vote") {
@@ -710,6 +757,125 @@ class GameFlowManager {
               });
             }
           });
+        }
+        break;
+      case MafiaPhase.FINAL_DEFENSE:
+        {
+          App.sayToAll(`Room ${this.room.id}: 최후 변론 단계 - 가장 많은 표를 받은 플레이어가 최후 변론을 합니다.`);
+          let maxVotes = 0;
+          let defendantId = null;
+          let defendantName = "";
+          for (const [playerId, votes] of Object.entries(this.voteResults)) {
+            if (votes > maxVotes) {
+              maxVotes = votes;
+              defendantId = playerId;
+            }
+          }
+          const defendant = this.room.players.find(p => p.id === defendantId);
+          if (!defendant) {
+            this.nextPhase();
+            return;
+          }
+          defendantName = defendant.name;
+          this.room.actionToRoomPlayers(player => {
+            const gamePlayer = getPlayerById(player.id);
+            if (!gamePlayer) return;
+            if (gamePlayer.tag.widget.voteWidget) {
+              gamePlayer.tag.widget.voteWidget.destroy();
+              gamePlayer.tag.widget.voteWidget = null;
+            }
+            gamePlayer.tag.widget.finalDefense = gamePlayer.showWidget("widgets/final_defense_widget.html", "middle", 0, 0);
+            gamePlayer.tag.widget.finalDefense.sendMessage({
+              type: "init",
+              isMobile: gamePlayer.isMobile,
+              isTablet: gamePlayer.isTablet,
+              defendantId: defendantId,
+              defendantName: defendantName,
+              myPlayerId: player.id,
+              timeLimit: phaseDurations[MafiaPhase.FINAL_DEFENSE],
+              serverTime: Date.now()
+            });
+            gamePlayer.tag.widget.finalDefense.onMessage.Add((player, data) => {
+              if (data.type === "submitDefense") {
+                this.broadcastDefense(data.defense);
+              } else if (data.type === "closeDefenseWidget") {
+                if (player.tag.widget.finalDefense) {
+                  player.tag.widget.finalDefense.destroy();
+                  player.tag.widget.finalDefense = null;
+                }
+              }
+            });
+          });
+          App.runLater(() => {
+            this.room.actionToRoomPlayers(player => {
+              const gamePlayer = getPlayerById(player.id);
+              if (!gamePlayer || !gamePlayer.tag.widget.finalDefense) return;
+              gamePlayer.tag.widget.finalDefense.destroy();
+              gamePlayer.tag.widget.finalDefense = null;
+            });
+            if (this.state === GameState.IN_PROGRESS) {
+              this.nextPhase();
+            }
+          }, phaseDurations[MafiaPhase.FINAL_DEFENSE]);
+        }
+        break;
+      case MafiaPhase.APPROVAL_VOTING:
+        {
+          App.sayToAll(`Room ${this.room.id}: 찬반 투표 단계 - 최후 변론을 들은 후 처형에 대한 찬반 투표를 진행합니다.`);
+          let maxVotes = 0;
+          let defendantId = null;
+          let defendantName = "";
+          for (const [playerId, votes] of Object.entries(this.voteResults)) {
+            if (votes > maxVotes) {
+              maxVotes = votes;
+              defendantId = playerId;
+            }
+          }
+          const defendant = this.room.players.find(p => p.id === defendantId);
+          if (!defendant) {
+            this.nextPhase();
+            return;
+          }
+          defendantName = defendant.name;
+          this.approvalVoteResults = {
+            approve: 0,
+            reject: 0
+          };
+          this.approvalPlayerVotes = {};
+          this.room.actionToRoomPlayers(player => {
+            const gamePlayer = getPlayerById(player.id);
+            if (!gamePlayer) return;
+            if (gamePlayer.tag.widget.finalDefense) {
+              gamePlayer.tag.widget.finalDefense.destroy();
+              gamePlayer.tag.widget.finalDefense = null;
+            }
+            gamePlayer.tag.widget.approvalVote = gamePlayer.showWidget("widgets/approval_vote_widget.html", "middle", 0, 0);
+            gamePlayer.tag.widget.approvalVote.sendMessage({
+              type: "init",
+              isMobile: gamePlayer.isMobile,
+              isTablet: gamePlayer.isTablet,
+              defendantId: defendantId,
+              defendantName: defendantName,
+              myPlayerId: player.id,
+              isAlive: player.isAlive,
+              defenseText: this.defenseText || "변론이 제출되지 않았습니다.",
+              timeLimit: phaseDurations[MafiaPhase.APPROVAL_VOTING],
+              serverTime: Date.now()
+            });
+            gamePlayer.tag.widget.approvalVote.onMessage.Add((player, data) => {
+              if (data.type === "submitApprovalVote") {
+                this.processApprovalVote(player.id, data.vote);
+              } else if (data.type === "closeApprovalVoteWidget") {
+                if (player.tag.widget.approvalVote) {
+                  player.tag.widget.approvalVote.destroy();
+                  player.tag.widget.approvalVote = null;
+                }
+              }
+            });
+          });
+          App.runLater(() => {
+            this.finalizeApprovalVoting();
+          }, phaseDurations[MafiaPhase.APPROVAL_VOTING]);
         }
         break;
       default:
@@ -907,6 +1073,9 @@ class GameFlowManager {
     });
     setTimeout(() => {
       this.resetGame();
+      if (this.room) {
+        this.room.endGame();
+      }
     }, 5000);
   }
   resetGame() {
@@ -934,8 +1103,25 @@ class GameFlowManager {
           gamePlayer.tag.widget.voteWidget.destroy();
           gamePlayer.tag.widget.voteWidget = null;
         }
+        if (gamePlayer.tag.widget.finalDefense) {
+          gamePlayer.tag.widget.finalDefense.destroy();
+          gamePlayer.tag.widget.finalDefense = null;
+        }
+        if (gamePlayer.tag.widget.approvalVote) {
+          gamePlayer.tag.widget.approvalVote.destroy();
+          gamePlayer.tag.widget.approvalVote = null;
+        }
       }
     });
+    this.voteResults = {};
+    this.playerVotes = {};
+    this.approvalVoteResults = {
+      approve: 0,
+      reject: 0
+    };
+    this.approvalPlayerVotes = {};
+    this.defenseText = "";
+    this.nightActions = [];
     App.sayToAll(`Room ${this.room.id}: 게임이 리셋되었습니다.`);
   }
   setPhase(phase) {
@@ -977,6 +1163,90 @@ class GameFlowManager {
         message: `${job.name} 능력을 사용했습니다.`
       });
     }
+  }
+  broadcastDefense(defense) {
+    if (!this.room) return;
+    this.defenseText = defense;
+    this.room.actionToRoomPlayers(player => {
+      const gamePlayer = getPlayerById(player.id);
+      if (!gamePlayer || !gamePlayer.tag.widget.finalDefense) return;
+      gamePlayer.tag.widget.finalDefense.sendMessage({
+        type: "updateDefense",
+        defense: defense
+      });
+    });
+  }
+  processApprovalVote(voterId, vote) {
+    if (this.approvalPlayerVotes[voterId]) {
+      const previousVote = this.approvalPlayerVotes[voterId];
+      this.approvalVoteResults[previousVote]--;
+    }
+    this.approvalPlayerVotes[voterId] = vote;
+    if (!this.approvalVoteResults[vote]) {
+      this.approvalVoteResults[vote] = 1;
+    } else {
+      this.approvalVoteResults[vote]++;
+    }
+    this.updateApprovalVoteResults();
+    const alivePlayers = this.room.players.filter(p => p.isAlive);
+    const votedPlayers = Object.keys(this.approvalPlayerVotes).length;
+    if (votedPlayers >= alivePlayers.length) {
+      this.finalizeApprovalVoting();
+    }
+  }
+  updateApprovalVoteResults() {
+    if (!this.room) return;
+    this.room.actionToRoomPlayers(player => {
+      const gamePlayer = getPlayerById(player.id);
+      if (!gamePlayer || !gamePlayer.tag.widget.approvalVote) return;
+      gamePlayer.tag.widget.approvalVote.sendMessage({
+        type: "showResults",
+        results: this.approvalVoteResults
+      });
+    });
+  }
+  finalizeApprovalVoting() {
+    if (!this.room) return;
+    this.updateApprovalVoteResults();
+    this.room.actionToRoomPlayers(player => {
+      const gamePlayer = getPlayerById(player.id);
+      if (!gamePlayer || !gamePlayer.tag.widget.approvalVote) return;
+      gamePlayer.tag.widget.approvalVote.sendMessage({
+        type: "showResults",
+        results: this.approvalVoteResults
+      });
+    });
+    let maxVotes = 0;
+    let defendantId = null;
+    for (const [playerId, votes] of Object.entries(this.voteResults)) {
+      if (votes > maxVotes) {
+        maxVotes = votes;
+        defendantId = playerId;
+      }
+    }
+    if (this.approvalVoteResults.approve > this.approvalVoteResults.reject) {
+      const defendant = this.room.players.find(p => p.id === defendantId);
+      if (defendant) {
+        defendant.isAlive = false;
+        App.sayToAll(`Room ${this.room.id}: ${defendant.name}님이 처형되었습니다.`);
+      }
+    } else {
+      App.sayToAll(`Room ${this.room.id}: 처형이 부결되었습니다.`);
+    }
+    if (this.checkWinCondition()) {
+      return;
+    }
+    App.runLater(() => {
+      this.room.actionToRoomPlayers(player => {
+        const gamePlayer = getPlayerById(player.id);
+        if (!gamePlayer || !gamePlayer.tag.widget.approvalVote) return;
+        gamePlayer.tag.widget.approvalVote.destroy();
+        gamePlayer.tag.widget.approvalVote = null;
+      });
+      if (this.state === GameState.IN_PROGRESS) {
+        this.nextPhase();
+      }
+    }, 5);
   }
 }
 ;// CONCATENATED MODULE: ../../libs/core/mafia/managers/gameRoom/GameRoom.ts
@@ -2157,6 +2427,29 @@ class Game extends GameBase {
     this.mafiaGameRoomManager.on("readyStatusChanged", (room, player, isReady) => {
       player.tag.isReady = isReady;
       this.notifyReadyStatusChanged(room, player);
+    });
+    this.mafiaGameRoomManager.on("gameStarted", room => {
+      room.actionToRoomPlayers(player => {
+        const gamePlayer = getPlayerById(player.id);
+        if (!gamePlayer) return;
+        if (gamePlayer.tag.widget.room) {
+          gamePlayer.tag.widget.room.sendMessage({
+            type: "gameStarting"
+          });
+        }
+      });
+    });
+    this.mafiaGameRoomManager.on("gameEnded", room => {
+      room.actionToRoomPlayers(player => {
+        const gamePlayer = getPlayerById(player.id);
+        if (!gamePlayer) return;
+        if (gamePlayer.tag.widget.room) {
+          gamePlayer.tag.widget.room.sendMessage({
+            type: "gameEnded"
+          });
+        }
+      });
+      this.updateRoomInfo();
     });
   }
   notifyHostChanged(room, newHost) {

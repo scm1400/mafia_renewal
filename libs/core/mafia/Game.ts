@@ -842,15 +842,14 @@ export class Game extends GameBase {
 	}
 
 	/**
-	 * 게임룸 매니저 이벤트 리스너를 설정합니다.
+	 * 게임룸 매니저 이벤트 리스너 설정
 	 */
 	private setupGameRoomManagerListeners() {
-		// 플레이어가 방에서 나갔을 때
+		// 플레이어 퇴장 이벤트
 		this.mafiaGameRoomManager.on("playerLeftRoom", (room, player) => {
-			// 방에 남아있는 플레이어들에게 퇴장 메시지 전송
 			this.notifyPlayerLeftRoom(room, player);
-
-			// 방장이 변경되었을 때 (방에 플레이어가 남아있는 경우)
+			
+			// 호스트가 있고 플레이어가 남아있으면 호스트 변경 알림
 			if (room.getPlayersCount() > 0 && room.hostId) {
 				const hostPlayer = getPlayerById(room.hostId);
 				if (hostPlayer) {
@@ -858,32 +857,66 @@ export class Game extends GameBase {
 				}
 			}
 		});
-
-		// 플레이어가 강퇴되었을 때
+		
+		// 플레이어 강퇴 이벤트
 		this.mafiaGameRoomManager.on("playerKicked", (room, player) => {
-			// 강퇴된 플레이어에게 로비 위젯 표시
+			// 플레이어의 방 위젯 제거
 			if (player.tag?.widget?.room) {
 				player.tag.widget.room.destroy();
 				player.tag.widget.room = null;
 			}
+			
+			// 로비 위젯 표시
 			this.showLobbyWidget(player);
-
-			// 방에 남아있는 플레이어들에게 강퇴 메시지 전송
+			
+			// 강퇴 알림
 			this.notifyPlayerKicked(room, player);
 		});
-
-		// 호스트가 변경되었을 때
+		
+		// 호스트 변경 이벤트
 		this.mafiaGameRoomManager.on("hostChanged", (room, newHost) => {
 			this.notifyHostChanged(room, newHost);
 		});
-
-		// 준비 상태가 변경되었을 때
+		
+		// 준비 상태 변경 이벤트
 		this.mafiaGameRoomManager.on("readyStatusChanged", (room, player, isReady) => {
-			// 플레이어의 준비 상태 업데이트
 			player.tag.isReady = isReady;
-
-			// 방의 모든 플레이어에게 준비 상태 변경 알림
 			this.notifyReadyStatusChanged(room, player);
+		});
+
+		// 게임 시작 이벤트
+		this.mafiaGameRoomManager.on("gameStarted", (room) => {
+			// 모든 플레이어에게 게임 시작 알림
+			room.actionToRoomPlayers((player) => {
+				const gamePlayer = getPlayerById(player.id);
+				if (!gamePlayer) return;
+
+				// 게임 시작 메시지 전송
+				if (gamePlayer.tag.widget.room) {
+					gamePlayer.tag.widget.room.sendMessage({
+						type: "gameStarting"
+					});
+				}
+			});
+		});
+
+		// 게임 종료 이벤트
+		this.mafiaGameRoomManager.on("gameEnded", (room) => {
+			// 모든 플레이어에게 게임 종료 알림
+			room.actionToRoomPlayers((player) => {
+				const gamePlayer = getPlayerById(player.id);
+				if (!gamePlayer) return;
+
+				// 게임 종료 메시지 전송
+				if (gamePlayer.tag.widget.room) {
+					gamePlayer.tag.widget.room.sendMessage({
+						type: "gameEnded"
+					});
+				}
+			});
+
+			// 방 정보 업데이트
+			this.updateRoomInfo();
 		});
 	}
 

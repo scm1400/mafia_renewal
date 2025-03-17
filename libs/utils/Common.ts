@@ -31,9 +31,9 @@ export function isEmpty(obj: object): boolean {
 
 export function sendConsoleMessage(player, message) {
 	const playerId = getPlayerId(player);
-	setTimeout(() => {
+	ScriptApp.runLater(() => {
 		if (!getPlayerById(playerId)) return;
-	}, 500);
+	}, 0.5);
 }
 
 export function getPlayerId(player) {

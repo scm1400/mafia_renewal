@@ -826,7 +826,7 @@
         });
 
         function revealWidget(moveScrollToBottom = false) {
-            if (moveScrollToBottom) {
+            if (moveScrollToBottom && $contentWrapper) {
                 $contentWrapper.scrollTop = $contentWrapper.scrollHeight;
             }
             if (_isMobile) {
@@ -839,7 +839,6 @@
                     top: `-${parseInt(0)}px`
                 }, '*')
             } else {
-                // document.querySelector("html").style.background = "rgba(0, 0, 0, 0.24)";
                 window.parent.postMessage({
                     type: "WidgetRearrange",
                     anchor: "middle",
@@ -847,6 +846,23 @@
                     height: `100%`,
                 }, "*")
             }
+        }
+
+        function hideWidget() {
+            window.parent.postMessage({
+                type: "WidgetRearrange",
+                width: "0px",
+                height: "0px",
+            }, "*")
+            window.parent.focus();
+        }
+
+        function fitTheSize() {
+            window.parent.postMessage({
+                type: "WidgetRearrange",
+                width: document.body.offsetWidth + 10,
+                height: document.body.offsetHeight + 10,
+            }, "*")
         }
 
         // 초기화

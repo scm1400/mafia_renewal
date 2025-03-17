@@ -69,6 +69,11 @@ export class GameFlowManager {
 	private voteResults: VoteResults = {};
 	private playerVotes: { [playerId: string]: string } = {}; // 각 플레이어가 누구에게 투표했는지
 
+	// 최후 변론 관련 변수
+	private defenseText: string = "";
+	private approvalVoteResults: { approve: number; reject: number } = { approve: 0, reject: 0 };
+	private approvalPlayerVotes: { [playerId: string]: string } = {};
+
 	constructor(roomNumber: number) {
 		this.roomNumber = roomNumber;
 	}
@@ -144,7 +149,7 @@ export class GameFlowManager {
 
 		// 플레이어 수에 따라 초기 단계 결정
 		if (this.room.players.length <= 4) {
-			this.phaseCycle = [MafiaPhase.DAY, MafiaPhase.VOTING, MafiaPhase.FINAL_DEFENSE, MafiaPhase.APPROVAL_VOTING];
+			this.phaseCycle = [MafiaPhase.DAY, MafiaPhase.VOTING, MafiaPhase.FINAL_DEFENSE, MafiaPhase.APPROVAL_VOTING, MafiaPhase.NIGHT];
 			this.setPhase(MafiaPhase.DAY);
 		} else {
 			this.phaseCycle = [MafiaPhase.NIGHT, MafiaPhase.DAY, MafiaPhase.VOTING, MafiaPhase.FINAL_DEFENSE, MafiaPhase.APPROVAL_VOTING];
@@ -246,6 +251,7 @@ export class GameFlowManager {
 			myRole: player.jobId,
 			myPlayerId: player.id,
 			timeRemaining: this.phaseTimer,
+			serverTime: Date.now(), // 서버 시간 전송
 		});
 	}
 
@@ -272,6 +278,10 @@ export class GameFlowManager {
 			ScriptApp.sayToAll("게임이 진행 중이 아닙니다.");
 			return;
 		}
+
+		// 이전 단계의 위젯 정리
+		this.cleanupPhaseWidgets();
+
 		const currentIndex = this.phaseCycle.indexOf(this.currentPhase);
 		const nextIndex = (currentIndex + 1) % this.phaseCycle.length;
 		// 사이클이 처음으로 돌아오면 dayCount 증가
@@ -286,6 +296,46 @@ export class GameFlowManager {
 
 		// 단계별 액션 실행
 		this.executePhaseActions();
+	}
+
+	/**
+	 * 현재 단계의 위젯을 정리합니다.
+	 */
+	private cleanupPhaseWidgets() {
+		if (!this.room) return;
+
+		this.room.actionToRoomPlayers((player) => {
+			const gamePlayer: GamePlayer = getPlayerById(player.id);
+			if (!gamePlayer) return;
+
+			// 단계별 위젯 정리
+			switch (this.currentPhase) {
+				case MafiaPhase.NIGHT:
+					if (gamePlayer.tag.widget.nightAction) {
+						gamePlayer.tag.widget.nightAction.destroy();
+						gamePlayer.tag.widget.nightAction = null;
+					}
+					break;
+				case MafiaPhase.VOTING:
+					if (gamePlayer.tag.widget.voteWidget) {
+						gamePlayer.tag.widget.voteWidget.destroy();
+						gamePlayer.tag.widget.voteWidget = null;
+					}
+					break;
+				case MafiaPhase.FINAL_DEFENSE:
+					if (gamePlayer.tag.widget.finalDefense) {
+						gamePlayer.tag.widget.finalDefense.destroy();
+						gamePlayer.tag.widget.finalDefense = null;
+					}
+					break;
+				case MafiaPhase.APPROVAL_VOTING:
+					if (gamePlayer.tag.widget.approvalVote) {
+						gamePlayer.tag.widget.approvalVote.destroy();
+						gamePlayer.tag.widget.approvalVote = null;
+					}
+					break;
+			}
+		});
 	}
 
 	/**
@@ -310,6 +360,12 @@ export class GameFlowManager {
 							return;
 						}
 
+						// 이전 단계 위젯 정리
+						if (gamePlayer.tag.widget.approvalVote) {
+							gamePlayer.tag.widget.approvalVote.destroy();
+							gamePlayer.tag.widget.approvalVote = null;
+						}
+
 						// 밤 액션 위젯 표시
 						if (player.isAlive) {
 							// 밤 액션 위젯 생성
@@ -329,6 +385,7 @@ export class GameFlowManager {
 								myPlayerId: player.id,
 								role: player.jobId,
 								timeLimit: phaseDurations[MafiaPhase.NIGHT],
+								serverTime: Date.now(), // 서버 시간 전송
 							});
 
 							// 밤 액션 위젯 메시지 처리
@@ -410,6 +467,7 @@ export class GameFlowManager {
 								players: this.room?.players || [],
 								myPlayerId: player.id,
 								timeLimit: phaseDurations[MafiaPhase.VOTING],
+								serverTime: Date.now(), // 서버 시간 전송
 							});
 
 							// 투표 위젯 메시지 처리
@@ -423,6 +481,164 @@ export class GameFlowManager {
 							});
 						}
 					});
+				}
+				break;
+			case MafiaPhase.FINAL_DEFENSE:
+				{
+					ScriptApp.sayToAll(`Room ${this.room.id}: 최후 변론 단계 - 가장 많은 표를 받은 플레이어가 최후 변론을 합니다.`);
+
+					// 투표 결과 확인
+					let maxVotes = 0;
+					let defendantId = null;
+					let defendantName = "";
+
+					// 가장 많은 표를 받은 플레이어 찾기
+					for (const [playerId, votes] of Object.entries(this.voteResults)) {
+						if (votes > maxVotes) {
+							maxVotes = votes;
+							defendantId = playerId;
+						}
+					}
+
+					// 피고인 정보 가져오기
+					const defendant = this.room.players.find((p) => p.id === defendantId);
+					if (!defendant) {
+						// 피고인이 없으면 다음 단계로 넘어감
+						this.nextPhase();
+						return;
+					}
+					defendantName = defendant.name;
+
+					// 최후 변론 위젯 표시
+					this.room.actionToRoomPlayers((player) => {
+						const gamePlayer: GamePlayer = getPlayerById(player.id);
+						if (!gamePlayer) return;
+
+						// 이전 단계 위젯 정리
+						if (gamePlayer.tag.widget.voteWidget) {
+							gamePlayer.tag.widget.voteWidget.destroy();
+							gamePlayer.tag.widget.voteWidget = null;
+						}
+
+						// 최후 변론 위젯 생성
+						gamePlayer.tag.widget.finalDefense = gamePlayer.showWidget("widgets/final_defense_widget.html", "middle", 0, 0);
+
+						// 초기화 메시지 전송
+						gamePlayer.tag.widget.finalDefense.sendMessage({
+							type: "init",
+							isMobile: gamePlayer.isMobile,
+							isTablet: gamePlayer.isTablet,
+							defendantId: defendantId,
+							defendantName: defendantName,
+							myPlayerId: player.id,
+							timeLimit: phaseDurations[MafiaPhase.FINAL_DEFENSE],
+							serverTime: Date.now(), // 서버 시간 전송
+						});
+
+						// 최후 변론 위젯 메시지 처리
+						gamePlayer.tag.widget.finalDefense.onMessage.Add((player, data) => {
+							if (data.type === "submitDefense") {
+								// 변론 내용 브로드캐스트
+								this.broadcastDefense(data.defense);
+							} else if (data.type === "closeDefenseWidget") {
+								if (player.tag.widget.finalDefense) {
+									player.tag.widget.finalDefense.destroy();
+									player.tag.widget.finalDefense = null;
+								}
+							}
+						});
+					});
+
+					// 타이머 설정 - 시간이 다 되면 자동으로 다음 단계로 넘어감
+					ScriptApp.runLater(() => {
+						this.room.actionToRoomPlayers((player) => {
+							const gamePlayer: GamePlayer = getPlayerById(player.id);
+							if (!gamePlayer || !gamePlayer.tag.widget.finalDefense) return;
+							gamePlayer.tag.widget.finalDefense.destroy();
+							gamePlayer.tag.widget.finalDefense = null;
+						});
+						if (this.state === GameState.IN_PROGRESS) {
+							this.nextPhase();
+						}
+					}, phaseDurations[MafiaPhase.FINAL_DEFENSE]);
+				}
+				break;
+			case MafiaPhase.APPROVAL_VOTING:
+				{
+					ScriptApp.sayToAll(`Room ${this.room.id}: 찬반 투표 단계 - 최후 변론을 들은 후 처형에 대한 찬반 투표를 진행합니다.`);
+
+					// 투표 결과 확인
+					let maxVotes = 0;
+					let defendantId = null;
+					let defendantName = "";
+
+					// 가장 많은 표를 받은 플레이어 찾기
+					for (const [playerId, votes] of Object.entries(this.voteResults)) {
+						if (votes > maxVotes) {
+							maxVotes = votes;
+							defendantId = playerId;
+						}
+					}
+
+					// 피고인 정보 가져오기
+					const defendant = this.room.players.find((p) => p.id === defendantId);
+					if (!defendant) {
+						// 피고인이 없으면 다음 단계로 넘어감
+						this.nextPhase();
+						return;
+					}
+					defendantName = defendant.name;
+
+					// 찬반 투표 결과 초기화
+					this.approvalVoteResults = { approve: 0, reject: 0 };
+					this.approvalPlayerVotes = {};
+
+					// 찬반 투표 위젯 표시
+					this.room.actionToRoomPlayers((player) => {
+						const gamePlayer: GamePlayer = getPlayerById(player.id);
+						if (!gamePlayer) return;
+
+						// 이전 단계 위젯 정리
+						if (gamePlayer.tag.widget.finalDefense) {
+							gamePlayer.tag.widget.finalDefense.destroy();
+							gamePlayer.tag.widget.finalDefense = null;
+						}
+
+						// 찬반 투표 위젯 생성
+						gamePlayer.tag.widget.approvalVote = gamePlayer.showWidget("widgets/approval_vote_widget.html", "middle", 0, 0);
+
+						// 초기화 메시지 전송
+						gamePlayer.tag.widget.approvalVote.sendMessage({
+							type: "init",
+							isMobile: gamePlayer.isMobile,
+							isTablet: gamePlayer.isTablet,
+							defendantId: defendantId,
+							defendantName: defendantName,
+							myPlayerId: player.id,
+							isAlive: player.isAlive,
+							defenseText: this.defenseText || "변론이 제출되지 않았습니다.",
+							timeLimit: phaseDurations[MafiaPhase.APPROVAL_VOTING],
+							serverTime: Date.now(), // 서버 시간 전송
+						});
+
+						// 찬반 투표 위젯 메시지 처리
+						gamePlayer.tag.widget.approvalVote.onMessage.Add((player, data) => {
+							if (data.type === "submitApprovalVote") {
+								// 찬반 투표 처리
+								this.processApprovalVote(player.id, data.vote);
+							} else if (data.type === "closeApprovalVoteWidget") {
+								if (player.tag.widget.approvalVote) {
+									player.tag.widget.approvalVote.destroy();
+									player.tag.widget.approvalVote = null;
+								}
+							}
+						});
+					});
+
+					// 타이머 설정 - 시간이 다 되면 자동으로 결과 처리
+					ScriptApp.runLater(() => {
+						this.finalizeApprovalVoting();
+					}, phaseDurations[MafiaPhase.APPROVAL_VOTING]);
 				}
 				break;
 			default:
@@ -742,6 +958,11 @@ export class GameFlowManager {
 		// 5초 후 게임 리셋
 		setTimeout(() => {
 			this.resetGame();
+
+			// 게임 종료 처리
+			if (this.room) {
+				this.room.endGame();
+			}
 		}, 5000);
 	}
 
@@ -778,8 +999,26 @@ export class GameFlowManager {
 					gamePlayer.tag.widget.voteWidget.destroy();
 					gamePlayer.tag.widget.voteWidget = null;
 				}
+
+				if (gamePlayer.tag.widget.finalDefense) {
+					gamePlayer.tag.widget.finalDefense.destroy();
+					gamePlayer.tag.widget.finalDefense = null;
+				}
+
+				if (gamePlayer.tag.widget.approvalVote) {
+					gamePlayer.tag.widget.approvalVote.destroy();
+					gamePlayer.tag.widget.approvalVote = null;
+				}
 			}
 		});
+
+		// 변수 초기화
+		this.voteResults = {};
+		this.playerVotes = {};
+		this.approvalVoteResults = { approve: 0, reject: 0 };
+		this.approvalPlayerVotes = {};
+		this.defenseText = "";
+		this.nightActions = [];
 
 		ScriptApp.sayToAll(`Room ${this.room.id}: 게임이 리셋되었습니다.`);
 	}
@@ -841,5 +1080,145 @@ export class GameFlowManager {
 				message: `${job.name} 능력을 사용했습니다.`,
 			});
 		}
+	}
+
+	/**
+	 * 최후 변론 내용을 모든 플레이어에게 전송
+	 * @param defense 변론 내용
+	 */
+	private broadcastDefense(defense: string) {
+		if (!this.room) return;
+
+		// 변론 내용 저장
+		this.defenseText = defense;
+
+		// 모든 플레이어에게 변론 내용 전송
+		this.room.actionToRoomPlayers((player) => {
+			const gamePlayer: GamePlayer = getPlayerById(player.id);
+			if (!gamePlayer || !gamePlayer.tag.widget.finalDefense) return;
+
+			gamePlayer.tag.widget.finalDefense.sendMessage({
+				type: "updateDefense",
+				defense: defense,
+			});
+		});
+	}
+
+	/**
+	 * 찬반 투표 처리
+	 * @param voterId 투표한 플레이어 ID
+	 * @param vote 투표 (approve 또는 reject)
+	 */
+	processApprovalVote(voterId: string, vote: string) {
+		// 이미 투표한 경우 이전 투표 취소
+		if (this.approvalPlayerVotes[voterId]) {
+			const previousVote = this.approvalPlayerVotes[voterId];
+			this.approvalVoteResults[previousVote]--;
+		}
+
+		// 새 투표 등록
+		this.approvalPlayerVotes[voterId] = vote;
+
+		// 투표 결과 업데이트
+		if (!this.approvalVoteResults[vote]) {
+			this.approvalVoteResults[vote] = 1;
+		} else {
+			this.approvalVoteResults[vote]++;
+		}
+
+		// 모든 플레이어에게 투표 결과 업데이트
+		this.updateApprovalVoteResults();
+
+		// 모든 플레이어가 투표했는지 확인
+		const alivePlayers = this.room.players.filter((p) => p.isAlive);
+		const votedPlayers = Object.keys(this.approvalPlayerVotes).length;
+
+		if (votedPlayers >= alivePlayers.length) {
+			// 모든 플레이어가 투표 완료
+			this.finalizeApprovalVoting();
+		}
+	}
+
+	/**
+	 * 모든 플레이어에게 찬반 투표 결과 업데이트
+	 */
+	updateApprovalVoteResults() {
+		if (!this.room) return;
+
+		this.room.actionToRoomPlayers((player) => {
+			const gamePlayer: GamePlayer = getPlayerById(player.id);
+			if (!gamePlayer || !gamePlayer.tag.widget.approvalVote) return;
+
+			gamePlayer.tag.widget.approvalVote.sendMessage({
+				type: "showResults",
+				results: this.approvalVoteResults,
+			});
+		});
+	}
+
+	/**
+	 * 찬반 투표 결과를 최종 처리합니다.
+	 */
+	finalizeApprovalVoting() {
+		if (!this.room) return;
+
+		// 찬반 투표 결과 업데이트
+		this.updateApprovalVoteResults();
+
+		// 찬반 투표 결과 표시
+		this.room.actionToRoomPlayers((player) => {
+			const gamePlayer: GamePlayer = getPlayerById(player.id);
+			if (!gamePlayer || !gamePlayer.tag.widget.approvalVote) return;
+
+			// 결과 표시
+			gamePlayer.tag.widget.approvalVote.sendMessage({
+				type: "showResults",
+				results: this.approvalVoteResults,
+			});
+		});
+
+		// 찬성이 더 많으면 플레이어 처형
+		let maxVotes = 0;
+		let defendantId = null;
+		for (const [playerId, votes] of Object.entries(this.voteResults)) {
+			if (votes > maxVotes) {
+				maxVotes = votes;
+				defendantId = playerId;
+			}
+		}
+
+		// 처형 결과 처리
+		if (this.approvalVoteResults.approve > this.approvalVoteResults.reject) {
+			// 찬성이 더 많으면 플레이어 처형
+			const defendant = this.room.players.find((p) => p.id === defendantId);
+			if (defendant) {
+				defendant.isAlive = false;
+				ScriptApp.sayToAll(`Room ${this.room.id}: ${defendant.name}님이 처형되었습니다.`);
+			}
+		} else {
+			// 반대가 더 많거나 같으면 처형 무효
+			ScriptApp.sayToAll(`Room ${this.room.id}: 처형이 부결되었습니다.`);
+		}
+
+		// 승리 조건 체크
+		if (this.checkWinCondition()) {
+			return; // 게임이 종료되었으므로 여기서 종료
+		}
+
+		// 위젯 정리 및 다음 단계로 진행
+		ScriptApp.runLater(() => {
+			// 찬반 투표 위젯 제거
+			this.room.actionToRoomPlayers((player) => {
+				const gamePlayer: GamePlayer = getPlayerById(player.id);
+				if (!gamePlayer || !gamePlayer.tag.widget.approvalVote) return;
+				gamePlayer.tag.widget.approvalVote.destroy();
+				gamePlayer.tag.widget.approvalVote = null;
+			});
+
+			// 다음 단계로
+			if (this.state === GameState.IN_PROGRESS) {
+				this.nextPhase();
+			}
+		}, 5); // 5초 후 다음 단계로
 	}
 }

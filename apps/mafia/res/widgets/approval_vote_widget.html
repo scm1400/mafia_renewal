@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html style="overflow: hidden">
+
+<head>
+    <script>
+        /* create style sheet */
+        const newFontStylePath = document.URL.includes('https://zep.us') ? "https://cdn-static.zep.us/static/zep-script/css/typography.css" : "https://cdn-static-stage.zep.us/static/zep-script/css/typography.css";
+
+        document.head.appendChild(Object.assign(document.createElement("link"), {
+            rel: "stylesheet",
+            type: "text/css",
+            href: newFontStylePath
+        }));
+    </script>
+    <style type="text/css">
+        :root {
+            --sat: env(safe-area-inset-top);
+            --sar: env(safe-area-inset-right);
+            --sab: env(safe-area-inset-bottom);
+            --sal: env(safe-area-inset-left);
+            --primary-color: #00bcd4;
+            --primary-dark: #008ba3;
+            --secondary-color: #e91e63;
+            --text-color: #27262E;
+            --bg-color: #f5f5f5;
+            --card-color: #ffffff;
+            --card-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+            --approve-color: #4caf50;
+            --reject-color: #f44336;
+        }
+
+        * {
+            padding: 0;
+            margin: 0;
+            box-sizing: border-box;
+            user-select: none !important;
+            font-family: 'Pretendard JP', 'Pretendard', sans-serif, Arial;
+            color: var(--text-color);
+        }
+
+        html {
+            width: 100%;
+            height: 100%;
+        }
+
+        body {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background-color: rgba(0, 0, 0, 0.7);
+        }
+
+        .approval-vote-container {
+            width: 90%;
+            max-width: 500px;
+            background-color: var(--card-color);
+            border-radius: 12px;
+            box-shadow: var(--card-shadow);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 15px 20px;
+            text-align: center;
+        }
+
+        .header h1 {
+            color: white;
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+
+        .header p {
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 14px;
+        }
+
+        .content {
+            padding: 20px;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .player-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 15px;
+            background-color: #f8f8f8;
+            border-radius: 8px;
+        }
+
+        .player-avatar {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background-color: #e0e0e0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: #555;
+            font-size: 24px;
+        }
+
+        .player-details {
+            flex: 1;
+        }
+
+        .player-name {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        .player-status {
+            font-size: 14px;
+            color: #666;
+        }
+
+        .timer-container {
+            text-align: center;
+            margin-bottom: 10px;
+        }
+
+        .timer {
+            font-size: 24px;
+            font-weight: 600;
+            color: var(--primary-color);
+        }
+
+        .defense-message {
+            width: 100%;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            background-color: #f9f9f9;
+            font-size: 14px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            margin-bottom: 20px;
+        }
+
+        .vote-options {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .vote-option {
+            flex: 1;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border: 2px solid transparent;
+        }
+
+        .vote-option.approve {
+            background-color: rgba(76, 175, 80, 0.1);
+            border-color: var(--approve-color);
+        }
+
+        .vote-option.reject {
+            background-color: rgba(244, 67, 54, 0.1);
+            border-color: var(--reject-color);
+        }
+
+        .vote-option:hover {
+            transform: translateY(-2px);
+        }
+
+        .vote-option.selected {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .vote-option.approve.selected {
+            background-color: rgba(76, 175, 80, 0.2);
+        }
+
+        .vote-option.reject.selected {
+            background-color: rgba(244, 67, 54, 0.2);
+        }
+
+        .vote-icon {
+            font-size: 32px;
+            margin-bottom: 10px;
+        }
+
+        .vote-label {
+            font-weight: 600;
+            font-size: 16px;
+        }
+
+        .vote-description {
+            font-size: 12px;
+            color: #666;
+            margin-top: 5px;
+        }
+
+        .vote-results {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .result-bar-container {
+            width: 100%;
+            height: 30px;
+            background-color: #f0f0f0;
+            border-radius: 15px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .result-bar {
+            height: 100%;
+            position: absolute;
+            left: 0;
+            top: 0;
+            transition: width 0.5s ease;
+        }
+
+        .result-bar.approve {
+            background-color: var(--approve-color);
+        }
+
+        .result-bar.reject {
+            background-color: var(--reject-color);
+        }
+
+        .result-labels {
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .result-label {
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .result-label.approve {
+            color: var(--approve-color);
+        }
+
+        .result-label.reject {
+            color: var(--reject-color);
+        }
+
+        .footer {
+            padding: 15px 20px;
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            border-top: 1px solid #eee;
+        }
+
+        .button {
+            padding: 10px 20px;
+            border-radius: 5px;
+            border: none;
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .button.primary {
+            background-color: var(--primary-color);
+            color: white;
+        }
+
+        .button.primary:hover {
+            background-color: var(--primary-dark);
+        }
+
+        .button.secondary {
+            background-color: #e0e0e0;
+            color: #333;
+        }
+
+        .button.secondary:hover {
+            background-color: #d5d5d5;
+        }
+
+        .button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="approval-vote-container">
+        <div class="header">
+            <h1>찬반 투표</h1>
+            <p>최후 변론을 들은 후, 처형에 대한 찬반 투표를 진행합니다.</p>
+        </div>
+
+        <div class="content">
+            <div class="player-info">
+                <div class="player-avatar" id="playerAvatar">?</div>
+                <div class="player-details">
+                    <div class="player-name" id="playerName">플레이어 이름</div>
+                    <div class="player-status">처형 대상</div>
+                </div>
+            </div>
+
+            <div class="timer-container">
+                <div class="timer" id="timer">00:30</div>
+            </div>
+
+            <div class="defense-message" id="defenseMessage">
+                최후 변론 내용이 여기에 표시됩니다.
+            </div>
+
+            <div class="vote-options" id="voteOptions">
+                <div class="vote-option approve" id="approveOption">
+                    <div class="vote-icon">👍</div>
+                    <div class="vote-label">찬성</div>
+                    <div class="vote-description">처형에 동의합니다</div>
+                </div>
+                <div class="vote-option reject" id="rejectOption">
+                    <div class="vote-icon">👎</div>
+                    <div class="vote-label">반대</div>
+                    <div class="vote-description">처형에 반대합니다</div>
+                </div>
+            </div>
+
+            <div class="vote-results hidden" id="voteResults">
+                <div class="result-bar-container">
+                    <div class="result-bar approve" id="approveBar" style="width: 0%"></div>
+                    <div class="result-bar reject" id="rejectBar" style="width: 0%"></div>
+                </div>
+                <div class="result-labels">
+                    <div class="result-label approve">찬성: <span id="approveCount">0</span></div>
+                    <div class="result-label reject">반대: <span id="rejectCount">0</span></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer">
+            <button class="button secondary" id="closeBtn">닫기</button>
+            <button class="button primary" id="submitVoteBtn">투표 제출</button>
+        </div>
+    </div>
+
+    <script>
+        // 전역 변수
+        let timeLeft = 30; // 기본 30초
+        let timerInterval;
+        let selectedVote = null;
+        let voteSubmitted = false;
+        let defendantId = null;
+        let myPlayerId = null;
+        let defenseText = "";
+        let isAlive = true;
+
+        // DOM 요소
+        const timerElement = document.getElementById('timer');
+        const playerNameElement = document.getElementById('playerName');
+        const playerAvatarElement = document.getElementById('playerAvatar');
+        const defenseMessageElement = document.getElementById('defenseMessage');
+        const voteOptionsElement = document.getElementById('voteOptions');
+        const approveOptionElement = document.getElementById('approveOption');
+        const rejectOptionElement = document.getElementById('rejectOption');
+        const voteResultsElement = document.getElementById('voteResults');
+        const approveBarElement = document.getElementById('approveBar');
+        const rejectBarElement = document.getElementById('rejectBar');
+        const approveCountElement = document.getElementById('approveCount');
+        const rejectCountElement = document.getElementById('rejectCount');
+        const submitVoteBtn = document.getElementById('submitVoteBtn');
+        const closeBtn = document.getElementById('closeBtn');
+
+        // 이벤트 리스너
+        approveOptionElement.addEventListener('click', () => selectVote('approve'));
+        rejectOptionElement.addEventListener('click', () => selectVote('reject'));
+        submitVoteBtn.addEventListener('click', submitVote);
+        closeBtn.addEventListener('click', closeWidget);
+
+        // 초기화 함수
+        function initialize(data) {
+            // 모바일 여부 설정
+            _isMobile = data.isMobile;
+            _isTablet = data.isTablet;
+
+            // 플레이어 정보 설정
+            defendantId = data.defendantId;
+            myPlayerId = data.myPlayerId;
+            defenseText = data.defenseText || "변론이 제출되지 않았습니다.";
+            isAlive = data.isAlive !== false;
+
+            // 플레이어 이름과 아바타 설정
+            playerNameElement.textContent = data.defendantName;
+            playerAvatarElement.textContent = data.defendantName.charAt(0).toUpperCase();
+            defenseMessageElement.textContent = defenseText;
+
+            // 타이머 설정
+            timeLeft = data.timeLimit || 30;
+            updateTimerDisplay();
+            startTimer();
+
+            // 죽은 플레이어는 투표할 수 없음
+            if (!isAlive) {
+                voteOptionsElement.classList.add('hidden');
+                submitVoteBtn.disabled = true;
+            }
+
+            // 위젯 표시
+            revealWidget();
+        }
+
+        // 타이머 시작
+        function startTimer() {
+            timerInterval = setInterval(() => {
+                timeLeft--;
+                updateTimerDisplay();
+
+                if (timeLeft <= 0) {
+                    clearInterval(timerInterval);
+                    
+                    // 시간이 다 되었을 때 자동 제출
+                    if (isAlive && !voteSubmitted) {
+                        submitVote();
+                    }
+                }
+            }, 1000);
+        }
+
+        // 타이머 표시 업데이트
+        function updateTimerDisplay() {
+            const minutes = Math.floor(timeLeft / 60);
+            const seconds = timeLeft % 60;
+            timerElement.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+        }
+
+        // 투표 선택
+        function selectVote(vote) {
+            if (voteSubmitted) return;
+            
+            selectedVote = vote;
+            
+            // UI 업데이트
+            approveOptionElement.classList.remove('selected');
+            rejectOptionElement.classList.remove('selected');
+            
+            if (vote === 'approve') {
+                approveOptionElement.classList.add('selected');
+            } else {
+                rejectOptionElement.classList.add('selected');
+            }
+        }
+
+        // 투표 제출
+        function submitVote() {
+            if (voteSubmitted || !isAlive) return;
+            
+            // 선택하지 않은 경우 기본값은 반대
+            if (!selectedVote) {
+                selectedVote = 'reject';
+            }
+            
+            voteSubmitted = true;
+            submitVoteBtn.disabled = true;
+            
+            // 부모 창에 투표 결과 전송
+            window.parent.postMessage({
+                type: 'submitApprovalVote',
+                vote: selectedVote
+            }, '*');
+        }
+
+        // 투표 결과 표시
+        function showResults(results) {
+            const approveCount = results.approve || 0;
+            const rejectCount = results.reject || 0;
+            const total = approveCount + rejectCount;
+            
+            if (total === 0) return;
+            
+            const approvePercentage = (approveCount / total) * 100;
+            const rejectPercentage = (rejectCount / total) * 100;
+            
+            // 결과 업데이트
+            approveBarElement.style.width = `${approvePercentage}%`;
+            rejectBarElement.style.width = `${rejectPercentage}%`;
+            approveCountElement.textContent = approveCount;
+            rejectCountElement.textContent = rejectCount;
+            
+            // 결과 표시
+            voteOptionsElement.classList.add('hidden');
+            voteResultsElement.classList.remove('hidden');
+        }
+
+        // 위젯 닫기
+        function closeWidget() {
+            hideWidget();
+            
+            // 부모 창에 닫기 메시지 전송
+            window.parent.postMessage({
+                type: 'closeApprovalVoteWidget'
+            }, '*');
+        }
+
+        let _isMobile = false;
+        let _isTablet = false;
+        let $contentWrapper;
+
+        function hideWidget() {
+            window.parent.postMessage({
+                type: "WidgetRearrange",
+                width: "0px",
+                height: "0px",
+            }, "*")
+            window.parent.focus();
+        }
+
+        function revealWidget(moveScrollToBottom = false) {
+            if (moveScrollToBottom && $contentWrapper) {
+                $contentWrapper.scrollTop = $contentWrapper.scrollHeight;
+            }
+            if (_isMobile) {
+                const rtcAndNotchHeight = 160 + parseInt(getComputedStyle(document.documentElement,).getPropertyValue("--sat"));
+                window.parent.postMessage({
+                    type: 'WidgetRearrange',
+                    anchor: 'middle',
+                    height: '100%',
+                    width: '100%',
+                    top: `-${parseInt(0)}px`
+                }, '*')
+            } else {
+                window.parent.postMessage({
+                    type: "WidgetRearrange",
+                    anchor: "middle",
+                    width: `500px`,
+                    height: `${document.querySelector('.approval-vote-container').offsetHeight+10}px`,
+                }, "*")
+            }
+        }
+
+        function fitTheSize() {
+            window.parent.postMessage({
+                type: "WidgetRearrange",
+                width: document.body.offsetWidth + 10,
+                height: document.body.offsetHeight + 10,
+            }, "*")
+        }
+
+        // 메시지 수신 처리
+        window.addEventListener('message', function (e) {
+            const data = e.data;
+
+            if (data.type === 'init') {
+                initialize(data);
+            } else if (data.type === 'showResults') {
+                showResults(data.results);
+            }
+        });
+    </script>
+</body>
+
+</html> 

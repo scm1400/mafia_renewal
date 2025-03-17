@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html style="overflow: hidden">
+
+<head>
+    <script>
+        /* create style sheet */
+        const newFontStylePath = document.URL.includes('https://zep.us') ? "https://cdn-static.zep.us/static/zep-script/css/typography.css" : "https://cdn-static-stage.zep.us/static/zep-script/css/typography.css";
+
+        document.head.appendChild(Object.assign(document.createElement("link"), {
+            rel: "stylesheet",
+            type: "text/css",
+            href: newFontStylePath
+        }));
+    </script>
+    <style type="text/css">
+        :root {
+            --sat: env(safe-area-inset-top);
+            --sar: env(safe-area-inset-right);
+            --sab: env(safe-area-inset-bottom);
+            --sal: env(safe-area-inset-left);
+            --primary-color: #00bcd4;
+            --primary-dark: #008ba3;
+            --secondary-color: #e91e63;
+            --text-color: #27262E;
+            --bg-color: #f5f5f5;
+            --card-color: #ffffff;
+            --card-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+        }
+
+        * {
+            padding: 0;
+            margin: 0;
+            box-sizing: border-box;
+            user-select: none !important;
+            font-family: 'Pretendard JP', 'Pretendard', sans-serif, Arial;
+            color: var(--text-color);
+        }
+
+        html {
+            width: 100%;
+            height: 100%;
+        }
+
+        body {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background-color: rgba(0, 0, 0, 0.7);
+        }
+
+        .final-defense-container {
+            width: 90%;
+            max-width: 600px;
+            background-color: var(--card-color);
+            border-radius: 12px;
+            box-shadow: var(--card-shadow);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 15px 20px;
+            text-align: center;
+        }
+
+        .header h1 {
+            color: white;
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+
+        .header p {
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 14px;
+        }
+
+        .content {
+            padding: 20px;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .player-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 15px;
+            background-color: #f8f8f8;
+            border-radius: 8px;
+        }
+
+        .player-avatar {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background-color: #e0e0e0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: #555;
+            font-size: 24px;
+        }
+
+        .player-details {
+            flex: 1;
+        }
+
+        .player-name {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        .player-status {
+            font-size: 14px;
+            color: #666;
+        }
+
+        .timer-container {
+            text-align: center;
+            margin-bottom: 10px;
+        }
+
+        .timer {
+            font-size: 24px;
+            font-weight: 600;
+            color: var(--primary-color);
+        }
+
+        .defense-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .defense-title {
+            font-size: 16px;
+            font-weight: 600;
+        }
+
+        .defense-input {
+            width: 100%;
+            min-height: 100px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            resize: none;
+            font-size: 14px;
+        }
+
+        .defense-message {
+            width: 100%;
+            min-height: 100px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            background-color: #f9f9f9;
+            font-size: 14px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+        }
+
+        .footer {
+            padding: 15px 20px;
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            border-top: 1px solid #eee;
+        }
+
+        .button {
+            padding: 10px 20px;
+            border-radius: 5px;
+            border: none;
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .button.primary {
+            background-color: var(--primary-color);
+            color: white;
+        }
+
+        .button.primary:hover {
+            background-color: var(--primary-dark);
+        }
+
+        .button.secondary {
+            background-color: #e0e0e0;
+            color: #333;
+        }
+
+        .button.secondary:hover {
+            background-color: #d5d5d5;
+        }
+
+        .button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .spectator-view {
+            display: none;
+        }
+
+        .defendant-view {
+            display: none;
+        }
+
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="final-defense-container">
+        <div class="header">
+            <h1>최후 변론</h1>
+            <p>가장 많은 표를 받은 플레이어의 최후 변론 시간입니다.</p>
+        </div>
+
+        <div class="content">
+            <div class="player-info">
+                <div class="player-avatar" id="playerAvatar">?</div>
+                <div class="player-details">
+                    <div class="player-name" id="playerName">플레이어 이름</div>
+                    <div class="player-status">최후 변론 중</div>
+                </div>
+            </div>
+
+            <div class="timer-container">
+                <div class="timer" id="timer">00:20</div>
+            </div>
+
+            <!-- 피고인 뷰 -->
+            <div class="defense-area defendant-view" id="defendantView">
+                <div class="defense-title">당신의 최후 변론을 입력하세요:</div>
+                <textarea class="defense-input" id="defenseInput" placeholder="자신의 무죄를 주장하세요..."></textarea>
+                <button class="button primary" id="submitDefenseBtn">변론 제출</button>
+            </div>
+
+            <!-- 관전자 뷰 -->
+            <div class="defense-area spectator-view" id="spectatorView">
+                <div class="defense-title">최후 변론 내용:</div>
+                <div class="defense-message" id="defenseMessage">
+                    아직 변론이 제출되지 않았습니다.
+                </div>
+            </div>
+        </div>
+
+        <div class="footer">
+            <button class="button secondary" id="closeBtn">닫기</button>
+        </div>
+    </div>
+
+    <script>
+        // 전역 변수
+        let timeLeft = 20; // 기본 20초
+        let timerInterval;
+        let isDefendant = false;
+        let defenseSubmitted = false;
+        let defendantId = null;
+        let myPlayerId = null;
+
+        // DOM 요소
+        const timerElement = document.getElementById('timer');
+        const playerNameElement = document.getElementById('playerName');
+        const playerAvatarElement = document.getElementById('playerAvatar');
+        const defendantView = document.getElementById('defendantView');
+        const spectatorView = document.getElementById('spectatorView');
+        const defenseInput = document.getElementById('defenseInput');
+        const defenseMessage = document.getElementById('defenseMessage');
+        const submitDefenseBtn = document.getElementById('submitDefenseBtn');
+        const closeBtn = document.getElementById('closeBtn');
+
+        // 이벤트 리스너
+        submitDefenseBtn.addEventListener('click', submitDefense);
+        closeBtn.addEventListener('click', closeWidget);
+
+        // 초기화 함수
+        function initialize(data) {
+            // 모바일 여부 설정
+            _isMobile = data.isMobile;
+            _isTablet = data.isTablet;
+
+            // 플레이어 정보 설정
+            defendantId = data.defendantId;
+            myPlayerId = data.myPlayerId;
+            isDefendant = defendantId === myPlayerId;
+
+            // 플레이어 이름과 아바타 설정
+            playerNameElement.textContent = data.defendantName;
+            playerAvatarElement.textContent = data.defendantName.charAt(0).toUpperCase();
+
+            // 타이머 설정
+            timeLeft = data.timeLimit || 20;
+            updateTimerDisplay();
+            startTimer();
+
+            // 뷰 설정
+            if (isDefendant) {
+                defendantView.style.display = 'block';
+                spectatorView.style.display = 'none';
+            } else {
+                defendantView.style.display = 'none';
+                spectatorView.style.display = 'block';
+            }
+
+            // 위젯 표시
+            revealWidget();
+        }
+
+        // 타이머 시작
+        function startTimer() {
+            timerInterval = setInterval(() => {
+                timeLeft--;
+                updateTimerDisplay();
+
+                if (timeLeft <= 0) {
+                    clearInterval(timerInterval);
+
+                    // 시간이 다 되었을 때 자동 제출
+                    if (isDefendant && !defenseSubmitted) {
+                        submitDefense();
+                    }
+                }
+            }, 1000);
+        }
+
+        // 타이머 표시 업데이트
+        function updateTimerDisplay() {
+            const minutes = Math.floor(timeLeft / 60);
+            const seconds = timeLeft % 60;
+            timerElement.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+        }
+
+        // 변론 제출
+        function submitDefense() {
+            if (defenseSubmitted) return;
+
+            const defenseText = defenseInput.value.trim();
+            defenseSubmitted = true;
+            submitDefenseBtn.disabled = true;
+
+            // 부모 창에 변론 내용 전송
+            window.parent.postMessage({
+                type: 'submitDefense',
+                defense: defenseText
+            }, '*');
+        }
+
+        // 변론 내용 업데이트 (관전자 뷰)
+        function updateDefenseMessage(message) {
+            defenseMessage.textContent = message || '변론이 제출되지 않았습니다.';
+        }
+
+        // 위젯 닫기
+        function closeWidget() {
+            hideWidget();
+
+            // 부모 창에 닫기 메시지 전송
+            window.parent.postMessage({
+                type: 'closeDefenseWidget'
+            }, '*');
+        }
+
+        let _isMobile = false;
+        let _isTablet = false;
+        let $contentWrapper;
+
+        function hideWidget() {
+            window.parent.postMessage({
+                type: "WidgetRearrange",
+                width: "0px",
+                height: "0px",
+            }, "*")
+            window.parent.focus();
+        }
+
+        function revealWidget(moveScrollToBottom = false) {
+            if (moveScrollToBottom && $contentWrapper) {
+                $contentWrapper.scrollTop = $contentWrapper.scrollHeight;
+            }
+            if (_isMobile) {
+                const rtcAndNotchHeight = 160 + parseInt(getComputedStyle(document.documentElement,).getPropertyValue("--sat"));
+                window.parent.postMessage({
+                    type: 'WidgetRearrange',
+                    anchor: 'middle',
+                    height: '100%',
+                    width: '100%',
+                    top: `-${parseInt(0)}px`
+                }, '*')
+            } else {
+                window.parent.postMessage({
+                    type: "WidgetRearrange",
+                    anchor: "middle",
+                    width: `500px`,
+                    height: `${document.querySelector('.final-defense-container').offsetHeight + 10}px`,
+                }, "*")
+            }
+        }
+
+        function fitTheSize() {
+            window.parent.postMessage({
+                type: "WidgetRearrange",
+                width: document.body.offsetWidth + 10,
+                height: document.body.offsetHeight + 10,
+            }, "*")
+        }
+
+        // 메시지 수신 처리
+        window.addEventListener('message', function (e) {
+            const data = e.data;
+
+            if (data.type === 'init') {
+                initialize(data);
+            } else if (data.type === 'updateDefense') {
+                updateDefenseMessage(data.defense);
+            }
+        });
+    </script>
+</body>
+
+</html>

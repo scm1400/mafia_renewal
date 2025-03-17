@@ -322,31 +322,105 @@
         let myPlayerId = null;
         let remainingTime = 0;
         let timerInterval;
+        let serverTime = 0;
+        let timeDiff = 0;
 
         const roleData = {
-            "MAFIA": {
+            "mafia": {
                 name: "마피아",
                 icon: "🔪",
                 description: "밤에 시민을 죽이는 역할입니다.",
                 className: "mafia"
             },
-            "POLICE": {
+            "police": {
                 name: "경찰",
                 icon: "🔍",
                 description: "밤에 한 명의 정체를 확인할 수 있습니다.",
                 className: "police"
             },
-            "DOCTOR": {
+            "doctor": {
                 name: "의사",
                 icon: "💉",
                 description: "밤에 한 명을 보호할 수 있습니다.",
                 className: "doctor"
             },
-            "CITIZEN": {
+            "citizen": {
                 name: "시민",
                 icon: "👨‍👩‍👧‍👦",
                 description: "투표를 통해 마피아를 찾아내세요.",
                 className: "citizen"
+            },
+            "spy": {
+                name: "스파이",
+                icon: "🕵️",
+                description: "마피아 채팅을 엿들을 수 있습니다.",
+                className: "citizen"
+            },
+            "medium": {
+                name: "영매",
+                icon: "👻",
+                description: "죽은 플레이어와 대화할 수 있습니다.",
+                className: "citizen"
+            },
+            "soldier": {
+                name: "군인",
+                icon: "🪖",
+                description: "마피아의 공격을 한 번 막을 수 있습니다.",
+                className: "citizen"
+            },
+            "politician": {
+                name: "정치인",
+                icon: "🗣️",
+                description: "투표 시 두 표를 행사할 수 있습니다.",
+                className: "citizen"
+            },
+            "lover": {
+                name: "연인",
+                icon: "❤️",
+                description: "다른 플레이어와 비밀 대화를 나눌 수 있습니다.",
+                className: "citizen"
+            },
+            "journalist": {
+                name: "기자",
+                icon: "📰",
+                description: "특정 정보를 모든 플레이어에게 공개할 수 있습니다.",
+                className: "citizen"
+            },
+            "werewolf": {
+                name: "짐승인간",
+                icon: "🐺",
+                description: "마피아가 모두 사망하면 능력이 활성화됩니다.",
+                className: "mafia"
+            },
+            "gangster": {
+                name: "건달",
+                icon: "👊",
+                description: "플레이어의 투표를 방해합니다.",
+                className: "citizen"
+            },
+            "detective": {
+                name: "사립탐정",
+                icon: "🕵️‍♂️",
+                description: "플레이어의 능력 사용을 추적합니다.",
+                className: "citizen"
+            },
+            "gravedigger": {
+                name: "도굴꾼",
+                icon: "⚰️",
+                description: "첫날 마피아에게 살해당한 플레이어의 직업을 얻습니다.",
+                className: "citizen"
+            },
+            "terrorist": {
+                name: "테러리스트",
+                icon: "💣",
+                description: "처형될 때 다른 플레이어를 함께 처형합니다.",
+                className: "citizen"
+            },
+            "madam": {
+                name: "마담",
+                icon: "💋",
+                description: "마피아와 접촉하여 대화할 수 있습니다.",
+                className: "mafia"
             }
         };
 
@@ -416,6 +490,7 @@
         }
 
         function updateMyRole(role) {
+            console.log("역할 업데이트:", role);
             myRole = role;
             
             if (!role) {
@@ -426,20 +501,40 @@
                 return;
             }
             
-            const roleInfo = roleData[role];
-            if (!roleInfo) return;
+            // 역할 ID가 소문자인지 확인
+            const roleKey = typeof role === 'string' ? role.toLowerCase() : role;
+            console.log("역할 키:", roleKey);
+            const roleInfo = roleData[roleKey];
             
+            if (!roleInfo) {
+                console.log("알 수 없는 역할:", role, "사용 가능한 역할:", Object.keys(roleData));
+                document.getElementById('role-name').textContent = "알 수 없는 역할";
+                document.getElementById('role-icon').textContent = "❓";
+                document.getElementById('role-desc').textContent = `역할 ID: ${role}`;
+                document.getElementById('my-role').className = "my-role";
+                return;
+            }
+            
+            console.log("역할 정보:", roleInfo);
             document.getElementById('role-name').textContent = roleInfo.name;
             document.getElementById('role-icon').textContent = roleInfo.icon;
             document.getElementById('role-desc').textContent = roleInfo.description;
             document.getElementById('my-role').className = `my-role ${roleInfo.className}`;
         }
 
-        function updateTimer(seconds) {
+        function updateTimer(seconds, serverTimestamp) {
             if (seconds <= 0) {
                 document.getElementById('timer').style.display = 'none';
                 clearInterval(timerInterval);
                 return;
+            }
+            
+            // 서버 시간과 클라이언트 시간의 차이 계산
+            if (serverTimestamp) {
+                const clientTime = Date.now();
+                serverTime = serverTimestamp;
+                timeDiff = clientTime - serverTime;
+                console.log("서버 시간:", serverTime, "클라이언트 시간:", clientTime, "시간 차이:", timeDiff);
             }
             
             remainingTime = seconds;
@@ -448,13 +543,20 @@
             
             clearInterval(timerInterval);
             timerInterval = setInterval(() => {
-                remainingTime--;
-                document.getElementById('timer').textContent = `남은 시간: ${remainingTime}초`;
+                // 서버 시간 기준으로 남은 시간 계산
+                const elapsedTime = Math.floor((Date.now() - serverTime - timeDiff) / 1000);
+                const newRemainingTime = Math.max(0, seconds - elapsedTime);
+                
+                if (newRemainingTime !== remainingTime) {
+                    remainingTime = newRemainingTime;
+                    document.getElementById('timer').textContent = `남은 시간: ${remainingTime}초`;
+                }
                 
                 if (remainingTime <= 0) {
                     clearInterval(timerInterval);
+                    document.getElementById('timer').style.display = 'none';
                 }
-            }, 1000);
+            }, 500); // 0.5초마다 업데이트
         }
 
         function showRoleDetail() {
@@ -497,7 +599,7 @@
                     type: "WidgetRearrange",
                     anchor: "middleright",
                     width: `300px`,
-                    height: `auto`,
+                    height: `${document.querySelector('.status-container').offsetHeight+10}px`,
                 }, "*")
             }
         }
@@ -523,18 +625,23 @@
                     alert("An error occurred:", error);
                 }
             } else if (data.type === 'updateGameStatus') {
+                console.log("게임 상태 업데이트:", data);
                 updateGamePhase(data.phase, data.day);
                 
                 if (data.players) {
                     updatePlayers(data.players);
                 }
                 
-                if (data.myRole) {
+                if (data.myPlayerId) {
+                    myPlayerId = data.myPlayerId;
+                }
+                
+                if (data.myRole !== undefined) {
                     updateMyRole(data.myRole);
                 }
                 
                 if (data.timeRemaining) {
-                    updateTimer(data.timeRemaining);
+                    updateTimer(data.timeRemaining, data.serverTime);
                 }
             } else if (data.type === "hide") {
                 hideWidget();
