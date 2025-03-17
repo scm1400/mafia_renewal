@@ -9,8 +9,8 @@ import { getPlayerById } from "../../../../utils/Common";
  * 여러 게임방을 생성하고 관리합니다.
  */
 export class GameRoomManager {
-	private gameRooms: Map<string, GameRoom> = new Map();
-	private gameModes: Map<string, GameMode> = new Map();
+	private gameRooms: Record<string, GameRoom> = {};
+	private gameModes: Record<string, GameMode> = {};
 	private callbacks: { [key: string]: Array<(...args: any[]) => void> } = {};
 
 	constructor() {
@@ -21,14 +21,14 @@ export class GameRoomManager {
 	 * 모든 게임방 조회
 	 */
 	public getAllRooms(): GameRoom[] {
-		return Array.from(this.gameRooms.values());
+		return Object.values(this.gameRooms);
 	}
 
 	/**
 	 * 특정 ID의 게임방 조회
 	 */
 	public getRoom(roomId: string): GameRoom | undefined {
-		return this.gameRooms.get(roomId);
+		return this.gameRooms[roomId];
 	}
 
 	/**
@@ -39,14 +39,14 @@ export class GameRoomManager {
 		let roomId = "1";
 		for (let i = 1; i <= 8; i++) {
 			const id = i.toString();
-			if (!this.gameRooms.has(id)) {
+			if (!this.gameRooms[id]) {
 				roomId = id;
 				break;
 			}
 		}
 		
 		// 모든 방이 사용 중인 경우
-		if (this.gameRooms.size >= 8) {
+		if (Object.keys(this.gameRooms).length >= 8) {
 			throw new Error("모든 게임방이 사용 중입니다.");
 		}
 		
@@ -57,7 +57,7 @@ export class GameRoomManager {
 		});
 		
 		// 게임방 등록
-		this.gameRooms.set(roomId, room);
+		this.gameRooms[roomId] = room;
 		
 		// 이벤트 리스너 설정
 		this.setupRoomEventListeners(room);
@@ -72,7 +72,7 @@ export class GameRoomManager {
 	 * 게임방 삭제
 	 */
 	public removeRoom(roomId: string): boolean {
-		const room = this.gameRooms.get(roomId);
+		const room = this.gameRooms[roomId];
 		
 		if (!room) {
 			return false;
@@ -82,7 +82,7 @@ export class GameRoomManager {
 		room.reset();
 		
 		// 게임방 삭제
-		this.gameRooms.delete(roomId);
+		delete this.gameRooms[roomId];
 		
 		// 방 삭제 이벤트 발생
 		this.emit("roomRemoved", roomId);
@@ -94,7 +94,7 @@ export class GameRoomManager {
 	 * 게임방 초기화
 	 */
 	public resetRoom(roomId: string): boolean {
-		const room = this.gameRooms.get(roomId);
+		const room = this.gameRooms[roomId];
 		
 		if (!room) {
 			return false;
@@ -113,28 +113,28 @@ export class GameRoomManager {
 	 * 게임 모드 등록
 	 */
 	public registerGameMode(gameMode: GameMode): void {
-		this.gameModes.set(gameMode.getId(), gameMode);
+		this.gameModes[gameMode.getId()] = gameMode;
 	}
 
 	/**
 	 * 게임 모드 조회
 	 */
 	public getGameMode(modeId: string): GameMode | undefined {
-		return this.gameModes.get(modeId);
+		return this.gameModes[modeId];
 	}
 
 	/**
 	 * 모든 게임 모드 조회
 	 */
 	public getAllGameModes(): GameMode[] {
-		return Array.from(this.gameModes.values());
+		return Object.values(this.gameModes);
 	}
 
 	/**
 	 * 플레이어를 게임방에 입장시킴
 	 */
 	public joinRoom(roomId: string, player: GamePlayer): boolean {
-		const room = this.gameRooms.get(roomId);
+		const room = this.gameRooms[roomId];
 		
 		if (!room) {
 			return false;
@@ -147,7 +147,7 @@ export class GameRoomManager {
 	 * 플레이어를 게임방에서 퇴장시킴
 	 */
 	public leaveRoom(roomId: string, playerId: string): boolean {
-		const room = this.gameRooms.get(roomId);
+		const room = this.gameRooms[roomId];
 		
 		if (!room) {
 			return false;

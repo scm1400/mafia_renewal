@@ -1221,8 +1221,8 @@ var GameRoom_1 = __webpack_require__(727);
  */
 var GameRoomManager = /** @class */function () {
   function GameRoomManager() {
-    this.gameRooms = new Map();
-    this.gameModes = new Map();
+    this.gameRooms = {};
+    this.gameModes = {};
     this.callbacks = {};
     // 기본 생성자
   }
@@ -1230,13 +1230,13 @@ var GameRoomManager = /** @class */function () {
    * 모든 게임방 조회
    */
   GameRoomManager.prototype.getAllRooms = function () {
-    return Array.from(this.gameRooms.values());
+    return Object.values(this.gameRooms);
   };
   /**
    * 특정 ID의 게임방 조회
    */
   GameRoomManager.prototype.getRoom = function (roomId) {
-    return this.gameRooms.get(roomId);
+    return this.gameRooms[roomId];
   };
   /**
    * 게임방 생성
@@ -1246,13 +1246,13 @@ var GameRoomManager = /** @class */function () {
     var roomId = "1";
     for (var i = 1; i <= 8; i++) {
       var id = i.toString();
-      if (!this.gameRooms.has(id)) {
+      if (!this.gameRooms[id]) {
         roomId = id;
         break;
       }
     }
     // 모든 방이 사용 중인 경우
-    if (this.gameRooms.size >= 8) {
+    if (Object.keys(this.gameRooms).length >= 8) {
       throw new Error("모든 게임방이 사용 중입니다.");
     }
     // 게임방 생성
@@ -1260,7 +1260,7 @@ var GameRoomManager = /** @class */function () {
       id: roomId
     }, config));
     // 게임방 등록
-    this.gameRooms.set(roomId, room);
+    this.gameRooms[roomId] = room;
     // 이벤트 리스너 설정
     this.setupRoomEventListeners(room);
     // 방 생성 이벤트 발생
@@ -1271,14 +1271,14 @@ var GameRoomManager = /** @class */function () {
    * 게임방 삭제
    */
   GameRoomManager.prototype.removeRoom = function (roomId) {
-    var room = this.gameRooms.get(roomId);
+    var room = this.gameRooms[roomId];
     if (!room) {
       return false;
     }
     // 게임방 리셋
     room.reset();
     // 게임방 삭제
-    this.gameRooms.delete(roomId);
+    delete this.gameRooms[roomId];
     // 방 삭제 이벤트 발생
     this.emit("roomRemoved", roomId);
     return true;
@@ -1287,7 +1287,7 @@ var GameRoomManager = /** @class */function () {
    * 게임방 초기화
    */
   GameRoomManager.prototype.resetRoom = function (roomId) {
-    var room = this.gameRooms.get(roomId);
+    var room = this.gameRooms[roomId];
     if (!room) {
       return false;
     }
@@ -1301,25 +1301,25 @@ var GameRoomManager = /** @class */function () {
    * 게임 모드 등록
    */
   GameRoomManager.prototype.registerGameMode = function (gameMode) {
-    this.gameModes.set(gameMode.getId(), gameMode);
+    this.gameModes[gameMode.getId()] = gameMode;
   };
   /**
    * 게임 모드 조회
    */
   GameRoomManager.prototype.getGameMode = function (modeId) {
-    return this.gameModes.get(modeId);
+    return this.gameModes[modeId];
   };
   /**
    * 모든 게임 모드 조회
    */
   GameRoomManager.prototype.getAllGameModes = function () {
-    return Array.from(this.gameModes.values());
+    return Object.values(this.gameModes);
   };
   /**
    * 플레이어를 게임방에 입장시킴
    */
   GameRoomManager.prototype.joinRoom = function (roomId, player) {
-    var room = this.gameRooms.get(roomId);
+    var room = this.gameRooms[roomId];
     if (!room) {
       return false;
     }
@@ -1329,7 +1329,7 @@ var GameRoomManager = /** @class */function () {
    * 플레이어를 게임방에서 퇴장시킴
    */
   GameRoomManager.prototype.leaveRoom = function (roomId, playerId) {
-    var room = this.gameRooms.get(roomId);
+    var room = this.gameRooms[roomId];
     if (!room) {
       return false;
     }
