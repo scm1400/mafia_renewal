@@ -1,0 +1,813 @@
+<!DOCTYPE html>
+<html style="overflow: hidden">
+
+<head>
+    <script>
+        /* create style sheet */
+        const newFontStylePath = document.URL.includes('https://zep.us') ? "https://cdn-static.zep.us/static/zep-script/css/typography.css" : "https://cdn-static-stage.zep.us/static/zep-script/css/typography.css";
+
+        document.head.appendChild(Object.assign(document.createElement("link"), {
+            rel: "stylesheet",
+            type: "text/css",
+            href: newFontStylePath
+        }));
+    </script>
+    <style type="text/css">
+        :root {
+            --sat: env(safe-area-inset-top);
+            --sar: env(safe-area-inset-right);
+            --sab: env(safe-area-inset-bottom);
+            --sal: env(safe-area-inset-left);
+            --primary-color: #00bcd4;
+            --primary-dark: #008ba3;
+            --secondary-color: #e91e63;
+            --text-color: #27262E;
+            --bg-color: #f5f5f5;
+            --card-color: #ffffff;
+            --card-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+        }
+
+        * {
+            padding: 0;
+            margin: 0;
+            box-sizing: border-box;
+            user-select: none !important;
+            font-family: 'Pretendard JP', 'Pretendard', sans-serif, Arial;
+            color: var(--text-color);
+        }
+
+        html {
+            width: 100%;
+            height: 100%;
+        }
+
+        body {
+            width: 100%;
+            height: 100%;
+            background-color: var(--bg-color);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 20px;
+            background-color: var(--primary-color);
+            color: white;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .header h1 {
+            color: white;
+            font-size: 24px;
+            font-weight: 700;
+        }
+
+        .header-controls {
+            display: flex;
+            gap: 10px;
+        }
+
+        .search-bar {
+            position: relative;
+            width: 250px;
+        }
+
+        .search-bar input {
+            width: 100%;
+            padding: 8px 15px;
+            border-radius: 20px;
+            border: none;
+            font-size: 14px;
+        }
+
+        .search-bar button {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            cursor: pointer;
+        }
+
+        .button {
+            padding: 8px 15px;
+            border-radius: 5px;
+            border: none;
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .button.primary {
+            background-color: white;
+            color: var(--primary-color);
+        }
+
+        .button.primary:hover {
+            background-color: #f0f0f0;
+        }
+
+        .main-content {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        .rooms-container {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .user-sidebar {
+            width: 280px;
+            padding: 20px;
+            background-color: white;
+            border-left: 1px solid #e0e0e0;
+            overflow-y: auto;
+        }
+
+        .section-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .refresh-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: var(--primary-color);
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .room-card {
+            background-color: var(--card-color);
+            border-radius: 8px;
+            padding: 15px;
+            box-shadow: var(--card-shadow);
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .room-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+
+        .room-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+
+        .room-title {
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .room-status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .status-tag {
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .status-tag.waiting {
+            background-color: #e3f2fd;
+            color: #1976d2;
+        }
+
+        .status-tag.in-progress {
+            background-color: #e8f5e9;
+            color: #388e3c;
+        }
+
+        .status-tag.full {
+            background-color: #ffebee;
+            color: #d32f2f;
+        }
+
+        .room-info {
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .room-details {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .info-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 14px;
+            color: #666;
+        }
+
+        .room-players {
+            text-align: right;
+        }
+
+        .player-count {
+            font-weight: 600;
+            font-size: 16px;
+        }
+
+        .user-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .user-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px;
+            border-radius: 5px;
+            transition: background-color 0.2s;
+        }
+
+        .user-item:hover {
+            background-color: #f5f5f5;
+        }
+
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background-color: #e0e0e0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: #555;
+            font-size: 18px;
+        }
+
+        .user-info {
+            flex: 1;
+        }
+
+        .user-name {
+            font-weight: 600;
+            margin-bottom: 2px;
+        }
+
+        .user-level {
+            font-size: 12px;
+            color: #666;
+        }
+
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            display: none;
+        }
+
+        .create-room-modal {
+            background-color: white;
+            border-radius: 8px;
+            padding: 20px;
+            width: 500px;
+            max-width: 90%;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .modal-title {
+            font-size: 20px;
+            font-weight: 600;
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 22px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+
+        .game-mode-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .game-mode-item {
+            flex: 1 0 calc(50% - 10px);
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .game-mode-item:hover {
+            border-color: var(--primary-color);
+        }
+
+        .game-mode-item.selected {
+            border-color: var(--primary-color);
+            background-color: rgba(0, 188, 212, 0.1);
+        }
+
+        .mode-name {
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        .mode-desc {
+            font-size: 12px;
+            color: #666;
+        }
+
+        .modal-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .modal-footer .button {
+            padding: 10px 20px;
+        }
+
+        .button.secondary {
+            background-color: #e0e0e0;
+            color: #333;
+        }
+
+        .button.secondary:hover {
+            background-color: #d5d5d5;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px 0;
+            color: #666;
+        }
+
+        .empty-state h3 {
+            margin-bottom: 10px;
+        }
+
+        .room-filters {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .filter-btn {
+            padding: 6px 12px;
+            border-radius: 20px;
+            border: 1px solid #ddd;
+            background-color: white;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+
+        .filter-btn.active {
+            background-color: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="header">
+        <h1>마피아 게임 로비</h1>
+        <div class="header-controls">
+            <div class="search-bar">
+                <input type="text" id="searchInput" placeholder="방 또는 플레이어 검색...">
+                <button id="searchBtn">🔍</button>
+            </div>
+            <button class="button primary" id="createRoomBtn">방 만들기</button>
+        </div>
+    </div>
+
+    <div class="main-content">
+        <div class="rooms-container">
+            <div class="section-title">
+                <span>대기중인 방</span>
+                <button class="refresh-btn" id="refreshBtn">
+                    <span>새로고침</span> 🔄
+                </button>
+            </div>
+            
+            <div class="room-filters">
+                <button class="filter-btn active" data-filter="all">전체</button>
+                <button class="filter-btn" data-filter="waiting">대기중</button>
+                <button class="filter-btn" data-filter="in-progress">게임중</button>
+            </div>
+            
+            <div id="roomsList">
+                <!-- 방 목록이 동적으로 추가됩니다 -->
+                <div class="empty-state">
+                    <h3>현재 활성화된 방이 없습니다</h3>
+                    <p>'방 만들기' 버튼을 클릭하여 새 방을 생성하세요!</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="user-sidebar">
+            <div class="section-title">접속중인 유저</div>
+            <div id="usersList" class="user-list">
+                <!-- 유저 목록이 동적으로 추가됩니다 -->
+            </div>
+        </div>
+    </div>
+
+    <!-- 방 생성 모달 -->
+    <div class="modal-overlay" id="createRoomModal">
+        <div class="create-room-modal">
+            <div class="modal-header">
+                <h2 class="modal-title">새 방 만들기</h2>
+                <button class="close-btn" id="closeModalBtn">&times;</button>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label" for="roomTitle">방 제목</label>
+                <input type="text" id="roomTitle" class="form-input" placeholder="방 제목을 입력하세요">
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">게임 모드</label>
+                <div class="game-mode-list" id="gameModeList">
+                    <!-- 게임 모드 목록이 동적으로 추가됩니다 -->
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label" for="maxPlayers">최대 인원</label>
+                <select id="maxPlayers" class="form-input">
+                    <option value="4">4명</option>
+                    <option value="6">6명</option>
+                    <option value="8" selected>8명</option>
+                    <option value="10">10명</option>
+                    <option value="12">12명</option>
+                    <option value="15">15명</option>
+                </select>
+            </div>
+            
+            <div class="modal-footer">
+                <button class="button secondary" id="cancelCreateBtn">취소</button>
+                <button class="button primary" id="confirmCreateBtn">생성하기</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 전역 변수
+        let rooms = [];
+        let users = [];
+        let selectedGameMode = null;
+        let gameModes = [];
+        let filteredRooms = [];
+        let currentFilter = 'all';
+        
+        // DOM 요소 접근
+        const roomsList = document.getElementById('roomsList');
+        const usersList = document.getElementById('usersList');
+        const createRoomBtn = document.getElementById('createRoomBtn');
+        const createRoomModal = document.getElementById('createRoomModal');
+        const closeModalBtn = document.getElementById('closeModalBtn');
+        const cancelCreateBtn = document.getElementById('cancelCreateBtn');
+        const confirmCreateBtn = document.getElementById('confirmCreateBtn');
+        const gameModeList = document.getElementById('gameModeList');
+        const searchInput = document.getElementById('searchInput');
+        const refreshBtn = document.getElementById('refreshBtn');
+        const filterBtns = document.querySelectorAll('.filter-btn');
+        
+        // 이벤트 리스너 설정
+        createRoomBtn.addEventListener('click', openCreateRoomModal);
+        closeModalBtn.addEventListener('click', closeCreateRoomModal);
+        cancelCreateBtn.addEventListener('click', closeCreateRoomModal);
+        confirmCreateBtn.addEventListener('click', createRoom);
+        refreshBtn.addEventListener('click', refreshRooms);
+        searchInput.addEventListener('input', searchRooms);
+        
+        // 필터 버튼 이벤트 설정
+        filterBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                filterBtns.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                currentFilter = btn.dataset.filter;
+                applyFilter();
+            });
+        });
+        
+        // 초기화 함수
+        function initializeLobby() {
+            // 게임 모드 데이터 로드
+            loadGameModes();
+            
+            // 방 목록과 유저 목록 로드
+            refreshRooms();
+            refreshUsers();
+        }
+        
+        // 게임 모드 로드
+        function loadGameModes() {
+            // 여기에서는 부모 창에서 게임 모드 데이터를 받아옵니다
+            parent.sendMessage({
+                type: 'requestGameModes'
+            });
+        }
+        
+        // 게임 모드 목록 렌더링
+        function renderGameModes(modes) {
+            gameModeList.innerHTML = '';
+            
+            modes.forEach(mode => {
+                const modeItem = document.createElement('div');
+                modeItem.className = 'game-mode-item';
+                modeItem.dataset.modeId = mode.id;
+                modeItem.innerHTML = `
+                    <div class="mode-name">${mode.name}</div>
+                    <div class="mode-desc">${mode.description}</div>
+                `;
+                
+                modeItem.addEventListener('click', () => {
+                    document.querySelectorAll('.game-mode-item').forEach(item => {
+                        item.classList.remove('selected');
+                    });
+                    modeItem.classList.add('selected');
+                    selectedGameMode = mode.id;
+                });
+                
+                gameModeList.appendChild(modeItem);
+            });
+        }
+        
+        // 방 목록 새로고침
+        function refreshRooms() {
+            parent.sendMessage({
+                type: 'requestRooms'
+            });
+        }
+        
+        // 유저 목록 새로고침
+        function refreshUsers() {
+            parent.sendMessage({
+                type: 'requestUsers'
+            });
+        }
+        
+        // 방 목록 렌더링
+        function renderRooms(roomsData) {
+            rooms = roomsData;
+            applyFilter();
+        }
+        
+        // 필터 적용
+        function applyFilter() {
+            if (currentFilter === 'all') {
+                filteredRooms = [...rooms];
+            } else if (currentFilter === 'waiting') {
+                filteredRooms = rooms.filter(room => room.state === 'WAITING');
+            } else if (currentFilter === 'in-progress') {
+                filteredRooms = rooms.filter(room => room.state === 'IN_PROGRESS');
+            }
+            
+            updateRoomsList();
+        }
+        
+        // 검색 기능
+        function searchRooms() {
+            const searchTerm = searchInput.value.toLowerCase().trim();
+            
+            if (searchTerm === '') {
+                applyFilter();
+                return;
+            }
+            
+            filteredRooms = rooms.filter(room => 
+                room.title.toLowerCase().includes(searchTerm) || 
+                room.host.name.toLowerCase().includes(searchTerm)
+            );
+            
+            updateRoomsList();
+        }
+        
+        // 방 목록 업데이트 (UI)
+        function updateRoomsList() {
+            roomsList.innerHTML = '';
+            
+            if (filteredRooms.length === 0) {
+                roomsList.innerHTML = `
+                    <div class="empty-state">
+                        <h3>조건에 맞는 방이 없습니다</h3>
+                        <p>'방 만들기' 버튼을 클릭하여 새 방을 생성하세요!</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            filteredRooms.forEach(room => {
+                const roomCard = document.createElement('div');
+                roomCard.className = 'room-card';
+                roomCard.dataset.roomId = room.id;
+                
+                let statusClass = 'waiting';
+                let statusText = '대기중';
+                
+                if (room.state === 'IN_PROGRESS') {
+                    statusClass = 'in-progress';
+                    statusText = '게임중';
+                } else if (room.players.length >= room.maxPlayers) {
+                    statusClass = 'full';
+                    statusText = '정원초과';
+                }
+                
+                roomCard.innerHTML = `
+                    <div class="room-header">
+                        <div class="room-title">${room.title}</div>
+                        <div class="room-status">
+                            <span class="status-tag ${statusClass}">${statusText}</span>
+                        </div>
+                    </div>
+                    <div class="room-info">
+                        <div class="room-details">
+                            <div class="info-item">
+                                <span>방장:</span> ${room.host.name}
+                            </div>
+                            <div class="info-item">
+                                <span>모드:</span> ${room.gameMode}
+                            </div>
+                        </div>
+                        <div class="room-players">
+                            <div class="player-count">${room.players.length}/${room.maxPlayers}</div>
+                            <div class="info-item">참가자</div>
+                        </div>
+                    </div>
+                `;
+                
+                roomCard.addEventListener('click', () => {
+                    joinRoom(room.id);
+                });
+                
+                roomsList.appendChild(roomCard);
+            });
+        }
+        
+        // 유저 목록 렌더링
+        function renderUsers(usersData) {
+            users = usersData;
+            usersList.innerHTML = '';
+            
+            users.forEach(user => {
+                const userItem = document.createElement('div');
+                userItem.className = 'user-item';
+                
+                // 이니셜 생성 (이름의 첫 글자)
+                const initial = user.name.charAt(0).toUpperCase();
+                
+                userItem.innerHTML = `
+                    <div class="user-avatar">${initial}</div>
+                    <div class="user-info">
+                        <div class="user-name">${user.name}</div>
+                        <div class="user-level">Lv. ${user.level || 1}</div>
+                    </div>
+                `;
+                
+                usersList.appendChild(userItem);
+            });
+        }
+        
+        // 방 생성 모달 열기
+        function openCreateRoomModal() {
+            createRoomModal.style.display = 'flex';
+            document.getElementById('roomTitle').value = '';
+            document.getElementById('maxPlayers').value = '8';
+            selectedGameMode = null;
+            
+            document.querySelectorAll('.game-mode-item').forEach(item => {
+                item.classList.remove('selected');
+            });
+        }
+        
+        // 방 생성 모달 닫기
+        function closeCreateRoomModal() {
+            createRoomModal.style.display = 'none';
+        }
+        
+        // 방 생성
+        function createRoom() {
+            const title = document.getElementById('roomTitle').value.trim();
+            const maxPlayers = parseInt(document.getElementById('maxPlayers').value);
+            
+            if (!title) {
+                alert('방 제목을 입력해주세요.');
+                return;
+            }
+            
+            if (!selectedGameMode) {
+                alert('게임 모드를 선택해주세요.');
+                return;
+            }
+            
+            parent.sendMessage({
+                type: 'createRoom',
+                data: {
+                    title,
+                    maxPlayers,
+                    gameMode: selectedGameMode
+                }
+            });
+            
+            closeCreateRoomModal();
+        }
+        
+        // 방 입장
+        function joinRoom(roomId) {
+            parent.sendMessage({
+                type: 'joinRoom',
+                roomId
+            });
+        }
+        
+        // 메시지 수신 처리
+        window.addEventListener('message', function(e) {
+            const data = e.data;
+            
+            if (data.type === 'updateRooms') {
+                renderRooms(data.rooms);
+            } else if (data.type === 'updateUsers') {
+                renderUsers(data.users);
+            } else if (data.type === 'gameModes') {
+                gameModes = data.modes;
+                renderGameModes(data.modes);
+            } else if (data.type === 'roomCreated') {
+                // 방 생성 성공 시
+                refreshRooms();
+            } else if (data.type === 'roomJoined') {
+                // 방 입장 성공 시
+                console.log('Room joined successfully', data.roomId);
+            } else if (data.type === 'error') {
+                alert(data.message);
+            }
+        });
+        
+        // 초기화
+        initializeLobby();
+    </script>
+</body>
+
+</html> 

@@ -99,7 +99,7 @@
             display: inline-block;
             white-space: nowrap;
             overflow: hidden;
-            transform: translateY(-100%);
+            animation: typing 3.5s steps(40, end), blink-caret 0.75s step-end infinite;
         }
 
         .hidden {
@@ -113,11 +113,30 @@
             width: 1px;
             left: -10000px;
         }
+
+        .start-button {
+            padding: 12px 24px;
+            background-color: #00bcd4;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            margin-top: 20px;
+        }
+
+        .start-button:hover {
+            background-color: #00acc1;
+        }
     </style>
 </head>
 
 <body class="hidden">
-    <div id="message">
+    <div class="content-box">
+        <div id="message"></div>
+        <button id="startButton" class="start-button">게임 시작</button>
     </div>
     <script type="text/javascript">
         let _isMobile = false;
@@ -232,6 +251,12 @@
             }, "*")
         }
 
+        // 게임 시작 버튼 클릭 이벤트
+        document.getElementById('startButton').addEventListener('click', function() {
+            parent.sendMessage({
+                type: 'startGame'
+            });
+        });
     </script>
 </body>
 

@@ -5,12 +5,16 @@ import { GameBase } from "../GameBase";
 import { GameState } from "./managers/gameFlow/GameFlowManager";
 import { GameRoomManager } from "./managers/gameRoom/GameRoomManager";
 import { GamePlayer } from "./types/GamePlayer";
+import { JOBS, GAME_MODES, getGameModeById } from "./types/JobTypes";
+import { GameMode } from "./gameMode/GameMode";
+import { createDefaultGameModes } from "./gameMode/defaultGameModes";
+import { JobId } from "./types/JobTypes";
 
 const ROOM_COUNT = 1;
 export class Game extends GameBase {
 	private static _instance: Game;
 
-	private mafiaGameRoomManager: GameRoomManager = new GameRoomManager(ROOM_COUNT);
+	private mafiaGameRoomManager: GameRoomManager = new GameRoomManager();
 
 	static create() {
 		if (!Game._instance) {
@@ -25,6 +29,20 @@ export class Game extends GameBase {
 		this.addOnLeavePlayerCallback(this.onLeavePlayer.bind(this));
 		this.addOnUpdateCallback(this.update.bind(this));
 		this.addOnDestroyCallback(this.onDestroy.bind(this));
+		
+		// 게임 모드 등록
+		const gameModes = createDefaultGameModes();
+		gameModes.forEach(mode => {
+			this.mafiaGameRoomManager.registerGameMode(mode);
+		});
+		
+		// 기본 게임방 생성
+		const defaultGameMode = gameModes.find(mode => mode.getId() === "classic") || gameModes[0];
+		this.mafiaGameRoomManager.createRoom({
+			title: "기본 게임방",
+			gameMode: defaultGameMode,
+			maxPlayers: 8
+		});
 	}
 
 	private onStart() {
@@ -46,10 +64,12 @@ export class Game extends GameBase {
 		player.tag.widget.main = player.showWidget("widgets/fullscreen_widget.html", "middle", 0, 0);
 		player.tag.widget.main.sendMessage({ type: "init", message: "코드 마피아" });
 
-		// 역할 카드 위젯 메시지 처리 설정
+		// 메인 위젯 메시지 처리 설정
 		player.tag.widget.main.onMessage.Add((player, data) => {
 			if (data.type === "showRoleDetail" && data.role) {
 				this.showRoleCard(player, data.role);
+			} else if (data.type === "startGame") {
+				this.showGameModeSelect(player);
 			}
 		});
 
@@ -59,7 +79,7 @@ export class Game extends GameBase {
 				"게임에 참가하시겠습니까?",
 				(res) => {
 					if (res) {
-						this.mafiaGameRoomManager.getRoom(1).addPlayer(playerId);
+						this.mafiaGameRoomManager.getRoom("1").joinPlayer(player);
 					}
 				},
 				{
@@ -70,11 +90,53 @@ export class Game extends GameBase {
 	}
 
 	/**
+	 * 게임 모드 선택 위젯을 표시합니다.
+	 * @param player 플레이어
+	 */
+	private showGameModeSelect(player: GamePlayer) {
+		// 이미 게임 모드 선택 위젯이 있으면 제거
+		if (player.tag.widget.gameModeSelect) {
+			player.tag.widget.gameModeSelect.destroy();
+		}
+		
+		// 게임 모드 선택 위젯 생성
+		player.tag.widget.gameModeSelect = player.showWidget("widgets/game_mode_select.html", "middle", 0, 0);
+		
+		// 게임 모드 정보 전송
+		player.tag.widget.gameModeSelect.sendMessage({
+			type: 'init_game_modes',
+			modes: GAME_MODES,
+			jobs: JOBS
+		});
+		
+		// 게임 모드 선택 위젯 메시지 처리
+		player.tag.widget.gameModeSelect.onMessage.Add((player, data) => {
+			if (data.type === "cancel_mode_select") {
+				player.tag.widget.gameModeSelect.destroy();
+				player.tag.widget.gameModeSelect = null;
+			} else if (data.type === "select_game_mode") {
+				const modeId = data.modeId;
+				const room = this.mafiaGameRoomManager.getRoom("1");
+				
+				// 게임 모드 설정
+				room.flowManager.setGameMode(modeId);
+				
+				// 게임 시작
+				room.flowManager.startGame();
+				
+				// 위젯 제거
+				player.tag.widget.gameModeSelect.destroy();
+				player.tag.widget.gameModeSelect = null;
+			}
+		});
+	}
+
+	/**
 	 * 역할 카드 위젯을 표시합니다.
 	 * @param player 플레이어
 	 * @param role 역할
 	 */
-	private showRoleCard(player: GamePlayer, role: string) {
+	private showRoleCard(player: GamePlayer, role: JobId | string) {
 		// 이미 역할 카드 위젯이 있으면 제거
 		if (player.tag.widget.roleCard) {
 			player.tag.widget.roleCard.destroy();
@@ -99,47 +161,32 @@ export class Game extends GameBase {
 	}
 
 	private onLeavePlayer(player: GamePlayer) {
-		// 플레이어가 속한 방에서 제거
-		const rooms = this.mafiaGameRoomManager.getAllRooms();
-		for (const [, room] of Object.entries(rooms)) {
-			const playerIndex = room.players.findIndex(p => p.id === player.id);
-			if (playerIndex !== -1) {
-				room.players.splice(playerIndex, 1);
-				break;
-			}
+		// 플레이어가 속한 방이 있으면 해당 방에서 제거
+		if (player.tag.roomInfo) {
+			const roomNum = player.tag.roomInfo.roomNum;
+			this.mafiaGameRoomManager.getRoom(roomNum.toString()).leavePlayer(player.id);
 		}
 	}
 
 	private update(dt: number) {
-		const rooms = this.mafiaGameRoomManager.getAllRooms();
-
-		for (const [, room] of Object.entries(rooms)) {
-			if (room.flowManager.state === GameState.IN_PROGRESS) {
+		// 각 방의 게임 상태 업데이트
+		for (let i = 1; i <= ROOM_COUNT; i++) {
+			const room = this.mafiaGameRoomManager.getRoom(i.toString());
+			if (room && room.flowManager.isGameInProgress()) {
+				// 타이머 업데이트
 				if (room.flowManager.phaseTimer > 0) {
 					room.flowManager.phaseTimer -= dt;
-					room.actionToRoomPlayers((player) => {
-						const gamePlayer = ScriptApp.getPlayerByID(player.id);
-						if (!gamePlayer) return;
-						showLabel(gamePlayer, "main", {
-							labelWidth: "S",
-							texts: [{ text: `⏱️ 남은 시간: ${Math.floor(room.flowManager.phaseTimer)}초`, style: { fontSize: "18px", mobileFontSize: "14px", fontWeight: 700, color: "white" } }],
-							topGapPC: -2,
-							topGapMobile: 10,
-							labelDisplayTime: 3000,
-							backgroundColor: 0x27262e,
-						});
-					});
-					if (room.flowManager.phaseTimer < 0) {
+					
+					// 타이머가 0 이하가 되면 다음 단계로 진행
+					if (room.flowManager.phaseTimer <= 0) {
 						room.flowManager.nextPhase();
 					}
-				}
-			} else {
-				if (room.players.length >= 4 && room.flowManager.state == GameState.WAITING) {
-					room.flowManager.startGame();
 				}
 			}
 		}
 	}
 
-	private onDestroy() {}
+	private onDestroy() {
+		// 게임 종료 시 필요한 정리 작업
+	}
 }
