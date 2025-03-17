@@ -368,18 +368,18 @@
 
         // 취소 버튼 클릭 이벤트
         document.getElementById('cancelButton').addEventListener('click', function() {
-            parent.sendMessage({
+            window.parent.sendMessage({
                 type: 'cancel_mode_select'
-            });
+            },"*");
         });
 
         // 선택 버튼 클릭 이벤트
         document.getElementById('selectButton').addEventListener('click', function() {
             if (selectedModeId) {
-                parent.sendMessage({
+                window.parent.sendMessage({
                     type: 'select_game_mode',
                     modeId: selectedModeId
-                });
+                },"*");
             }
         });
     </script>
