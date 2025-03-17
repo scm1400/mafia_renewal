@@ -12,7 +12,7 @@ export interface PlayerProfile {
 
 export interface PlayerTag {
 	widget: {
-		[key: string]: any;
+		[key: string]: ScriptWidget;
 	};
 	mafiaPlayer?: MafiaPlayer;
 	roomInfo?: {

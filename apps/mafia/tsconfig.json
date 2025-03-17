@@ -1,7 +1,11 @@
 {
 	"compilerOptions": {
+		"target": "ES2015",
+		"module": "ES2015", // 혹은 "commonjs", "ES2020" 등 프로젝트에 맞게
+		"moduleResolution": "node", // 또는 "nodenext"로 시도
 		"noEmit": false,
-		"isolatedModules": true
+		"isolatedModules": true,
+		"removeComments": true
 	},
 	"include": ["src", "main.ts"],
 	"exclude": ["node_modules"]
