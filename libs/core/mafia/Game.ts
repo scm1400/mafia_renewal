@@ -713,7 +713,7 @@ export class Game extends GameBase {
 	 * @param player 나가는 플레이어
 	 */
 	protected onLeavePlayer(player: GamePlayer): void {
-		console.log(`[Game] Player ${player.name} (${player.id}) 퇴장`);
+		ScriptApp.sayToStaffs(`[Game] Player ${player.name} (${player.id}) 퇴장`);
 
 		// 방에 있는 경우 방에서도 퇴장 처리
 		if (player.tag?.roomInfo) {
@@ -920,6 +920,20 @@ export class Game extends GameBase {
 					this.notifyHostChanged(room, hostPlayer);
 				}
 			}
+		});
+
+		// 방 생성 이벤트
+		this.mafiaGameRoomManager.on("roomCreated", (room) => {
+			// 모든 플레이어에게 방 목록 업데이트 전송
+			this.updateRoomInfo();
+			ScriptApp.sayToStaffs(`[Game] 새로운 방이 생성되었습니다: ${room.id} - ${room.title}`);
+		});
+
+		// 플레이어 입장 이벤트
+		this.mafiaGameRoomManager.on("playerJoinedRoom", (room, player) => {
+			// 방에 플레이어가 입장할 때도 방 목록 업데이트
+			this.updateRoomInfo();
+			ScriptApp.sayToStaffs(`[Game] 플레이어 ${player.name}가 방 ${room.id}에 입장했습니다.`);
 		});
 
 		// 플레이어 강퇴 이벤트

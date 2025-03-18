@@ -162,6 +162,163 @@
             background-color: #fbc02d;
             color: white;
         }
+        
+        /* 추가 역할 스타일 */
+        .spy {
+            background-color: #f3e5f5;
+        }
+
+        .spy .role-title, .spy .ability-title {
+            color: #9c27b0;
+        }
+
+        .spy .role-icon {
+            background-color: #9c27b0;
+            color: white;
+        }
+        
+        .medium {
+            background-color: #e0f7fa;
+        }
+
+        .medium .role-title, .medium .ability-title {
+            color: #00acc1;
+        }
+
+        .medium .role-icon {
+            background-color: #00acc1;
+            color: white;
+        }
+        
+        .soldier {
+            background-color: #e8eaf6;
+        }
+
+        .soldier .role-title, .soldier .ability-title {
+            color: #3f51b5;
+        }
+
+        .soldier .role-icon {
+            background-color: #3f51b5;
+            color: white;
+        }
+        
+        .politician {
+            background-color: #efebe9;
+        }
+
+        .politician .role-title, .politician .ability-title {
+            color: #795548;
+        }
+
+        .politician .role-icon {
+            background-color: #795548;
+            color: white;
+        }
+        
+        .lover {
+            background-color: #fce4ec;
+        }
+
+        .lover .role-title, .lover .ability-title {
+            color: #e91e63;
+        }
+
+        .lover .role-icon {
+            background-color: #e91e63;
+            color: white;
+        }
+        
+        .journalist {
+            background-color: #fff3e0;
+        }
+
+        .journalist .role-title, .journalist .ability-title {
+            color: #ff9800;
+        }
+
+        .journalist .role-icon {
+            background-color: #ff9800;
+            color: white;
+        }
+        
+        .werewolf {
+            background-color: #fafafa;
+        }
+
+        .werewolf .role-title, .werewolf .ability-title {
+            color: #616161;
+        }
+
+        .werewolf .role-icon {
+            background-color: #616161;
+            color: white;
+        }
+        
+        .gangster {
+            background-color: #eceff1;
+        }
+
+        .gangster .role-title, .gangster .ability-title {
+            color: #607d8b;
+        }
+
+        .gangster .role-icon {
+            background-color: #607d8b;
+            color: white;
+        }
+        
+        .detective {
+            background-color: #f1f8e9;
+        }
+
+        .detective .role-title, .detective .ability-title {
+            color: #689f38;
+        }
+
+        .detective .role-icon {
+            background-color: #689f38;
+            color: white;
+        }
+        
+        .gravedigger {
+            background-color: #e0f2f1;
+        }
+
+        .gravedigger .role-title, .gravedigger .ability-title {
+            color: #00897b;
+        }
+
+        .gravedigger .role-icon {
+            background-color: #00897b;
+            color: white;
+        }
+        
+        .terrorist {
+            background-color: #f9fbe7;
+        }
+
+        .terrorist .role-title, .terrorist .ability-title {
+            color: #827717;
+        }
+
+        .terrorist .role-icon {
+            background-color: #827717;
+            color: white;
+        }
+        
+        .madam {
+            background-color: #fff1f1;
+        }
+
+        .madam .role-title, .madam .ability-title {
+            color: #d81b60;
+        }
+
+        .madam .role-icon {
+            background-color: #d81b60;
+            color: white;
+        }
 
         .close-button {
             position: absolute;
@@ -201,33 +358,117 @@
 
     <script>
         let roleData = {
-            "MAFIA": {
+            "mafia": {
                 title: "마피아",
                 icon: "🔪",
                 description: "밤에 시민을 죽이는 역할입니다. 다른 마피아와 협력하여 시민들을 모두 제거하세요.",
                 abilityTitle: "암살",
                 abilityDescription: "밤마다 한 명의 시민을 선택하여 제거할 수 있습니다."
             },
-            "POLICE": {
+            "police": {
                 title: "경찰",
                 icon: "🔍",
                 description: "밤에 한 명의 정체를 확인할 수 있는 역할입니다. 마피아를 찾아 시민들을 보호하세요.",
                 abilityTitle: "조사",
                 abilityDescription: "밤마다 한 명을 선택하여 마피아인지 아닌지 확인할 수 있습니다."
             },
-            "DOCTOR": {
+            "doctor": {
                 title: "의사",
                 icon: "💉",
                 description: "밤에 한 명을 보호할 수 있는 역할입니다. 마피아의 공격으로부터 시민을 구하세요.",
                 abilityTitle: "치료",
                 abilityDescription: "밤마다 한 명을 선택하여 마피아의 공격으로부터 보호할 수 있습니다."
             },
-            "CITIZEN": {
+            "citizen": {
                 title: "시민",
                 icon: "👨‍👩‍👧‍👦",
                 description: "특별한 능력은 없지만, 투표를 통해 마피아를 찾아내는 역할입니다.",
                 abilityTitle: "투표",
                 abilityDescription: "낮 시간에 의심되는 사람에게 투표하여 마피아를 찾아내세요."
+            },
+            "spy": {
+                title: "스파이",
+                icon: "🕵️",
+                description: "마피아 팀의 정보원입니다.",
+                abilityTitle: "접선",
+                abilityDescription: "접선 전 밤마다 플레이어 한 명을 골라, 마피아인지 확인 할 수 있다."
+            },
+            "medium": {
+                title: "영매",
+                icon: "👻",
+                description: "죽은 플레이어들의 대화를 들을 수 있습니다.",
+                abilityTitle: "영매술",
+                abilityDescription: "죽은 자들의 대화를 들을 수 있다."
+            },
+            "soldier": {
+                title: "군인",
+                icon: "🪖",
+                description: "마피아의 공격을 한 번 방어할 수 있습니다.",
+                abilityTitle: "방탄",
+                abilityDescription: "마피아의 공격을 한 차례 버텨낼 수 있다."
+            },
+            "politician": {
+                title: "정치인",
+                icon: "🗣️",
+                description: "투표로 처형되지 않습니다.",
+                abilityTitle: "처세",
+                abilityDescription: "플레이어 간 투표를 통해 처형당하지 않는다."
+            },
+            "lover": {
+                title: "연인",
+                icon: "❤️",
+                description: "밤에 다른 연인과 대화할 수 있습니다.",
+                abilityTitle: "연애",
+                abilityDescription: "밤만 되면 둘만의 대화가 가능하다."
+            },
+            "journalist": {
+                title: "기자",
+                icon: "📰",
+                description: "플레이어의 직업을 조사하여 공개합니다.",
+                abilityTitle: "특종",
+                abilityDescription: "밤에 한 명의 플레이어의 직업을 조사하여 다음 날 아침 모든 플레이어에게 해당 사실을 알린다."
+            },
+            "werewolf": {
+                title: "짐승인간",
+                icon: "🐺",
+                description: "마피아가 모두 사망하면 능력이 활성화됩니다.",
+                abilityTitle: "갈망",
+                abilityDescription: "밤에 선택한 플레이어가 마피아에게 살해당할 경우 마피아에게 길들여지며, 이후 마피아가 모두 사망하면 밤마다 플레이어를 제거할 수 있다."
+            },
+            "gangster": {
+                title: "건달",
+                icon: "👊",
+                description: "플레이어의 투표를 방해합니다.",
+                abilityTitle: "공갈",
+                abilityDescription: "밤마다 한 명을 선택하여, 다음날 투표시 해당 플레이어가 투표를 하지 못하도록 만든다."
+            },
+            "detective": {
+                title: "사립탐정",
+                icon: "🕵️‍♂️",
+                description: "플레이어의 능력 사용을 추적합니다.",
+                abilityTitle: "추리",
+                abilityDescription: "밤마다 플레이어 한 명을 조사하여 해당 플레이어가 누구에게 능력을 사용하였는지 알아낼 수 있다."
+            },
+            "gravedigger": {
+                title: "도굴꾼",
+                icon: "⚰️",
+                description: "첫날 마피아에게 살해당한 플레이어의 직업을 얻습니다.",
+                abilityTitle: "도굴",
+                abilityDescription: "첫날 마피아에게 살해당한 플레이어의 직업을 얻는다."
+            },
+            "terrorist": {
+                title: "테러리스트",
+                icon: "💣",
+                description: "처형될 때 다른 플레이어를 함께 처형합니다.",
+                abilityTitle: "자폭",
+                abilityDescription: "투표로 인해 처형될 때, 플레이어 한 명을 선택하여 같이 처형될 수 있다."
+            },
+            "madam": {
+                title: "마담",
+                icon: "💋",
+                description: "마피아와 접촉하여 대화할 수 있습니다.",
+                abilityTitle: "접선",
+                abilityDescription: "마피아를 유혹할 경우, 서로의 존재를 알아차리고 밤에 대화할 수 있게 된다."
             }
         };
 
@@ -236,7 +477,7 @@
         let $contentWrapper;
 
         function closeWidget() {
-            window.parent.postMessage({ type: "close" }, "*");
+            hideWidget();
         }
 
         function hideWidget() {
@@ -278,9 +519,44 @@
                 height: document.body.offsetHeight + 10,
             }, "*")
         }
+        
+        // 주어진 역할 ID에 맞는 역할 정보 설정
+        function updateRoleUI(roleId) {
+            // 역할 ID가 대문자라면 소문자로 변환
+            const role = roleId ? roleId.toLowerCase() : '';
+            const roleInfo = roleData[role];
+            
+            console.log(`역할 ID: ${roleId}, 변환된 ID: ${role}, 정보 찾음: ${roleInfo ? '예' : '아니오'}`);
+            
+            if (roleInfo) {
+                document.getElementById('role-title').textContent = roleInfo.title;
+                document.getElementById('role-icon').textContent = roleInfo.icon;
+                document.getElementById('role-description').textContent = roleInfo.description;
+                document.getElementById('ability-title').textContent = roleInfo.abilityTitle;
+                document.getElementById('ability-description').textContent = roleInfo.abilityDescription;
+                
+                // 역할에 따른 클래스 추가
+                const roleCard = document.querySelector('.role-card');
+                roleCard.classList.remove('mafia', 'police', 'doctor', 'citizen', 'spy', 'medium',
+                                        'soldier', 'politician', 'lover', 'journalist', 'werewolf',
+                                        'gangster', 'detective', 'gravedigger', 'terrorist', 'madam');
+                roleCard.classList.add(role);
+            } else {
+                console.error(`알 수 없는 역할: ${roleId}`);
+                document.getElementById('role-title').textContent = `알 수 없는 역할 (${roleId})`;
+                document.getElementById('role-icon').textContent = "❓";
+                document.getElementById('role-description').textContent = "직업 정보를 찾을 수 없습니다.";
+                document.getElementById('ability-title').textContent = "알 수 없는 능력";
+                document.getElementById('ability-description').textContent = "능력 정보를 찾을 수 없습니다.";
+            }
+            
+            // 위젯을 표시
+            revealWidget();
+        }
 
         window.addEventListener('message', function(e) {
             const data = e.data;
+            
             if(data.type === "setWidget"){
                 _isMobile = data.isMobile;
                 _isTablet = data.isTablet;
@@ -293,21 +569,50 @@
                     alert("An error occurred:", error);
                 }
             } else if (data.type === 'setRole') {
-                const role = data.role;
-                const roleInfo = roleData[role];
+                // 기존 setRole 타입 처리 (legacy)
+                updateRoleUI(data.role);
+            } else if (data.type === 'role_info') {
+                // GameFlowManager에서 사용하는 role_info 타입 처리
+                console.log("역할 정보 수신:", data);
                 
-                if (roleInfo) {
-                    document.getElementById('role-title').textContent = roleInfo.title;
-                    document.getElementById('role-icon').textContent = roleInfo.icon;
-                    document.getElementById('role-description').textContent = roleInfo.description;
-                    document.getElementById('ability-title').textContent = roleInfo.abilityTitle;
-                    document.getElementById('ability-description').textContent = roleInfo.abilityDescription;
-                    
-                    // 역할에 따른 클래스 추가
-                    const roleCard = document.querySelector('.role-card');
-                    roleCard.classList.remove('mafia', 'police', 'doctor', 'citizen');
-                    roleCard.classList.add(role.toLowerCase());
+                // 서버에서 전달한 역할 정보 사용
+                const role = data.role.toLowerCase();
+                
+                // roleData에 없는 직업이라면 동적으로 추가
+                if (!roleData[role]) {
+                    roleData[role] = {
+                        title: data.role,
+                        icon: data.icon || "❓",
+                        description: data.description || "설명 없음",
+                        abilityTitle: "능력",
+                        abilityDescription: data.ability || "능력 설명 없음"
+                    };
                 }
+                
+                // UI 업데이트
+                document.getElementById('role-title').textContent = data.role;
+                document.getElementById('role-icon').textContent = data.icon || "❓";
+                document.getElementById('role-description').textContent = data.description || "설명 없음";
+                document.getElementById('ability-title').textContent = "능력";
+                document.getElementById('ability-description').textContent = data.ability || "능력 설명 없음";
+                
+                // 팀에 따라 스타일 조정
+                const roleCard = document.querySelector('.role-card');
+                roleCard.classList.remove('mafia', 'police', 'doctor', 'citizen', 'spy', 'medium',
+                                        'soldier', 'politician', 'lover', 'journalist', 'werewolf',
+                                        'gangster', 'detective', 'gravedigger', 'terrorist', 'madam');
+                
+                if (data.team === "마피아팀") {
+                    roleCard.classList.add('mafia');
+                } else if (data.team === "시민팀") {
+                    roleCard.classList.add('citizen');
+                } else {
+                    // 해당 역할 ID로 클래스 추가
+                    roleCard.classList.add(role);
+                }
+                
+                // 위젯 표시
+                revealWidget();
             } else if (data.type === "hide") {
                 hideWidget();
             } else if (data.type === "reveal") {

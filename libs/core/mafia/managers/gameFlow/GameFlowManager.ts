@@ -969,7 +969,7 @@ export class GameFlowManager {
 		this.state = GameState.ENDED;
 
 		// 승리 메시지 표시
-		let winMessage = winnerTeam === JobTeam.MAFIA ? "마피아 승리!" : "시민 승리!";
+		const winMessage = winnerTeam === JobTeam.MAFIA ? "마피아 승리!" : "시민 승리!";
 		this.showRoomLabel(winMessage, 5000);
 
 		// 모든 플레이어에게 결과 메시지 전송
