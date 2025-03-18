@@ -440,7 +440,7 @@
 </head>
 
 <body>
-    <div class="lobby-container">
+    <div id="widget-container" class="lobby-container">
         <div class="header">
             <h1>마피아 게임 로비</h1>
             <div class="header-controls">
@@ -525,7 +525,7 @@
     </div>
 
     <script>
-        // 전역 변수
+        // 전역 변수 정의
         let rooms = [];
         let users = [];
         let selectedGameMode = null;
@@ -533,8 +533,17 @@
         let filteredRooms = [];
         let currentFilter = 'all';
         let refreshInterval = null; // 주기적 갱신을 위한 인터벌 변수
-
-        // DOM 요소 접근
+        let isVisible = false;
+        let isMobile = false;
+        let isTablet = false;
+        let lastRequestTime = { // 마지막 요청 시간을 추적하기 위한 객체
+            rooms: 0,
+            users: 0,
+            gameModes: 0
+        };
+        let requestCooldown = 3000; // 요청 간 최소 간격 (밀리초)
+        
+        // DOM 요소 참조
         const roomsList = document.getElementById('roomsList');
         const usersList = document.getElementById('usersList');
         const createRoomBtn = document.getElementById('createRoomBtn');
@@ -546,19 +555,21 @@
         const searchInput = document.getElementById('searchInput');
         const refreshBtn = document.getElementById('refreshBtn');
         const filterBtns = document.querySelectorAll('.filter-btn');
-
+        
         // 이벤트 리스너 설정
-        createRoomBtn.addEventListener('click', openCreateRoomModal);
-        closeModalBtn.addEventListener('click', closeCreateRoomModal);
-        cancelCreateBtn.addEventListener('click', closeCreateRoomModal);
-        confirmCreateBtn.addEventListener('click', createRoom);
+        createRoomBtn.addEventListener('click', showCreateRoomModal);
+        closeModalBtn.addEventListener('click', hideCreateRoomModal);
+        cancelCreateBtn.addEventListener('click', hideCreateRoomModal);
+        confirmCreateBtn.addEventListener('click', handleCreateRoom);
         refreshBtn.addEventListener('click', () => {
-            // 수동 갱신 - 방 목록과 유저 목록 모두 갱신
-            refreshRooms();
-            refreshUsers();
+            // 수동 갱신 - 방 목록과 유저 목록 모두 갱신 (딜레이 적용)
+            requestRoomsWithDelay();
+            requestUsersWithDelay();
         });
+        
+        // 검색 기능
         searchInput.addEventListener('input', searchRooms);
-
+        
         // 필터 버튼 이벤트 설정
         filterBtns.forEach(btn => {
             btn.addEventListener('click', () => {
@@ -569,43 +580,187 @@
             });
         });
 
-        // 초기화 함수
-        function initializeLobby() {
-            // 게임 모드 데이터 로드
-            loadGameModes();
-
-            // 방 목록과 유저 목록 로드 (초기 한 번만 요청)
-            refreshRooms();
-            refreshUsers();
+        // 위젯 숨김 처리
+        function hideWidget() {
+            document.getElementById('widget-container').style.display = 'none';
+            isVisible = false;
             
-            // 주기적 업데이트를 위한 타이머는 사용하지 않음 (서버에서 필요할 때마다 업데이트 전송)
-            // refreshInterval = setInterval(() => {
-            //     refreshUsers();
-            //     refreshRooms();
-            // }, 5000);
-        }
-
-        // 게임 모드 로드
-        function loadGameModes() {
-            // 여기에서는 부모 창에서 게임 모드 데이터를 받아옵니다
             window.parent.postMessage({
-                type: 'requestGameModes'
+                type: "WidgetRearrange",
+                width: "0px",
+                height: "0px",
             }, "*");
+            window.parent.focus();
         }
 
-        // 게임 모드 목록 렌더링
-        function renderGameModes(modes) {
-            gameModeList.innerHTML = '';
+        // 위젯 표시 처리
+        function revealWidget() {
+            document.getElementById('widget-container').style.display = 'flex';
+            isVisible = true;
+            
+            if (isMobile) {
+                const rtcAndNotchHeight = 160 + parseInt(getComputedStyle(document.documentElement,).getPropertyValue("--sat"));
+                window.parent.postMessage({
+                    type: 'WidgetRearrange',
+                    anchor: 'middle',
+                    height: '100%',
+                    width: '100%',
+                    top: `-${parseInt(0)}px`
+                }, '*');
+            } else {
+                window.parent.postMessage({
+                    type: "WidgetRearrange",
+                    anchor: "middle",
+                    width: `100%`,
+                    height: `100%`,
+                }, "*");
+            }
+        }
 
-            modes.forEach(mode => {
+        // 메시지 전송 함수
+        function sendMessage(message) {
+            window.parent.postMessage(message, "*");
+        }
+        
+        // 방 생성 모달 표시
+        function showCreateRoomModal() {
+            if (createRoomModal) {
+                createRoomModal.style.display = 'flex';
+            }
+            selectedGameMode = null;
+            gameModeList.innerHTML = '';
+            
+            // 모달이 열릴 때 게임 모드 정보를 요청
+            requestGameModesWithDelay();
+            
+            // 만약 gameModes가 비어있다면 콘솔에 로그 남기기
+            if (gameModes.length === 0) {
+                console.log("게임 모드 정보가 없습니다. 서버에서 정보를 요청합니다.");
+                // 쿨다운과 상관없이 강제로 요청
+                lastRequestTime.gameModes = 0;
+                sendMessage({ type: 'requestGameModes' });
+                
+                // 5초 후에도 게임 모드 정보가 없다면 재시도 또는 에러 메시지 표시
+                setTimeout(() => {
+                    if (gameModes.length === 0 && createRoomModal && createRoomModal.style.display === 'flex') {
+                        console.log("게임 모드 정보 요청 타임아웃. 재시도합니다.");
+                        sendMessage({ type: 'requestGameModes' });
+                        
+                        // 추가 5초 후에도 정보가 없다면 오류 메시지 표시
+                        setTimeout(() => {
+                            if (gameModes.length === 0 && createRoomModal && createRoomModal.style.display === 'flex') {
+                                const errorMsg = document.createElement('div');
+                                errorMsg.className = 'empty-state';
+                                errorMsg.style.padding = '20px';
+                                errorMsg.style.color = 'red';
+                                errorMsg.innerHTML = `
+                                    <h3>게임 모드 정보를 불러오지 못했습니다</h3>
+                                    <p>서버 연결을 확인해주세요. <button id="retryGameModes" style="padding: 5px 10px; margin-top: 10px;">다시 시도</button></p>
+                                `;
+                                gameModeList.innerHTML = '';
+                                gameModeList.appendChild(errorMsg);
+                                
+                                // 다시 시도 버튼 이벤트 설정
+                                document.getElementById('retryGameModes').addEventListener('click', () => {
+                                    renderGameModes(); // 로딩 메시지 다시 표시
+                                    sendMessage({ type: 'requestGameModes' });
+                                });
+                            }
+                        }, 5000);
+                    }
+                }, 5000);
+            } else {
+                console.log("게임 모드 정보 사용 가능: ", gameModes.length + "개");
+            }
+            
+            renderGameModes();
+        }
+        
+        // 방 생성 모달 숨김
+        function hideCreateRoomModal() {
+            if (createRoomModal) {
+                createRoomModal.style.display = 'none';
+            }
+        }
+        
+        // 방 생성 처리
+        function handleCreateRoom() {
+            const title = document.getElementById('roomTitle').value.trim();
+            const maxPlayers = parseInt(document.getElementById('maxPlayers').value);
+            
+            if (!title) {
+                showError('방 제목을 입력해주세요.');
+                return;
+            }
+            
+            if (!selectedGameMode) {
+                showError('게임 모드를 선택해주세요.');
+                return;
+            }
+            
+            sendMessage({
+                type: 'createRoom',
+                data: {
+                    title,
+                    maxPlayers,
+                    gameMode: selectedGameMode
+                }
+            });
+            
+            hideCreateRoomModal();
+        }
+        
+        // 방 목록 업데이트
+        function updateRooms(roomsData) {
+            rooms = roomsData;
+            applyFilter();
+        }
+        
+        // 유저 목록 업데이트
+        function updateUsers(usersData) {
+            users = usersData;
+            renderUsers();
+        }
+        
+        // 게임 모드 업데이트
+        function updateGameModes(modes) {
+            gameModes = modes;
+            renderGameModes();
+        }
+        
+        // 게임 모드 렌더링
+        function renderGameModes() {
+            if (!gameModeList) return;
+            
+            gameModeList.innerHTML = '';
+            
+            // 게임 모드 데이터가 없는 경우 로딩 메시지 표시
+            if (gameModes.length === 0) {
+                const loadingMsg = document.createElement('div');
+                loadingMsg.className = 'empty-state';
+                loadingMsg.style.padding = '20px';
+                loadingMsg.innerHTML = `
+                    <h3>게임 모드 정보를 불러오는 중...</h3>
+                    <p>잠시만 기다려주세요.</p>
+                `;
+                gameModeList.appendChild(loadingMsg);
+                return;
+            }
+            
+            gameModes.forEach(mode => {
                 const modeItem = document.createElement('div');
                 modeItem.className = 'game-mode-item';
                 modeItem.dataset.modeId = mode.id;
+                
+                if (selectedGameMode === mode.id) {
+                    modeItem.classList.add('selected');
+                }
+                
                 modeItem.innerHTML = `
                     <div class="mode-name">${mode.name}</div>
                     <div class="mode-desc">${mode.description}</div>
                 `;
-
+                
                 modeItem.addEventListener('click', () => {
                     document.querySelectorAll('.game-mode-item').forEach(item => {
                         item.classList.remove('selected');
@@ -613,31 +768,47 @@
                     modeItem.classList.add('selected');
                     selectedGameMode = mode.id;
                 });
-
+                
                 gameModeList.appendChild(modeItem);
             });
         }
-
-        // 방 목록 새로고침
-        function refreshRooms() {
-            window.parent.postMessage({
-                type: 'requestRooms'
-            }, "*");
+        
+        // 유저 렌더링
+        function renderUsers() {
+            if (!usersList) return;
+            
+            usersList.innerHTML = '';
+            
+            if (users.length === 0) {
+                const emptyMsg = document.createElement('div');
+                emptyMsg.className = 'empty-state';
+                emptyMsg.innerHTML = `
+                    <h3>접속한 유저가 없습니다.</h3>
+                    <p>'방 만들기' 버튼을 클릭하여 새 방을 생성하세요!</p>
+                `;
+                usersList.appendChild(emptyMsg);
+                return;
+            }
+            
+            users.forEach(user => {
+                const userItem = document.createElement('div');
+                userItem.className = 'user-item';
+                userItem.dataset.userId = user.id;
+                
+                userItem.innerHTML = `
+                    <div class="user-avatar">
+                        <span class="avatar-initial">${user.name.charAt(0)}</span>
+                    </div>
+                    <div class="user-info">
+                        <div class="user-name">${user.name}</div>
+                        <div class="user-level">Lv. ${user.level || 1}</div>
+                    </div>
+                `;
+                
+                usersList.appendChild(userItem);
+            });
         }
-
-        // 유저 목록 새로고침
-        function refreshUsers() {
-            window.parent.postMessage({
-                type: 'requestUsers'
-            }, "*");
-        }
-
-        // 방 목록 렌더링
-        function renderRooms(roomsData) {
-            rooms = roomsData;
-            applyFilter();
-        }
-
+        
         // 필터 적용
         function applyFilter() {
             if (currentFilter === 'all') {
@@ -647,31 +818,31 @@
             } else if (currentFilter === 'in-progress') {
                 filteredRooms = rooms.filter(room => room.state === 'IN_PROGRESS');
             }
-
+            
             updateRoomsList();
         }
-
+        
         // 검색 기능
         function searchRooms() {
             const searchTerm = searchInput.value.toLowerCase().trim();
-
+            
             if (searchTerm === '') {
                 applyFilter();
                 return;
             }
-
+            
             filteredRooms = rooms.filter(room =>
                 room.title.toLowerCase().includes(searchTerm) ||
                 room.host.name.toLowerCase().includes(searchTerm)
             );
-
+            
             updateRoomsList();
         }
-
+        
         // 방 목록 업데이트 (UI)
         function updateRoomsList() {
             roomsList.innerHTML = '';
-
+            
             if (filteredRooms.length === 0) {
                 roomsList.innerHTML = `
                     <div class="empty-state">
@@ -681,15 +852,15 @@
                 `;
                 return;
             }
-
+            
             filteredRooms.forEach(room => {
                 const roomCard = document.createElement('div');
                 roomCard.className = 'room-card';
                 roomCard.dataset.roomId = room.id;
-
+                
                 let statusClass = 'waiting';
                 let statusText = '대기중';
-
+                
                 if (room.state === 'IN_PROGRESS') {
                     statusClass = 'in-progress';
                     statusText = '게임중';
@@ -697,7 +868,7 @@
                     statusClass = 'full';
                     statusText = '정원초과';
                 }
-
+                
                 roomCard.innerHTML = `
                     <div class="room-header">
                         <div class="room-title">${room.title}</div>
@@ -720,184 +891,160 @@
                         </div>
                     </div>
                 `;
-
+                
                 roomCard.addEventListener('click', () => {
                     joinRoom(room.id);
                 });
-
+                
                 roomsList.appendChild(roomCard);
             });
         }
-
-        // 유저 목록 렌더링
-        function renderUsers(usersData) {
-            users = usersData;
-            usersList.innerHTML = '';
-
-            users.forEach(user => {
-                const userItem = document.createElement('div');
-                userItem.className = 'user-item';
-
-                // 이니셜 생성 (이름의 첫 글자)
-                const initial = user.name.charAt(0).toUpperCase();
-
-                userItem.innerHTML = `
-                    <div class="user-avatar">${initial}</div>
-                    <div class="user-info">
-                        <div class="user-name">${user.name}</div>
-                        <div class="user-level">Lv. ${user.level || 1}</div>
-                    </div>
-                `;
-
-                usersList.appendChild(userItem);
-            });
-        }
-
-        // 방 생성 모달 열기
-        function openCreateRoomModal() {
-            createRoomModal.style.display = 'flex';
-            document.getElementById('roomTitle').value = '';
-            document.getElementById('maxPlayers').value = '8';
-            selectedGameMode = null;
-
-            document.querySelectorAll('.game-mode-item').forEach(item => {
-                item.classList.remove('selected');
-            });
-        }
-
-        // 방 생성 모달 닫기
-        function closeCreateRoomModal() {
-            createRoomModal.style.display = 'none';
-        }
-
-        // 방 생성
-        function createRoom() {
-            const title = document.getElementById('roomTitle').value.trim();
-            const maxPlayers = parseInt(document.getElementById('maxPlayers').value);
-
-            if (!title) {
-                alert('방 제목을 입력해주세요.');
-                return;
-            }
-
-            if (!selectedGameMode) {
-                alert('게임 모드를 선택해주세요.');
-                return;
-            }
-
-            window.parent.postMessage({
-                type: 'createRoom',
-                data: {
-                    title,
-                    maxPlayers,
-                    gameMode: selectedGameMode
-                }
-            }, "*");
-
-            closeCreateRoomModal();
-        }
-
+        
         // 방 입장
         function joinRoom(roomId) {
-            window.parent.postMessage({
+            sendMessage({
                 type: 'joinRoom',
                 roomId
-            }, "*");
+            });
+        }
+        
+        // 에러 메시지 표시
+        function showError(message) {
+            alert(`오류: ${message}`);
+        }
+        
+        // 알림 메시지 표시
+        function showNotification(message) {
+            // 알림 UI 구현
+            const notification = document.createElement('div');
+            notification.className = 'notification';
+            notification.textContent = message;
+            
+            document.body.appendChild(notification);
+            
+            // 3초 후 자동 제거
+            setTimeout(() => {
+                notification.classList.add('fade-out');
+                setTimeout(() => {
+                    notification.remove();
+                }, 300);
+            }, 3000);
+        }
+
+        // 딜레이를 적용한 요청 함수들
+        function requestRoomsWithDelay() {
+            const now = Date.now();
+            if (now - lastRequestTime.rooms >= requestCooldown) {
+                lastRequestTime.rooms = now;
+                sendMessage({ type: 'requestRooms' });
+            } else {
+                console.log(`방 목록 요청 쿨다운 중 (${requestCooldown - (now - lastRequestTime.rooms)}ms 남음)`);
+            }
+        }
+
+        function requestUsersWithDelay() {
+            const now = Date.now();
+            if (now - lastRequestTime.users >= requestCooldown) {
+                lastRequestTime.users = now;
+                sendMessage({ type: 'requestUsers' });
+            } else {
+                console.log(`유저 목록 요청 쿨다운 중 (${requestCooldown - (now - lastRequestTime.users)}ms 남음)`);
+            }
+        }
+
+        function requestGameModesWithDelay() {
+            const now = Date.now();
+            if (now - lastRequestTime.gameModes >= requestCooldown) {
+                lastRequestTime.gameModes = now;
+                sendMessage({ type: 'requestGameModes' });
+            } else {
+                console.log(`게임 모드 정보 요청 쿨다운 중 (${requestCooldown - (now - lastRequestTime.gameModes)}ms 남음)`);
+            }
         }
 
         // 메시지 수신 처리
         window.addEventListener('message', function (e) {
             const data = e.data;
-
+            
             if (data.type === 'init') {
-                _isMobile = e.data.isMobile;
-                _isTablet = e.data.isTablet;
-
-                _languageCode = e.data.languageCode;
-                _localizeContainer = e.data.localizeContainer;
-                document.body.classList.remove("hidden");
+                isMobile = data.isMobile;
+                isTablet = data.isTablet;
+                
+                if (isMobile || isTablet) {
+                    document.body.classList.add('mobile');
+                }
+                
                 revealWidget();
-            }
-            if (data.type === 'updateRooms') {
-                renderRooms(data.rooms);
-            } else if (data.type === 'updateUsers') {
-                renderUsers(data.users);
+                
+                // 위젯이 표시된 직후 필요한 정보 요청 (초기화시에는 쿨다운 없이 바로 요청)
+                console.log("로비 위젯 초기화: 게임 모드, 방, 유저 정보 요청");
+                lastRequestTime.gameModes = Date.now();
+                sendMessage({ type: 'requestGameModes' });
+                
+                // 방과 유저 정보는 약간의 시간차를 두고 요청
+                setTimeout(() => {
+                    lastRequestTime.rooms = Date.now();
+                    sendMessage({ type: 'requestRooms' });
+                }, 200);
+                
+                setTimeout(() => {
+                    lastRequestTime.users = Date.now();
+                    sendMessage({ type: 'requestUsers' });
+                }, 400);
+                
+                // 주기적으로 방 목록과 유저 목록 갱신 (30초마다)
+                if (refreshInterval) {
+                    clearInterval(refreshInterval);
+                }
+                
+                refreshInterval = setInterval(() => {
+                    if (isVisible) {
+                        requestRoomsWithDelay();
+                        requestUsersWithDelay();
+                    }
+                }, 30000); // 30초마다 갱신
+            } else if (data.type === 'roomsList') {
+                updateRooms(data.rooms);
+            } else if (data.type === 'usersList') {
+                updateUsers(data.users);
             } else if (data.type === 'gameModes') {
-                gameModes = data.modes;
-                renderGameModes(data.modes);
-            } else if (data.type === 'roomCreated') {
-                // 방 생성 성공 시 - 서버가 이미 updateRooms를 보냈으므로 추가 요청은 하지 않음
-                // refreshRooms();
-            } else if (data.type === 'roomJoined') {
-                // 방 입장 성공 시
-                console.log('Room joined successfully', data.roomId);
+                console.log("게임 모드 정보 수신:", data.modes);
+                updateGameModes(data.modes);
+                
+                // 모달이 열려있는 상태라면 게임 모드 목록을 즉시 업데이트
+                if (createRoomModal && createRoomModal.style.display === 'flex') {
+                    console.log("모달이 열려있는 상태에서 게임 모드 정보가 도착했습니다. 목록을 업데이트합니다.");
+                    renderGameModes();
+                }
             } else if (data.type === 'error') {
-                alert(data.message);
-            } else if (data.type === 'userJoined') {
-                // 사용자가 접속했을 때 - 서버가 이미 updateUsers를 보냈으므로 추가 요청은 하지 않음
-                // refreshUsers();
-            } else if (data.type === 'userLeft') {
-                // 사용자가 나갔을 때 - 서버가 이미 updateUsers를 보냈으므로 추가 요청은 하지 않음
-                // refreshUsers();
-            } else if (data.type === 'roomUpdated') {
-                // 방 목록이 업데이트되었을 때 - 서버가 이미 updateRooms를 보냈으므로 추가 요청은 하지 않음
-            } else if (data.type === 'widgetClose') {
-                // 위젯이 닫히기 전에 인터벌 정리
+                showError(data.message);
+            } else if (data.type === 'notification') {
+                showNotification(data.message);
+            } else if (data.type === 'hideWidget') {
+                hideWidget();
+                // 위젯이 숨겨질 때 인터벌 중지
                 if (refreshInterval) {
                     clearInterval(refreshInterval);
                     refreshInterval = null;
                 }
+            } else if (data.type === 'showWidget') {
+                revealWidget();
+                // 위젯이 다시 표시될 때 최신 정보로 갱신
+                requestGameModesWithDelay();
+                requestRoomsWithDelay();
+                requestUsersWithDelay();
+                
+                // 주기적 갱신 재시작
+                if (!refreshInterval) {
+                    refreshInterval = setInterval(() => {
+                        if (isVisible) {
+                            requestRoomsWithDelay();
+                            requestUsersWithDelay();
+                        }
+                    }, 30000); // 30초마다 갱신
+                }
             }
         });
-
-        function revealWidget(moveScrollToBottom = false) {
-            if (moveScrollToBottom && $contentWrapper) {
-                $contentWrapper.scrollTop = $contentWrapper.scrollHeight;
-            }
-            if (_isMobile) {
-                const rtcAndNotchHeight = 160 + parseInt(getComputedStyle(document.documentElement,).getPropertyValue("--sat"));
-                window.parent.postMessage({
-                    type: 'WidgetRearrange',
-                    anchor: 'middle',
-                    height: '100%',
-                    width: '100%',
-                    top: `-${parseInt(0)}px`
-                }, '*')
-            } else {
-                window.parent.postMessage({
-                    type: "WidgetRearrange",
-                    anchor: "middle",
-                    width: `100%`,
-                    height: `100%`,
-                }, "*")
-            }
-        }
-
-        function hideWidget() {
-            // 인터벌 정리
-            if (refreshInterval) {
-                clearInterval(refreshInterval);
-                refreshInterval = null;
-            }
-            
-            window.parent.postMessage({
-                type: "WidgetRearrange",
-                width: "0px",
-                height: "0px",
-            }, "*")
-            window.parent.focus();
-        }
-
-        function fitTheSize() {
-            window.parent.postMessage({
-                type: "WidgetRearrange",
-                width: document.body.offsetWidth + 10,
-                height: document.body.offsetHeight + 10,
-            }, "*")
-        }
-
-        // 초기화
-        initializeLobby();
     </script>
 </body>
 

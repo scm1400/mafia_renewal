@@ -805,10 +805,11 @@
         // 메시지 수신 처리
         window.addEventListener('message', function (e) {
             const data = e.data;
-            if (data.type === 'init') {
-                _isMobile = e.data.isMobile;
-                _isTablet = e.data.isTablet;
-
+            if(data.type === "setWidget"){
+                _isMobile = data.isMobile;
+                _isTablet = data.isTablet;
+                hideWidget();
+            } else  if (data.type === 'init') {
                 _languageCode = e.data.languageCode;
                 _localizeContainer = e.data.localizeContainer;
                 document.body.classList.remove("hidden");

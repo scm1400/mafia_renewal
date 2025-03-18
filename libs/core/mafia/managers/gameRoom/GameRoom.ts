@@ -4,6 +4,7 @@ import { GamePlayer } from "../../types/GamePlayer";
 import { getPlayerById } from "../../../../utils/Common";
 import { Job, GameMode as GameModeInterface, JobId } from "../../types/JobTypes";
 import { GameMode } from "../../gameMode/GameMode";
+import { WidgetManager } from "../widget/WidgetManager";
 
 // GameRoomState 열거형
 export enum GameRoomState {
@@ -331,28 +332,9 @@ export class GameRoom {
 			// 플레이어 위치 이동
 			player.spawnAtLocation("Lobby");
 			
-			// 위젯 제거
-			if (player.tag.widget) {
-				if (player.tag.widget.gameStatus) {
-					player.tag.widget.gameStatus.destroy();
-					player.tag.widget.gameStatus = null;
-				}
-				
-				if (player.tag.widget.nightAction) {
-					player.tag.widget.nightAction.destroy();
-					player.tag.widget.nightAction = null;
-				}
-				
-				if (player.tag.widget.voteWidget) {
-					player.tag.widget.voteWidget.destroy();
-					player.tag.widget.voteWidget = null;
-				}
-				
-				if (player.tag.widget.deadChat) {
-					player.tag.widget.deadChat.destroy();
-					player.tag.widget.deadChat = null;
-				}
-			}
+			// WidgetManager를 통해 플레이어 위젯 정리 (오브젝트 풀 패턴 사용)
+			const widgetManager = WidgetManager.instance;
+			widgetManager.cleanupPlayerWidgets(player);
 		}
 		
 		// 호스트가 나간 경우 새로운 호스트 지정
@@ -534,27 +516,14 @@ export class GameRoom {
 	 * 방 초기화
 	 */
 	public reset(): void {
-		// 모든 플레이어의 위젯 제거
+		// 모든 플레이어의 위젯 제거 (오브젝트 풀 패턴 사용)
 		this.players.forEach((player) => {
 			const gamePlayer = getPlayerById(player.id);
 			if (!gamePlayer) return;
 			
-			if (gamePlayer.tag.widget) {
-				if (gamePlayer.tag.widget.gameStatus) {
-					gamePlayer.tag.widget.gameStatus.destroy();
-					gamePlayer.tag.widget.gameStatus = null;
-				}
-				
-				if (gamePlayer.tag.widget.nightAction) {
-					gamePlayer.tag.widget.nightAction.destroy();
-					gamePlayer.tag.widget.nightAction = null;
-				}
-				
-				if (gamePlayer.tag.widget.voteWidget) {
-					gamePlayer.tag.widget.voteWidget.destroy();
-					gamePlayer.tag.widget.voteWidget = null;
-				}
-			}
+			// WidgetManager를 통해 플레이어 위젯 정리
+			const widgetManager = WidgetManager.instance;
+			widgetManager.cleanupPlayerWidgets(gamePlayer);
 		});
 		
 		// 플레이어 목록 초기화

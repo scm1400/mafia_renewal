@@ -341,11 +341,12 @@
         // 메시지 수신 처리
         window.addEventListener('message', function(e) {
             const data = e.data;
-            
-            if (data.type === 'init') {
+            if(data.type === "setWidget"){
+                _isMobile = data.isMobile;
+                _isTablet = data.isTablet;
+                hideWidget();
+            } else if (data.type === 'init') {
                 try {
-                    _isMobile = data.isMobile;
-                    _isTablet = data.isTablet;
                     document.body.classList.remove("hidden");
                     revealWidget();
                 } catch (error) {
