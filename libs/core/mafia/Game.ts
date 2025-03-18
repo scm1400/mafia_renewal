@@ -102,6 +102,9 @@ export class Game extends GameBase {
 
 		// 로비 위젯 표시
 		this.showLobbyWidget(player);
+		
+		// 모든 플레이어에게 유저 목록 업데이트 전송
+		this.updateUsersInfo();
 	}
 
 	/**
@@ -760,6 +763,9 @@ export class Game extends GameBase {
 				this.updateRoomInfo();
 			}
 		}
+		
+		// 모든 플레이어에게 유저 목록 업데이트 전송
+		this.updateUsersInfo();
 	}
 
 	private update(dt: number) {
@@ -889,6 +895,11 @@ export class Game extends GameBase {
 			if (gamePlayer.tag?.widget?.main) {
 				this.sendRoomsList(gamePlayer);
 				this.sendUsersList(gamePlayer);
+				
+				// 방 목록 업데이트 이벤트도 전송 (클라이언트가 이벤트로 인식할 수 있도록)
+				gamePlayer.tag.widget.main.sendMessage({
+					type: "roomUpdated"
+				});
 			}
 		});
 	}
@@ -988,6 +999,25 @@ export class Game extends GameBase {
 
 				// 방 정보 업데이트
 				this.sendRoomInfoToPlayer(gamePlayer, room);
+			}
+		});
+	}
+
+	/**
+	 * 모든 플레이어에게 유저 목록을 업데이트합니다.
+	 */
+	private updateUsersInfo() {
+		// 모든 플레이어에게 유저 목록 전송
+		ScriptApp.players.forEach((p) => {
+			// GamePlayer 타입으로 변환 (타입 단언 사용)
+			const gamePlayer = p as unknown as GamePlayer;
+			if (gamePlayer.tag?.widget?.main) {
+				// userJoined 이벤트 전송
+				this.sendUsersList(gamePlayer);
+				// 추가로 일반 메시지도 보내서 로비 위젯에서 처리할 수 있도록 함
+				gamePlayer.tag.widget.main.sendMessage({
+					type: "userJoined"
+				});
 			}
 		});
 	}

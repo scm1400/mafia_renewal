@@ -451,6 +451,9 @@ function getJobsByGameMode(modeId) {
 }
 ;// ../../libs/utils/CustomLabelFunctions.ts
 
+const LABEL_SPACING = 60;
+const labelCounts = {};
+const playerLabels = {};
 function clearCustomLabel(player = null) {
   if (player) {
     player.showCustomLabel("-", 0xffffff, 0x000000, -2000, 0, 1, 1000, {
@@ -459,6 +462,14 @@ function clearCustomLabel(player = null) {
     player.showCustomLabel("-", 0xffffff, 0x000000, -2000, 0, 1, 1000, {
       key: "sub"
     });
+    if (player.id) {
+      Object.keys(playerLabels).forEach(idAndKey => {
+        if (idAndKey.startsWith(`${player.id}_`)) {
+          delete playerLabels[idAndKey];
+        }
+      });
+      labelCounts[player.id] = 0;
+    }
   } else {
     actionToAllPlayers(player => {
       player.showCustomLabel("-", 0xffffff, 0x000000, -2000, 0, 1, 1000, {
@@ -467,8 +478,37 @@ function clearCustomLabel(player = null) {
       player.showCustomLabel("-", 0xffffff, 0x000000, -2000, 0, 1, 1000, {
         key: "sub"
       });
+      if (player.id) {
+        Object.keys(playerLabels).forEach(idAndKey => {
+          if (idAndKey.startsWith(`${player.id}_`)) {
+            delete playerLabels[idAndKey];
+          }
+        });
+        labelCounts[player.id] = 0;
+      }
+    });
+    Object.keys(labelCounts).forEach(key => {
+      labelCounts[key] = 0;
+    });
+    Object.keys(playerLabels).forEach(key => {
+      delete playerLabels[key];
     });
   }
+}
+function cleanupLabel(playerId, key, timeout) {
+  setTimeout(() => {
+    const labelKey = `${playerId}_${key}`;
+    if (playerLabels[labelKey] !== undefined) {
+      delete playerLabels[labelKey];
+      if (labelCounts[playerId] && labelCounts[playerId] > 0) {
+        labelCounts[playerId]--;
+      }
+      const playerActiveLabels = Object.keys(playerLabels).filter(k => k.startsWith(`${playerId}_`)).sort((a, b) => playerLabels[a] - playerLabels[b]);
+      playerActiveLabels.forEach((labelId, index) => {
+        playerLabels[labelId] = index;
+      });
+    }
+  }, timeout);
 }
 function showLabel(player, key, options = {}) {
   const mobileLabelPercentWidth = {
@@ -498,11 +538,27 @@ function showLabel(player, key, options = {}) {
     padding = "8px",
     fontOpacity = false,
     labelDisplayTime = 3000,
-    texts = []
+    texts = [],
+    fixedPosition = false
   } = options;
   const isMobile = player.isMobile && !player.isTablet;
   const isTablet = player.isMobile && player.isTablet;
-  const topGap = isMobile ? topGapMobile : topGapPC;
+  let baseTopGap = isMobile ? topGapMobile : topGapPC;
+  let topGap = baseTopGap;
+  if (!fixedPosition && player.id) {
+    const labelKey = `${player.id}_${key}`;
+    if (!labelCounts[player.id]) {
+      labelCounts[player.id] = 0;
+    }
+    if (playerLabels[labelKey] !== undefined) {
+      topGap = baseTopGap + playerLabels[labelKey] * LABEL_SPACING;
+    } else {
+      playerLabels[labelKey] = labelCounts[player.id];
+      topGap = baseTopGap + labelCounts[player.id] * LABEL_SPACING;
+      labelCounts[player.id]++;
+    }
+    cleanupLabel(player.id, key, labelDisplayTime);
+  }
   let labelPercentWidth;
   if (isMobile) {
     labelPercentWidth = mobileLabelPercentWidth[labelWidth];
@@ -609,7 +665,8 @@ class GameFlowManager {
         labelDisplayTime: duration,
         texts: [{
           text: message
-        }]
+        }],
+        fixedPosition: false
       });
     });
   }
@@ -624,7 +681,8 @@ class GameFlowManager {
         labelDisplayTime: 4000,
         texts: [{
           text: message
-        }]
+        }],
+        fixedPosition: false
       });
     });
   }
@@ -676,9 +734,9 @@ class GameFlowManager {
       const gamePlayer = this.room.getGamePlayer(player.id);
       if (gamePlayer) {
         this.showRoleCard(gamePlayer, player.jobId);
-        this.initGameStatusWidgets();
       }
     });
+    this.initGameStatusWidgets();
     this.room.players.forEach(player => {
       if (player.jobId === JobId.MEDIUM && player.isAlive) {
         const gamePlayer = getPlayerById(player.id);
@@ -980,7 +1038,7 @@ class GameFlowManager {
           }
           const defendant = this.room.players.find(p => p.id === defendantId);
           if (!defendant) {
-            this.nextPhase();
+            this.finalizeApprovalVoting();
             return;
           }
           defendantName = defendant.name;
@@ -1040,7 +1098,7 @@ class GameFlowManager {
           }
           const defendant = this.room.players.find(p => p.id === defendantId);
           if (!defendant) {
-            this.nextPhase();
+            this.finalizeApprovalVoting();
             return;
           }
           defendantName = defendant.name;
@@ -1732,7 +1790,7 @@ class GameRoom {
       try {
         callback(...args);
       } catch (error) {
-        console.error(`Error in event listener for ${event}:`, error);
+        App.sayToStaffs(`Error in event listener for ${event}:`, error);
       }
     });
   }
@@ -1895,7 +1953,7 @@ class GameRoom {
     try {
       this.flowManager.startGame();
     } catch (error) {
-      console.error("Error starting game:", error);
+      App.sayToStaffs("Error starting game:", error);
       this.state = GameRoomState.WAITING;
       return false;
     }
@@ -2070,7 +2128,7 @@ class GameRoomManager {
       try {
         callback(...args);
       } catch (error) {
-        console.error(`Error in event listener for ${event}:`, error);
+        App.sayToStaffs(`Error in event listener for ${event}:`, error);
       }
     });
   }
@@ -2225,6 +2283,7 @@ class Game extends GameBase {
       }
     }
     this.showLobbyWidget(player);
+    this.updateUsersInfo();
   }
   showLobbyWidget(player) {
     if (player.tag.widget.main) {
@@ -2686,6 +2745,7 @@ class Game extends GameBase {
         this.updateRoomInfo();
       }
     }
+    this.updateUsersInfo();
   }
   update(dt) {
     for (let i = 1; i <= Game.ROOM_COUNT; i++) {
@@ -2781,6 +2841,9 @@ class Game extends GameBase {
       if ((_b = (_a = gamePlayer.tag) === null || _a === void 0 ? void 0 : _a.widget) === null || _b === void 0 ? void 0 : _b.main) {
         this.sendRoomsList(gamePlayer);
         this.sendUsersList(gamePlayer);
+        gamePlayer.tag.widget.main.sendMessage({
+          type: "roomUpdated"
+        });
       }
     });
   }
@@ -2846,6 +2909,18 @@ class Game extends GameBase {
           newHostName: newHost.name
         });
         this.sendRoomInfoToPlayer(gamePlayer, room);
+      }
+    });
+  }
+  updateUsersInfo() {
+    App.players.forEach(p => {
+      var _a, _b;
+      const gamePlayer = p;
+      if ((_b = (_a = gamePlayer.tag) === null || _a === void 0 ? void 0 : _a.widget) === null || _b === void 0 ? void 0 : _b.main) {
+        this.sendUsersList(gamePlayer);
+        gamePlayer.tag.widget.main.sendMessage({
+          type: "userJoined"
+        });
       }
     });
   }

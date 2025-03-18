@@ -371,6 +371,7 @@
         let myPlayerId = null;
         let defenseText = "";
         let isAlive = true;
+        let isDefendant = false;
 
         // DOM 요소
         const timerElement = document.getElementById('timer');
@@ -405,6 +406,9 @@
             myPlayerId = data.myPlayerId;
             defenseText = data.defenseText || "변론이 제출되지 않았습니다.";
             isAlive = data.isAlive !== false;
+            
+            // 자신이 피고인인지 확인
+            isDefendant = defendantId === myPlayerId;
 
             // 플레이어 이름과 아바타 설정
             playerNameElement.textContent = data.defendantName;
@@ -416,8 +420,8 @@
             updateTimerDisplay();
             startTimer();
 
-            // 죽은 플레이어는 투표할 수 없음
-            if (!isAlive) {
+            // 죽은 플레이어거나 자신이 피고인인 경우 투표할 수 없음
+            if (!isAlive || isDefendant) {
                 voteOptionsElement.classList.add('hidden');
                 submitVoteBtn.disabled = true;
             }

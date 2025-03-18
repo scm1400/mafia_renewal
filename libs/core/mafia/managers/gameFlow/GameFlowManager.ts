@@ -231,9 +231,11 @@ export class GameFlowManager {
 			const gamePlayer = this.room.getGamePlayer(player.id);
 			if (gamePlayer) {
 				this.showRoleCard(gamePlayer, player.jobId);
-				this.initGameStatusWidgets();
 			}
 		});
+
+		// 게임 상태 위젯 초기화 (한 번만 호출)
+		this.initGameStatusWidgets();
 
 		// 영매에게 죽은 플레이어 채팅 위젯 표시
 		this.room.players.forEach(player => {
@@ -650,8 +652,9 @@ export class GameFlowManager {
 					// 피고인 정보 가져오기
 					const defendant = this.room.players.find((p) => p.id === defendantId);
 					if (!defendant) {
-						// 피고인이 없으면 다음 단계로 넘어감
-						this.nextPhase();
+						// 피고인이 없으면 다음 단계로 넘어감 (투표가 없었거나 동점인 경우)
+						// APPROVAL_VOTING 단계는 반드시 처리해야 하므로 해당 단계를 완료 처리
+						this.finalizeApprovalVoting();
 						return;
 					}
 					defendantName = defendant.name;
@@ -730,8 +733,9 @@ export class GameFlowManager {
 					// 피고인 정보 가져오기
 					const defendant = this.room.players.find((p) => p.id === defendantId);
 					if (!defendant) {
-						// 피고인이 없으면 다음 단계로 넘어감
-						this.nextPhase();
+						// 피고인이 없으면 다음 단계로 넘어감 (투표가 없었거나 동점인 경우)
+						// APPROVAL_VOTING 단계는 반드시 처리해야 하므로 해당 단계를 완료 처리
+						this.finalizeApprovalVoting();
 						return;
 					}
 					defendantName = defendant.name;

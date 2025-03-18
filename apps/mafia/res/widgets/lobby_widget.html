@@ -532,6 +532,7 @@
         let gameModes = [];
         let filteredRooms = [];
         let currentFilter = 'all';
+        let refreshInterval = null; // 주기적 갱신을 위한 인터벌 변수
 
         // DOM 요소 접근
         const roomsList = document.getElementById('roomsList');
@@ -551,7 +552,11 @@
         closeModalBtn.addEventListener('click', closeCreateRoomModal);
         cancelCreateBtn.addEventListener('click', closeCreateRoomModal);
         confirmCreateBtn.addEventListener('click', createRoom);
-        refreshBtn.addEventListener('click', refreshRooms);
+        refreshBtn.addEventListener('click', () => {
+            // 수동 갱신 - 방 목록과 유저 목록 모두 갱신
+            refreshRooms();
+            refreshUsers();
+        });
         searchInput.addEventListener('input', searchRooms);
 
         // 필터 버튼 이벤트 설정
@@ -569,9 +574,15 @@
             // 게임 모드 데이터 로드
             loadGameModes();
 
-            // 방 목록과 유저 목록 로드
+            // 방 목록과 유저 목록 로드 (초기 한 번만 요청)
             refreshRooms();
             refreshUsers();
+            
+            // 주기적 업데이트를 위한 타이머는 사용하지 않음 (서버에서 필요할 때마다 업데이트 전송)
+            // refreshInterval = setInterval(() => {
+            //     refreshUsers();
+            //     refreshRooms();
+            // }, 5000);
         }
 
         // 게임 모드 로드
@@ -815,13 +826,27 @@
                 gameModes = data.modes;
                 renderGameModes(data.modes);
             } else if (data.type === 'roomCreated') {
-                // 방 생성 성공 시
-                refreshRooms();
+                // 방 생성 성공 시 - 서버가 이미 updateRooms를 보냈으므로 추가 요청은 하지 않음
+                // refreshRooms();
             } else if (data.type === 'roomJoined') {
                 // 방 입장 성공 시
                 console.log('Room joined successfully', data.roomId);
             } else if (data.type === 'error') {
                 alert(data.message);
+            } else if (data.type === 'userJoined') {
+                // 사용자가 접속했을 때 - 서버가 이미 updateUsers를 보냈으므로 추가 요청은 하지 않음
+                // refreshUsers();
+            } else if (data.type === 'userLeft') {
+                // 사용자가 나갔을 때 - 서버가 이미 updateUsers를 보냈으므로 추가 요청은 하지 않음
+                // refreshUsers();
+            } else if (data.type === 'roomUpdated') {
+                // 방 목록이 업데이트되었을 때 - 서버가 이미 updateRooms를 보냈으므로 추가 요청은 하지 않음
+            } else if (data.type === 'widgetClose') {
+                // 위젯이 닫히기 전에 인터벌 정리
+                if (refreshInterval) {
+                    clearInterval(refreshInterval);
+                    refreshInterval = null;
+                }
             }
         });
 
@@ -849,6 +874,12 @@
         }
 
         function hideWidget() {
+            // 인터벌 정리
+            if (refreshInterval) {
+                clearInterval(refreshInterval);
+                refreshInterval = null;
+            }
+            
             window.parent.postMessage({
                 type: "WidgetRearrange",
                 width: "0px",
