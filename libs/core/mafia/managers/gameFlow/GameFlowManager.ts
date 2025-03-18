@@ -110,7 +110,8 @@ export class GameFlowManager {
 			showLabel(gamePlayer, "room_message", {
 				labelWidth: "L",
 				labelDisplayTime: duration,
-				texts: [{ text: message }]
+				texts: [{ text: message }],
+				fixedPosition: false // 위치 자동 조정 활성화
 			});
 		});
 	}
@@ -130,7 +131,8 @@ export class GameFlowManager {
 				labelWidth: "M",
 				backgroundColor: 0x000000,
 				labelDisplayTime: 4000,
-				texts: [{ text: message }]
+				texts: [{ text: message }],
+				fixedPosition: false // 위치 자동 조정 활성화
 			});
 		});
 	}
@@ -783,7 +785,7 @@ export class GameFlowManager {
 					// 타이머 설정 - 시간이 다 되면 자동으로 결과 처리
 					ScriptApp.runLater(() => {
 						this.finalizeApprovalVoting();
-					}, phaseDurations[MafiaPhase.APPROVAL_VOTING]);
+					}, phaseDurations[MafiaPhase.APPROVAL_VOTING]); // 5초 후 다음 단계로
 				}
 				break;
 			default:
@@ -1257,7 +1259,7 @@ export class GameFlowManager {
 			if (this.room) {
 				this.room.endGame();
 			}
-		}, 5); // (5초) 후 실행
+		}, 5); // 5초 후 실행
 	}
 
 	// 게임 리셋: 게임 상태와 단계 등을 초기화합니다.
