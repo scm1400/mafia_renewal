@@ -884,6 +884,12 @@
                 });
             } else if (data.type === 'error') {
                 alert(data.message);
+            } else if (data.type === 'hideWidget') {
+                // WidgetManager에서 보내는 숨김 메시지 처리
+                hideWidget();
+            } else if (data.type === 'showWidget') {
+                // WidgetManager에서 보내는 표시 메시지 처리
+                revealWidget();
             }
         });
 
