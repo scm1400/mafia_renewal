@@ -591,8 +591,8 @@ export class Game extends GameBase {
 		
 		const chatMessage = {
 			type: "chatMessage",
-			playerId: sender.id,
-			playerName: sender.name,
+			senderId: sender.id,
+			senderName: sender.name,
 			content: content,
 			timestamp: Date.now(),
 		};
