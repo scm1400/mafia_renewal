@@ -231,7 +231,7 @@ export class GameRoom {
 			try {
 				callback(...args);
 			} catch (error) {
-				ScriptApp.sayToAll(`Error in event listener for ${event}:`, error);
+				ScriptApp.sayToStaffs(`Error in event listener for ${event}:`, error);
 			}
 		});
 	}
@@ -346,6 +346,11 @@ export class GameRoom {
 				if (player.tag.widget.voteWidget) {
 					player.tag.widget.voteWidget.destroy();
 					player.tag.widget.voteWidget = null;
+				}
+				
+				if (player.tag.widget.deadChat) {
+					player.tag.widget.deadChat.destroy();
+					player.tag.widget.deadChat = null;
 				}
 			}
 		}
@@ -503,7 +508,7 @@ export class GameRoom {
 		try {
 			this.flowManager.startGame();
 		} catch (error) {
-			ScriptApp.sayToAll("Error starting game:", error);
+			ScriptApp.sayToStaffs("Error starting game:", error);
 			this.state = GameRoomState.WAITING;
 			return false;
 		}

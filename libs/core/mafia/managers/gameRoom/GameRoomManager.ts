@@ -3,6 +3,7 @@ import { GameMode } from "../../gameMode/GameMode";
 import { GamePlayer } from "../../types/GamePlayer";
 import { getJobsByGameMode } from "../../types/JobTypes";
 import { getPlayerById } from "../../../../utils/Common";
+import { Game } from "../../Game";
 
 /**
  * 게임방 관리자 클래스
@@ -37,7 +38,7 @@ export class GameRoomManager {
 	public createRoom(config: Omit<GameRoomConfig, "id">): GameRoom {
 		// 사용 가능한 방 번호 찾기 (1~8)
 		let roomId = "1";
-		for (let i = 1; i <= 8; i++) {
+		for (let i = 1; i <= Game.ROOM_COUNT; i++) {
 			const id = i.toString();
 			if (!this.gameRooms[id]) {
 				roomId = id;
@@ -46,7 +47,7 @@ export class GameRoomManager {
 		}
 		
 		// 모든 방이 사용 중인 경우
-		if (Object.keys(this.gameRooms).length >= 8) {
+		if (Object.keys(this.gameRooms).length >= Game.ROOM_COUNT) {
 			throw new Error("모든 게임방이 사용 중입니다.");
 		}
 		
@@ -217,7 +218,7 @@ export class GameRoomManager {
 			try {
 				callback(...args);
 			} catch (error) {
-				ScriptApp.sayToAll(`Error in event listener for ${event}:`, error);
+				ScriptApp.sayToStaffs(`Error in event listener for ${event}:`, error);
 			}
 		});
 	}

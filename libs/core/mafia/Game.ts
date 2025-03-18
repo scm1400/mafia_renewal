@@ -12,9 +12,11 @@ import { JobId } from "./types/JobTypes";
 import { GameRoom } from "./managers/gameRoom/GameRoom";
 import { MafiaPlayer } from "./managers/gameFlow/GameFlowManager";
 
-const ROOM_COUNT = 8;
+
+
 export class Game extends GameBase {
 	private static _instance: Game;
+	public static ROOM_COUNT = 0;
 
 	private mafiaGameRoomManager: GameRoomManager = new GameRoomManager();
 
@@ -37,6 +39,12 @@ export class Game extends GameBase {
 		gameModes.forEach((mode) => {
 			this.mafiaGameRoomManager.registerGameMode(mode);
 		});
+
+		for (let i = 1; i <= 20; i++) {
+			if (ScriptMap.hasLocation(`GameRoom_${i}`)) {
+				Game.ROOM_COUNT++;
+			}
+		}
 
 		// 게임룸 매니저 이벤트 리스너 설정
 		this.setupGameRoomManagerListeners();
@@ -65,6 +73,32 @@ export class Game extends GameBase {
 
 		//@ts-ignore
 		const customData = parseJsonString(player.customData);
+
+		// 이전 게임 룸 정보가 있는지 확인
+		if (player.tag.roomInfo) {
+			const roomNum = player.tag.roomInfo.roomNum;
+			const room = this.mafiaGameRoomManager.getRoom(roomNum.toString());
+			
+			if (room) {
+				// 게임이 진행 중인지 확인
+				const gameFlow = room.flowManager;
+				if (gameFlow && gameFlow.isGameInProgress()) {
+					// 이미 사망한 플레이어인지 확인
+					const deadPlayers = gameFlow.getDeadPlayers();
+					if (deadPlayers && deadPlayers.includes(player.id)) {
+						// 죽은 플레이어 채팅 위젯 표시
+						gameFlow.showPermanentDeadChatWidget(player);
+					}
+					
+					// 영매인지 확인
+					const mafiaPlayer = room.getPlayer(player.id);
+					if (mafiaPlayer && mafiaPlayer.jobId === JobId.MEDIUM && mafiaPlayer.isAlive) {
+						// 영매용 채팅 위젯 표시
+						gameFlow.showMediumChatWidget(player);
+					}
+				}
+			}
+		}
 
 		// 로비 위젯 표시
 		this.showLobbyWidget(player);
@@ -202,6 +236,24 @@ export class Game extends GameBase {
 
 		// 게임 모드 상세 정보 전송
 		this.sendGameModeDetailsToPlayer(player, room.gameMode);
+
+		// 게임이 진행 중인지 확인
+		const gameFlow = room.flowManager;
+		if (gameFlow && gameFlow.isGameInProgress()) {
+			// 이미 사망한 플레이어인지 확인
+			const deadPlayers = gameFlow.getDeadPlayers();
+			if (deadPlayers && deadPlayers.includes(player.id)) {
+				// 죽은 플레이어 채팅 위젯 표시
+				gameFlow.showPermanentDeadChatWidget(player);
+			}
+			
+			// 영매인지 확인
+			const mafiaPlayer = room.getPlayer(player.id);
+			if (mafiaPlayer && mafiaPlayer.jobId === JobId.MEDIUM && mafiaPlayer.isAlive) {
+				// 영매용 채팅 위젯 표시
+				gameFlow.showMediumChatWidget(player);
+			}
+		}
 
 		// 방에 있는 다른 플레이어들에게 새 플레이어 입장 알림
 		this.notifyPlayerJoinedRoom(room, player);
@@ -712,7 +764,7 @@ export class Game extends GameBase {
 
 	private update(dt: number) {
 		// 각 방의 게임 상태 업데이트
-		for (let i = 1; i <= ROOM_COUNT; i++) {
+		for (let i = 1; i <= Game.ROOM_COUNT; i++) {
 			const room = this.mafiaGameRoomManager.getRoom(i.toString());
 			if (room && room.flowManager.isGameInProgress()) {
 				// 타이머 업데이트
@@ -759,7 +811,7 @@ export class Game extends GameBase {
 		}
 
 		const rooms = [];
-		for (let i = 1; i <= ROOM_COUNT; i++) {
+		for (let i = 1; i <= Game.ROOM_COUNT; i++) {
 			const room = this.mafiaGameRoomManager.getRoom(i.toString());
 			if (room) {
 				const players = room.getPlayers();
@@ -848,7 +900,7 @@ export class Game extends GameBase {
 		// 플레이어 퇴장 이벤트
 		this.mafiaGameRoomManager.on("playerLeftRoom", (room, player) => {
 			this.notifyPlayerLeftRoom(room, player);
-			
+
 			// 호스트가 있고 플레이어가 남아있으면 호스트 변경 알림
 			if (room.getPlayersCount() > 0 && room.hostId) {
 				const hostPlayer = getPlayerById(room.hostId);
@@ -857,7 +909,7 @@ export class Game extends GameBase {
 				}
 			}
 		});
-		
+
 		// 플레이어 강퇴 이벤트
 		this.mafiaGameRoomManager.on("playerKicked", (room, player) => {
 			// 플레이어의 방 위젯 제거
@@ -865,19 +917,19 @@ export class Game extends GameBase {
 				player.tag.widget.room.destroy();
 				player.tag.widget.room = null;
 			}
-			
+
 			// 로비 위젯 표시
 			this.showLobbyWidget(player);
-			
+
 			// 강퇴 알림
 			this.notifyPlayerKicked(room, player);
 		});
-		
+
 		// 호스트 변경 이벤트
 		this.mafiaGameRoomManager.on("hostChanged", (room, newHost) => {
 			this.notifyHostChanged(room, newHost);
 		});
-		
+
 		// 준비 상태 변경 이벤트
 		this.mafiaGameRoomManager.on("readyStatusChanged", (room, player, isReady) => {
 			player.tag.isReady = isReady;

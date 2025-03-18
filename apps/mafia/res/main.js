@@ -1,7 +1,7 @@
 /******/ (() => { // webpackBootstrap
 /******/ 	"use strict";
 
-;// CONCATENATED MODULE: ../../libs/utils/Localizer.ts
+;// ../../libs/utils/Localizer.ts
 const LOCALIZE_KEYS = {};
 const LOCALIZE_CONTAINER = {
   ko: null,
@@ -32,7 +32,7 @@ class Localizer_Localizer {
     return acc;
   }
 }
-;// CONCATENATED MODULE: ../../libs/utils/Common.ts
+;// ../../libs/utils/Common.ts
 
 let log;
 function isDevServer() {
@@ -67,7 +67,7 @@ function getPlayerId(player) {
 function getPlayerById(playerId) {
   return App.players.find(player => getPlayerId(player) === playerId);
 }
-function actionToAllPlayers(action, ...args) {
+function Common_actionToAllPlayers(action, ...args) {
   for (const player of App.players) {
     if (!player) continue;
     try {
@@ -117,7 +117,7 @@ function getLocationAreaCoordinates(locationName) {
   }
   return coordinates;
 }
-;// CONCATENATED MODULE: ../../libs/core/GameBase.ts
+;// ../../libs/core/GameBase.ts
 class GameBase {
   constructor() {
     this.onStartCallbacks = [];
@@ -191,7 +191,7 @@ class GameBase {
     this.onTriggerObjectCallbacks.push(callback);
   }
 }
-;// CONCATENATED MODULE: ../../libs/core/mafia/types/JobTypes.ts
+;// ../../libs/core/mafia/types/JobTypes.ts
 var JobId;
 (function (JobId) {
   JobId["MAFIA"] = "mafia";
@@ -449,7 +449,109 @@ function getJobsByGameMode(modeId) {
     return job ? job : null;
   }).filter(job => job !== null);
 }
-;// CONCATENATED MODULE: ../../libs/core/mafia/managers/gameFlow/GameFlowManager.ts
+;// ../../libs/utils/CustomLabelFunctions.ts
+
+function clearCustomLabel(player = null) {
+  if (player) {
+    player.showCustomLabel("-", 0xffffff, 0x000000, -2000, 0, 1, 1000, {
+      key: "main"
+    });
+    player.showCustomLabel("-", 0xffffff, 0x000000, -2000, 0, 1, 1000, {
+      key: "sub"
+    });
+  } else {
+    actionToAllPlayers(player => {
+      player.showCustomLabel("-", 0xffffff, 0x000000, -2000, 0, 1, 1000, {
+        key: "main"
+      });
+      player.showCustomLabel("-", 0xffffff, 0x000000, -2000, 0, 1, 1000, {
+        key: "sub"
+      });
+    });
+  }
+}
+function showLabel(player, key, options = {}) {
+  const mobileLabelPercentWidth = {
+    XL: 90,
+    L: 80,
+    M: 70,
+    S: 60
+  };
+  const tabletLabelPercentWidth = {
+    XL: 84,
+    L: 68,
+    M: 54,
+    S: 48
+  };
+  const pcLabelPercentWidth = {
+    XL: 50,
+    L: 40,
+    M: 28,
+    S: 20
+  };
+  const {
+    labelWidth = "M",
+    topGapMobile = 10,
+    topGapPC = -2,
+    backgroundColor = 0x27262e,
+    borderRadius = "12px",
+    padding = "8px",
+    fontOpacity = false,
+    labelDisplayTime = 3000,
+    texts = []
+  } = options;
+  const isMobile = player.isMobile && !player.isTablet;
+  const isTablet = player.isMobile && player.isTablet;
+  const topGap = isMobile ? topGapMobile : topGapPC;
+  let labelPercentWidth;
+  if (isMobile) {
+    labelPercentWidth = mobileLabelPercentWidth[labelWidth];
+  } else if (isTablet) {
+    labelPercentWidth = tabletLabelPercentWidth[labelWidth];
+  } else {
+    labelPercentWidth = pcLabelPercentWidth[labelWidth];
+  }
+  const parentStyle = `
+    display: flex; 
+    flex-direction: column; 
+    align-items: center; 
+    text-align: center;`;
+  const defaultTextStyle = {
+    fontSize: "18px",
+    mobileFontSize: "14px",
+    fontWeight: 400,
+    color: "white"
+  };
+  let htmlStr = `<span style="${parentStyle}">`;
+  texts.forEach(({
+    text,
+    style = {}
+  }) => {
+    if (!text) return;
+    const {
+      fontSize,
+      mobileFontSize,
+      fontWeight,
+      color
+    } = Object.assign(Object.assign({}, defaultTextStyle), style);
+    const appliedFontSize = player.isMobile && !player.isTablet ? mobileFontSize || fontSize : fontSize;
+    const textStyle = `
+        font-size: ${appliedFontSize};
+        font-weight: ${fontWeight};
+        color: ${color};`;
+    htmlStr += `<span style="${textStyle}">${text}</span>`;
+  });
+  htmlStr += `</span>`;
+  const customLabelOption = {
+    key: key,
+    borderRadius: borderRadius,
+    fontOpacity: fontOpacity,
+    padding: padding
+  };
+  player.showCustomLabel(htmlStr, 0xffffff, backgroundColor, topGap, labelPercentWidth, 0.64, labelDisplayTime, customLabelOption);
+}
+;// ../../libs/core/mafia/managers/gameFlow/GameFlowManager.ts
+
 
 
 var GameState;
@@ -488,7 +590,43 @@ class GameFlowManager {
       reject: 0
     };
     this.approvalPlayerVotes = {};
+    this.loverPlayers = [];
+    this.deadPlayers = [];
+    this.chatMessages = [];
+    this.deadChatWidgetShown = {};
     this.roomNumber = roomNumber;
+    this.currentPhase = MafiaPhase.DAY;
+    this.phaseCycle = [MafiaPhase.NIGHT, MafiaPhase.DAY, MafiaPhase.VOTING, MafiaPhase.FINAL_DEFENSE, MafiaPhase.APPROVAL_VOTING];
+    this.phaseTimer = phaseDurations[this.currentPhase];
+  }
+  showRoomLabel(message, duration = 3000) {
+    if (!this.room) return;
+    this.room.actionToRoomPlayers(player => {
+      const gamePlayer = getPlayerById(player.id);
+      if (!gamePlayer) return;
+      showLabel(gamePlayer, "room_message", {
+        labelWidth: "L",
+        labelDisplayTime: duration,
+        texts: [{
+          text: message
+        }]
+      });
+    });
+  }
+  sayToRoom(message) {
+    if (!this.room) return;
+    this.room.actionToRoomPlayers(player => {
+      const gamePlayer = getPlayerById(player.id);
+      if (!gamePlayer) return;
+      showLabel(gamePlayer, "room_chat", {
+        labelWidth: "M",
+        backgroundColor: 0x000000,
+        labelDisplayTime: 4000,
+        texts: [{
+          text: message
+        }]
+      });
+    });
   }
   setGameRoom(room) {
     this.room = room;
@@ -498,11 +636,11 @@ class GameFlowManager {
   }
   startGame() {
     if (!this.room) {
-      App.sayToAll("게임 룸이 설정되지 않았습니다.");
+      this.sayToRoom("게임 룸이 설정되지 않았습니다.");
       return;
     }
     if (this.room.players.length < 4) {
-      App.showCenterLabel("게임 시작을 위해 최소 4명의 플레이어가 필요합니다");
+      this.showRoomLabel("게임 시작을 위해 최소 4명의 플레이어가 필요합니다");
       return;
     }
     const playersShuffled = [...this.room.players];
@@ -522,6 +660,8 @@ class GameFlowManager {
       }
       playersShuffled[i].isAlive = true;
     }
+    this.loverPlayers = playersShuffled.filter(p => p.jobId === JobId.LOVER).map(p => p.id);
+    this.chatMessages = [];
     this.state = GameState.IN_PROGRESS;
     this.dayCount = 1;
     if (this.room.players.length <= 4) {
@@ -531,12 +671,20 @@ class GameFlowManager {
       this.phaseCycle = [MafiaPhase.NIGHT, MafiaPhase.DAY, MafiaPhase.VOTING, MafiaPhase.FINAL_DEFENSE, MafiaPhase.APPROVAL_VOTING];
       this.setPhase(MafiaPhase.NIGHT);
     }
-    App.showCenterLabel("게임이 시작되었습니다!");
+    this.showRoomLabel("게임이 시작되었습니다!");
     this.room.players.forEach(player => {
       const gamePlayer = this.room.getGamePlayer(player.id);
       if (gamePlayer) {
         this.showRoleCard(gamePlayer, player.jobId);
         this.initGameStatusWidgets();
+      }
+    });
+    this.room.players.forEach(player => {
+      if (player.jobId === JobId.MEDIUM && player.isAlive) {
+        const gamePlayer = getPlayerById(player.id);
+        if (gamePlayer) {
+          this.showMediumChatWidget(gamePlayer);
+        }
       }
     });
     this.executePhaseActions();
@@ -604,7 +752,7 @@ class GameFlowManager {
   }
   nextPhase() {
     if (this.state !== GameState.IN_PROGRESS) {
-      App.sayToAll("게임이 진행 중이 아닙니다.");
+      this.sayToRoom("게임이 진행 중이 아닙니다.");
       return;
     }
     this.cleanupPhaseWidgets();
@@ -614,7 +762,7 @@ class GameFlowManager {
       this.dayCount++;
     }
     this.setPhase(this.phaseCycle[nextIndex]);
-    App.sayToAll(`Room ${this.room.id}: 단계 전환 -> ${this.currentPhase} (Day ${this.dayCount})`);
+    this.sayToRoom(`단계 전환 -> ${this.currentPhase} (Day ${this.dayCount})`);
     this.updateAllGameStatusWidgets();
     this.executePhaseActions();
   }
@@ -656,7 +804,7 @@ class GameFlowManager {
     switch (this.currentPhase) {
       case MafiaPhase.NIGHT:
         {
-          App.sayToAll(`Room ${this.room.id}: 밤 단계 - 마피아가 희생자를 선택합니다.`);
+          this.sayToRoom(`밤 단계 - 마피아가 희생자를 선택합니다.`);
           this.voteResults = {};
           this.playerVotes = {};
           this.room.actionToRoomPlayers(player => {
@@ -681,21 +829,80 @@ class GameFlowManager {
                 type: "init",
                 players: ((_a = this.room) === null || _a === void 0 ? void 0 : _a.players) || [],
                 myPlayerId: player.id,
-                role: player.jobId,
+                role: player.jobId.toLowerCase(),
                 timeLimit: phaseDurations[MafiaPhase.NIGHT],
                 serverTime: Date.now()
               });
               gamePlayer.tag.widget.nightAction.onMessage.Add((player, data) => {
                 const mafiaPlayer = player.tag.mafiaPlayer;
-                if (data.type === "kill" && (mafiaPlayer === null || mafiaPlayer === void 0 ? void 0 : mafiaPlayer.jobId) === JobId.MAFIA) {
-                  this.mafiaAction(data.targetId);
-                } else if (data.type === "investigate" && (mafiaPlayer === null || mafiaPlayer === void 0 ? void 0 : mafiaPlayer.jobId) === JobId.POLICE) {
-                  this.policeAction(data.targetId, player);
-                } else if (data.type === "heal" && (mafiaPlayer === null || mafiaPlayer === void 0 ? void 0 : mafiaPlayer.jobId) === JobId.DOCTOR) {
-                  this.doctorAction(data.targetId);
-                } else if (data.type === "close") {
-                  player.tag.widget.nightAction.destroy();
-                  player.tag.widget.nightAction = null;
+                if (!mafiaPlayer) return;
+                switch (data.type) {
+                  case "kill":
+                    if (mafiaPlayer.jobId === JobId.MAFIA) {
+                      this.mafiaAction(data.targetId);
+                    }
+                    break;
+                  case "investigate":
+                    if (mafiaPlayer.jobId === JobId.POLICE) {
+                      this.policeAction(data.targetId, player);
+                    }
+                    break;
+                  case "heal":
+                    if (mafiaPlayer.jobId === JobId.DOCTOR) {
+                      this.doctorAction(data.targetId);
+                    }
+                    break;
+                  case "contact":
+                    if (mafiaPlayer.jobId === JobId.SPY || mafiaPlayer.jobId === JobId.MADAM) {
+                      this.processAbility(mafiaPlayer.id, data.targetId);
+                    }
+                    break;
+                  case "listen":
+                    if (mafiaPlayer.jobId === JobId.MEDIUM) {
+                      this.processAbility(mafiaPlayer.id, data.targetId);
+                    }
+                    break;
+                  case "announce":
+                    if (mafiaPlayer.jobId === JobId.JOURNALIST) {
+                      this.processAbility(mafiaPlayer.id, data.targetId);
+                    }
+                    break;
+                  case "convert":
+                    if (mafiaPlayer.jobId === JobId.WEREWOLF) {
+                      this.processAbility(mafiaPlayer.id, data.targetId);
+                    }
+                    break;
+                  case "block":
+                    if (mafiaPlayer.jobId === JobId.GANGSTER) {
+                      this.processAbility(mafiaPlayer.id, data.targetId);
+                    }
+                    break;
+                  case "track":
+                    if (mafiaPlayer.jobId === JobId.DETECTIVE) {
+                      this.processAbility(mafiaPlayer.id, data.targetId);
+                    }
+                    break;
+                  case "initChat":
+                    if (data.chatTarget === "lover" && mafiaPlayer.jobId === JobId.LOVER) {
+                      this.initLoverChat(player);
+                    } else if (data.chatTarget === "dead" && mafiaPlayer.jobId === JobId.MEDIUM) {
+                      this.initMediumChat(player);
+                    }
+                    break;
+                  case "chatMessage":
+                    if (data.chatTarget === "lover" && mafiaPlayer.jobId === JobId.LOVER) {
+                      this.broadcastLoverMessage(player, data.message);
+                    } else if (data.chatTarget === "dead" && mafiaPlayer.jobId === JobId.MEDIUM) {}
+                    break;
+                  case "close":
+                    player.tag.widget.nightAction.destroy();
+                    player.tag.widget.nightAction = null;
+                    break;
+                  default:
+                    if (data.targetId) {
+                      this.processAbility(mafiaPlayer.id, data.targetId);
+                    }
+                    break;
                 }
               });
             }
@@ -705,7 +912,7 @@ class GameFlowManager {
       case MafiaPhase.DAY:
         {
           this.evaluateNightActions();
-          App.sayToAll(`Room ${this.room.id}: 낮 단계 - 플레이어들이 토론을 진행합니다.`);
+          this.sayToRoom(`낮 단계 - 플레이어들이 토론을 진행합니다.`);
           this.room.actionToRoomPlayers(player => {
             const gamePlayer = getPlayerById(player.id);
             if (!gamePlayer) {
@@ -723,7 +930,7 @@ class GameFlowManager {
         break;
       case MafiaPhase.VOTING:
         {
-          App.sayToAll(`Room ${this.room.id}: 투표 단계 - 마피아로 의심되는 플레이어에게 투표하세요.`);
+          this.sayToRoom(`투표 단계 - 마피아로 의심되는 플레이어에게 투표하세요.`);
           this.voteResults = {};
           this.playerVotes = {};
           this.room.actionToRoomPlayers(player => {
@@ -761,7 +968,7 @@ class GameFlowManager {
         break;
       case MafiaPhase.FINAL_DEFENSE:
         {
-          App.sayToAll(`Room ${this.room.id}: 최후 변론 단계 - 가장 많은 표를 받은 플레이어가 최후 변론을 합니다.`);
+          this.sayToRoom(`최후 변론 단계 - 가장 많은 표를 받은 플레이어가 최후 변론을 합니다.`);
           let maxVotes = 0;
           let defendantId = null;
           let defendantName = "";
@@ -821,7 +1028,7 @@ class GameFlowManager {
         break;
       case MafiaPhase.APPROVAL_VOTING:
         {
-          App.sayToAll(`Room ${this.room.id}: 찬반 투표 단계 - 최후 변론을 들은 후 처형에 대한 찬반 투표를 진행합니다.`);
+          this.sayToRoom(`찬반 투표 단계 - 최후 변론을 들은 후 처형에 대한 찬반 투표를 진행합니다.`);
           let maxVotes = 0;
           let defendantId = null;
           let defendantName = "";
@@ -879,7 +1086,7 @@ class GameFlowManager {
         }
         break;
       default:
-        App.sayToAll(`Room ${this.room.id}: 알 수 없는 단계입니다.`);
+        this.sayToRoom(`알 수 없는 단계입니다.`);
     }
     if (this.dayCount == 0) this.dayCount = 1;
   }
@@ -915,41 +1122,128 @@ class GameFlowManager {
   finalizeVoting() {
     if (!this.room) return;
     let maxVotes = 0;
-    let eliminatedPlayerId = null;
+    let executedPlayerId = null;
     for (const [playerId, votes] of Object.entries(this.voteResults)) {
       if (votes > maxVotes) {
         maxVotes = votes;
-        eliminatedPlayerId = playerId;
+        executedPlayerId = playerId;
       }
     }
-    this.room.actionToRoomPlayers(player => {
-      const gamePlayer = getPlayerById(player.id);
-      if (!gamePlayer || !gamePlayer.tag.widget.voteWidget) return;
-      gamePlayer.tag.widget.voteWidget.sendMessage({
-        type: "showResults",
-        results: this.voteResults
-      });
+    const tiedPlayers = Object.entries(this.voteResults).filter(([_, votes]) => votes === maxVotes).map(([playerId, _]) => playerId);
+    if (tiedPlayers.length > 1) {
+      this.sayToRoom(`투표 결과 동률로 처형이 진행되지 않습니다.`);
+      return null;
+    }
+    if (executedPlayerId) {
+      const player = this.room.players.find(p => p.id === executedPlayerId);
+      if (player) {
+        player.isAlive = false;
+        if (!this.deadPlayers.includes(executedPlayerId)) {
+          this.deadPlayers.push(executedPlayerId);
+        }
+        this.sayToRoom(`${player.name}님이 마을 투표로 처형되었습니다.`);
+        const gamePlayer = getPlayerById(executedPlayerId);
+        if (gamePlayer) {
+          if (gamePlayer.tag.widget.main) {
+            gamePlayer.tag.widget.main.sendMessage({
+              type: "player_died",
+              message: "당신은 처형되었습니다."
+            });
+          }
+          this.showPermanentDeadChatWidget(gamePlayer);
+        }
+        return executedPlayerId;
+      }
+    }
+    return null;
+  }
+  getDeadPlayers() {
+    return [...this.deadPlayers];
+  }
+  showPermanentDeadChatWidget(player) {
+    if (this.deadChatWidgetShown[player.id]) return;
+    if (player.tag.widget.deadChat) {
+      player.tag.widget.deadChat.destroy();
+      player.tag.widget.deadChat = null;
+    }
+    player.tag.widget.deadChat = player.showWidget("widgets/dead_chat_widget.html", "bottomright", 0, 0);
+    player.tag.widget.deadChat.sendMessage({
+      type: "init",
+      isMobile: player.isMobile,
+      isTablet: player.isTablet,
+      myPlayerId: player.id,
+      myName: player.name,
+      myRole: "dead",
+      messages: this.chatMessages.filter(msg => msg.target === 'dead')
     });
-    App.runLater(() => {
-      if (!this.room) return;
-      this.room.actionToRoomPlayers(player => {
-        const gamePlayer = getPlayerById(player.id);
-        if (!gamePlayer || !gamePlayer.tag.widget.voteWidget) return;
-        gamePlayer.tag.widget.voteWidget.destroy();
-        gamePlayer.tag.widget.voteWidget = null;
-      });
-      if (eliminatedPlayerId) {
-        const targetPlayer = this.room.players.find(p => p.id === eliminatedPlayerId);
-        if (targetPlayer) {
-          targetPlayer.isAlive = false;
-          App.sayToAll(`Room ${this.room.id}: ${targetPlayer.name}(${targetPlayer.jobId}) 플레이어가 투표로 탈락했습니다.`);
+    player.tag.widget.deadChat.onMessage.Add((player, data) => {
+      if (data.type === "deadChatMessage") {
+        this.broadcastPermanentDeadMessage(player, data.message);
+      } else if (data.type === "hideDeadChat") {
+        this.deadChatWidgetShown[player.id] = false;
+      } else if (data.type === "showDeadChat") {
+        this.deadChatWidgetShown[player.id] = true;
+      }
+    });
+    this.deadChatWidgetShown[player.id] = true;
+  }
+  showMediumChatWidget(player) {
+    if (player.tag.mafiaPlayer.jobId !== JobId.MEDIUM) return;
+    if (this.deadChatWidgetShown[player.id]) return;
+    if (player.tag.widget.deadChat) {
+      player.tag.widget.deadChat.destroy();
+      player.tag.widget.deadChat = null;
+    }
+    player.tag.widget.deadChat = player.showWidget("widgets/dead_chat_widget.html", "bottomright", 0, 0);
+    player.tag.widget.deadChat.sendMessage({
+      type: "init",
+      isMobile: player.isMobile,
+      isTablet: player.isTablet,
+      myPlayerId: player.id,
+      myName: player.name,
+      myRole: "medium",
+      messages: this.chatMessages.filter(msg => msg.target === 'dead')
+    });
+    player.tag.widget.deadChat.onMessage.Add((player, data) => {
+      if (data.type === "hideDeadChat") {
+        this.deadChatWidgetShown[player.id] = false;
+      } else if (data.type === "showDeadChat") {
+        this.deadChatWidgetShown[player.id] = true;
+      }
+    });
+    this.deadChatWidgetShown[player.id] = true;
+  }
+  broadcastPermanentDeadMessage(sender, message) {
+    var _a;
+    this.chatMessages.push({
+      target: 'dead',
+      sender: sender.id,
+      senderName: sender.name,
+      message: message
+    });
+    (_a = this.room) === null || _a === void 0 ? void 0 : _a.actionToRoomPlayers(player => {
+      if (!player.isAlive || this.deadPlayers.includes(player.id)) {
+        const deadPlayer = getPlayerById(player.id);
+        if (deadPlayer && deadPlayer.tag.widget.deadChat && deadPlayer.id !== sender.id) {
+          deadPlayer.tag.widget.deadChat.sendMessage({
+            type: "chatMessage",
+            senderId: sender.id,
+            senderName: sender.name,
+            message: message
+          });
+        }
+      } else if (player.jobId === JobId.MEDIUM) {
+        const mediumPlayer = getPlayerById(player.id);
+        if (mediumPlayer && mediumPlayer.tag.widget.deadChat) {
+          mediumPlayer.tag.widget.deadChat.sendMessage({
+            type: "chatMessage",
+            senderId: sender.id,
+            senderName: sender.name,
+            message: message
+          });
         }
       }
-      this.checkWinCondition();
-      if (this.state === GameState.IN_PROGRESS) {
-        this.nextPhase();
-      }
-    }, 3);
+    });
   }
   mafiaAction(targetPlayerId) {
     if (this.currentPhase !== MafiaPhase.NIGHT) {
@@ -1027,13 +1321,19 @@ class GameFlowManager {
       const player = this.room.players.find(p => p.id === playerId);
       if (player) {
         player.isAlive = false;
-        App.showCenterLabel(`${player.name}님이 사망했습니다.`);
-        const gamePlayer = this.room.getGamePlayer(playerId);
+        if (!this.deadPlayers.includes(playerId)) {
+          this.deadPlayers.push(playerId);
+        }
+        this.showRoomLabel(`${player.name}님이 사망했습니다.`);
+        const gamePlayer = getPlayerById(playerId);
         if (gamePlayer) {
-          gamePlayer.tag.widget.main.sendMessage({
-            type: "player_died",
-            message: "당신은 사망했습니다."
-          });
+          if (gamePlayer.tag.widget.main) {
+            gamePlayer.tag.widget.main.sendMessage({
+              type: "player_died",
+              message: "당신은 사망했습니다."
+            });
+          }
+          this.showPermanentDeadChatWidget(gamePlayer);
         }
       }
     });
@@ -1055,28 +1355,26 @@ class GameFlowManager {
     return false;
   }
   showGameResult(winnerTeam) {
+    if (!this.room) return;
     this.state = GameState.ENDED;
-    const winMessage = winnerTeam === JobTeam.MAFIA ? "마피아 팀이 승리했습니다!" : "시민 팀이 승리했습니다!";
-    App.showCenterLabel(winMessage);
-    this.room.players.forEach(player => {
-      const gamePlayer = this.room.getGamePlayer(player.id);
-      if (gamePlayer) {
-        const job = getJobById(player.jobId);
-        const isWinner = (job === null || job === void 0 ? void 0 : job.team) === winnerTeam;
-        gamePlayer.tag.widget.main.sendMessage({
-          type: "game_result",
-          winner: winnerTeam,
-          isWinner: isWinner,
-          message: winMessage
+    let winMessage = winnerTeam === JobTeam.MAFIA ? "마피아 승리!" : "시민 승리!";
+    this.showRoomLabel(winMessage, 5000);
+    this.room.actionToRoomPlayers(player => {
+      const gamePlayer = getPlayerById(player.id);
+      if (!gamePlayer) return;
+      if (gamePlayer.tag.widget.gameStatus) {
+        gamePlayer.tag.widget.gameStatus.sendMessage({
+          type: "gameResult",
+          winnerTeam: winnerTeam
         });
       }
     });
-    setTimeout(() => {
+    App.runLater(() => {
       this.resetGame();
       if (this.room) {
         this.room.endGame();
       }
-    }, 5000);
+    }, 5);
   }
   resetGame() {
     if (!this.room) return;
@@ -1111,6 +1409,10 @@ class GameFlowManager {
           gamePlayer.tag.widget.approvalVote.destroy();
           gamePlayer.tag.widget.approvalVote = null;
         }
+        if (gamePlayer.tag.widget.deadChat) {
+          gamePlayer.tag.widget.deadChat.destroy();
+          gamePlayer.tag.widget.deadChat = null;
+        }
       }
     });
     this.voteResults = {};
@@ -1122,7 +1424,10 @@ class GameFlowManager {
     this.approvalPlayerVotes = {};
     this.defenseText = "";
     this.nightActions = [];
-    App.sayToAll(`Room ${this.room.id}: 게임이 리셋되었습니다.`);
+    this.deadPlayers = [];
+    this.chatMessages = [];
+    this.deadChatWidgetShown = {};
+    this.sayToRoom(`게임이 리셋되었습니다.`);
   }
   setPhase(phase) {
     this.currentPhase = phase;
@@ -1182,11 +1487,6 @@ class GameFlowManager {
       this.approvalVoteResults[previousVote]--;
     }
     this.approvalPlayerVotes[voterId] = vote;
-    if (!this.approvalVoteResults[vote]) {
-      this.approvalVoteResults[vote] = 1;
-    } else {
-      this.approvalVoteResults[vote]++;
-    }
     this.updateApprovalVoteResults();
     const alivePlayers = this.room.players.filter(p => p.isAlive);
     const votedPlayers = Object.keys(this.approvalPlayerVotes).length;
@@ -1228,10 +1528,10 @@ class GameFlowManager {
       const defendant = this.room.players.find(p => p.id === defendantId);
       if (defendant) {
         defendant.isAlive = false;
-        App.sayToAll(`Room ${this.room.id}: ${defendant.name}님이 처형되었습니다.`);
+        this.sayToRoom(`${defendant.name}님이 처형되었습니다.`);
       }
     } else {
-      App.sayToAll(`Room ${this.room.id}: 처형이 부결되었습니다.`);
+      this.sayToRoom(`처형이 부결되었습니다.`);
     }
     if (this.checkWinCondition()) {
       return;
@@ -1248,8 +1548,52 @@ class GameFlowManager {
       }
     }, 5);
   }
+  initLoverChat(player) {
+    this.chatMessages.filter(msg => msg.target === 'lover').forEach(msg => {
+      if (player.tag.widget.nightAction) {
+        player.tag.widget.nightAction.sendMessage({
+          type: "chatMessage",
+          chatTarget: "lover",
+          sender: msg.senderName,
+          message: msg.message
+        });
+      }
+    });
+  }
+  initMediumChat(player) {
+    this.chatMessages.filter(msg => msg.target === 'dead').forEach(msg => {
+      if (player.tag.widget.nightAction) {
+        player.tag.widget.nightAction.sendMessage({
+          type: "chatMessage",
+          chatTarget: "dead",
+          sender: msg.senderName,
+          message: msg.message
+        });
+      }
+    });
+  }
+  broadcastLoverMessage(sender, message) {
+    this.chatMessages.push({
+      target: 'lover',
+      sender: sender.id,
+      senderName: sender.name,
+      message: message
+    });
+    this.loverPlayers.forEach(loverId => {
+      if (loverId === sender.id) return;
+      const loverPlayer = getPlayerById(loverId);
+      if (loverPlayer && loverPlayer.tag.widget.nightAction) {
+        loverPlayer.tag.widget.nightAction.sendMessage({
+          type: "chatMessage",
+          chatTarget: "lover",
+          sender: sender.name,
+          message: message
+        });
+      }
+    });
+  }
 }
-;// CONCATENATED MODULE: ../../libs/core/mafia/managers/gameRoom/GameRoom.ts
+;// ../../libs/core/mafia/managers/gameRoom/GameRoom.ts
 
 
 
@@ -1388,7 +1732,7 @@ class GameRoom {
       try {
         callback(...args);
       } catch (error) {
-        App.sayToAll(`Error in event listener for ${event}:`, error);
+        console.error(`Error in event listener for ${event}:`, error);
       }
     });
   }
@@ -1459,6 +1803,10 @@ class GameRoom {
         if (player.tag.widget.voteWidget) {
           player.tag.widget.voteWidget.destroy();
           player.tag.widget.voteWidget = null;
+        }
+        if (player.tag.widget.deadChat) {
+          player.tag.widget.deadChat.destroy();
+          player.tag.widget.deadChat = null;
         }
       }
     }
@@ -1547,7 +1895,7 @@ class GameRoom {
     try {
       this.flowManager.startGame();
     } catch (error) {
-      App.sayToAll("Error starting game:", error);
+      console.error("Error starting game:", error);
       this.state = GameRoomState.WAITING;
       return false;
     }
@@ -1609,7 +1957,8 @@ class GameRoom {
     };
   }
 }
-;// CONCATENATED MODULE: ../../libs/core/mafia/managers/gameRoom/GameRoomManager.ts
+;// ../../libs/core/mafia/managers/gameRoom/GameRoomManager.ts
+
 
 class GameRoomManager {
   constructor() {
@@ -1625,14 +1974,14 @@ class GameRoomManager {
   }
   createRoom(config) {
     let roomId = "1";
-    for (let i = 1; i <= 8; i++) {
+    for (let i = 1; i <= Game.ROOM_COUNT; i++) {
       const id = i.toString();
       if (!this.gameRooms[id]) {
         roomId = id;
         break;
       }
     }
-    if (Object.keys(this.gameRooms).length >= 8) {
+    if (Object.keys(this.gameRooms).length >= Game.ROOM_COUNT) {
       throw new Error("모든 게임방이 사용 중입니다.");
     }
     const room = new GameRoom(Object.assign({
@@ -1721,7 +2070,7 @@ class GameRoomManager {
       try {
         callback(...args);
       } catch (error) {
-        App.sayToAll(`Error in event listener for ${event}:`, error);
+        console.error(`Error in event listener for ${event}:`, error);
       }
     });
   }
@@ -1740,7 +2089,7 @@ class GameRoomManager {
     }
   }
 }
-;// CONCATENATED MODULE: ../../libs/core/mafia/gameMode/GameMode.ts
+;// ../../libs/core/mafia/gameMode/GameMode.ts
 class GameMode {
   constructor(config) {
     this.jobs = [];
@@ -1783,7 +2132,7 @@ class GameMode {
     };
   }
 }
-;// CONCATENATED MODULE: ../../libs/core/mafia/gameMode/defaultGameModes.ts
+;// ../../libs/core/mafia/gameMode/defaultGameModes.ts
 
 
 function createDefaultGameModes() {
@@ -1806,14 +2155,14 @@ function createDefaultGameModes() {
   });
   return modes;
 }
-;// CONCATENATED MODULE: ../../libs/core/mafia/Game.ts
+;// ../../libs/core/mafia/Game.ts
 
 
 
 
 
 
-const ROOM_COUNT = 8;
+
 class Game extends GameBase {
   static create() {
     if (!Game._instance) {
@@ -1832,6 +2181,11 @@ class Game extends GameBase {
     gameModes.forEach(mode => {
       this.mafiaGameRoomManager.registerGameMode(mode);
     });
+    for (let i = 1; i <= 20; i++) {
+      if (Map.hasLocation(`GameRoom_${i}`)) {
+        Game.ROOM_COUNT++;
+      }
+    }
     this.setupGameRoomManagerListeners();
   }
   onStart() {
@@ -1853,6 +2207,23 @@ class Game extends GameBase {
     };
     Localizer_Localizer.prepareLocalizationContainer(player);
     const customData = parseJsonString(player.customData);
+    if (player.tag.roomInfo) {
+      const roomNum = player.tag.roomInfo.roomNum;
+      const room = this.mafiaGameRoomManager.getRoom(roomNum.toString());
+      if (room) {
+        const gameFlow = room.flowManager;
+        if (gameFlow && gameFlow.isGameInProgress()) {
+          const deadPlayers = gameFlow.getDeadPlayers();
+          if (deadPlayers && deadPlayers.includes(player.id)) {
+            gameFlow.showPermanentDeadChatWidget(player);
+          }
+          const mafiaPlayer = room.getPlayer(player.id);
+          if (mafiaPlayer && mafiaPlayer.jobId === JobId.MEDIUM && mafiaPlayer.isAlive) {
+            gameFlow.showMediumChatWidget(player);
+          }
+        }
+      }
+    }
     this.showLobbyWidget(player);
   }
   showLobbyWidget(player) {
@@ -1943,6 +2314,17 @@ class Game extends GameBase {
     });
     this.sendRoomInfoToPlayer(player, room);
     this.sendGameModeDetailsToPlayer(player, room.gameMode);
+    const gameFlow = room.flowManager;
+    if (gameFlow && gameFlow.isGameInProgress()) {
+      const deadPlayers = gameFlow.getDeadPlayers();
+      if (deadPlayers && deadPlayers.includes(player.id)) {
+        gameFlow.showPermanentDeadChatWidget(player);
+      }
+      const mafiaPlayer = room.getPlayer(player.id);
+      if (mafiaPlayer && mafiaPlayer.jobId === JobId.MEDIUM && mafiaPlayer.isAlive) {
+        gameFlow.showMediumChatWidget(player);
+      }
+    }
     this.notifyPlayerJoinedRoom(room, player);
     player.tag.widget.room.onMessage.Add((sender, data) => {
       var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k;
@@ -2306,7 +2688,7 @@ class Game extends GameBase {
     }
   }
   update(dt) {
-    for (let i = 1; i <= ROOM_COUNT; i++) {
+    for (let i = 1; i <= Game.ROOM_COUNT; i++) {
       const room = this.mafiaGameRoomManager.getRoom(i.toString());
       if (room && room.flowManager.isGameInProgress()) {
         if (room.flowManager.phaseTimer > 0) {
@@ -2337,7 +2719,7 @@ class Game extends GameBase {
       return;
     }
     const rooms = [];
-    for (let i = 1; i <= ROOM_COUNT; i++) {
+    for (let i = 1; i <= Game.ROOM_COUNT; i++) {
       const room = this.mafiaGameRoomManager.getRoom(i.toString());
       if (room) {
         const players = room.getPlayers();
@@ -2468,7 +2850,8 @@ class Game extends GameBase {
     });
   }
 }
-;// CONCATENATED MODULE: ./main.ts
+Game.ROOM_COUNT = 0;
+;// ./main.ts
 
 App.onInit.Add(() => {
   App.cameraEffect = 1;
