@@ -1139,7 +1139,12 @@ class GameFlowManager {
             return;
           }
           defendantName = defendant.name;
-          this.showFinalDefenseWidget(defendant, defendant);
+          this.room.actionToRoomPlayers(player => {
+            const gamePlayer = getPlayerById(player.id);
+            if (gamePlayer) {
+              this.showFinalDefenseWidget(player, defendant);
+            }
+          });
           App.runLater(() => {
             this.nextPhase();
           }, phaseDurations[MafiaPhase.FINAL_DEFENSE]);
@@ -1163,7 +1168,14 @@ class GameFlowManager {
             return;
           }
           defendantName = defendant.name;
-          this.showApprovalVoteWidget(defendant, defendant);
+          this.room.actionToRoomPlayers(player => {
+            if (player.isAlive) {
+              const gamePlayer = getPlayerById(player.id);
+              if (gamePlayer) {
+                this.showApprovalVoteWidget(player, defendant);
+              }
+            }
+          });
           App.runLater(() => {
             this.finalizeApprovalVoting();
           }, phaseDurations[MafiaPhase.APPROVAL_VOTING]);
@@ -1209,13 +1221,15 @@ class GameFlowManager {
       timeLimit: phaseDurations[MafiaPhase.FINAL_DEFENSE],
       serverTime: Date.now(),
       isDefendant: player.id === targetPlayer.id,
-      defendantName: targetPlayer.name
+      defendantName: targetPlayer.name,
+      defendantId: targetPlayer.id,
+      myPlayerId: player.id
     });
     const finalDefenseWidget = widgetManager.getWidget(gamePlayer, WidgetType.FINAL_DEFENSE);
     if (finalDefenseWidget) {
       finalDefenseWidget.element.onMessage.Add((sender, data) => {
-        if (data.type === "defense" && sender.id === targetPlayer.id) {
-          this.defenseText = data.text || "";
+        if (data.type === "submitDefense" && sender.id === targetPlayer.id) {
+          this.defenseText = data.defense || "";
           this.broadcastDefense(this.defenseText);
         }
       });
@@ -1231,13 +1245,16 @@ class GameFlowManager {
       type: "init",
       timeLimit: phaseDurations[MafiaPhase.APPROVAL_VOTING],
       serverTime: Date.now(),
-      targetName: targetPlayer.name,
-      defense: this.defenseText
+      defendantName: targetPlayer.name,
+      defendantId: targetPlayer.id,
+      myPlayerId: player.id,
+      isAlive: player.isAlive,
+      defenseText: this.defenseText
     });
     const approvalVoteWidget = widgetManager.getWidget(gamePlayer, WidgetType.APPROVAL_VOTE);
     if (approvalVoteWidget) {
       approvalVoteWidget.element.onMessage.Add((sender, data) => {
-        if (data.type === "vote" && (data.vote === "approve" || data.vote === "reject")) {
+        if (data.type === "submitApprovalVote" && (data.vote === "approve" || data.vote === "reject")) {
           const mafiaPlayer = sender.tag.mafiaPlayer;
           if (mafiaPlayer && mafiaPlayer.isAlive && mafiaPlayer.id !== targetPlayer.id) {
             this.processApprovalVote(mafiaPlayer.id, data.vote);
