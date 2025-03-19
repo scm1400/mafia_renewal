@@ -821,7 +821,8 @@
                 initializeChat(roleAction.chatTarget);
             }
             
-            clearInterval(timerInterval);
+            // 타이머는 계속 실행되도록 유지
+            // clearInterval(timerInterval);
         }
 
         function initializeChat(target) {
@@ -1023,21 +1024,45 @@
                     alert("An error occurred:", error);
                 }
                 
+                // 기존 상태 초기화
                 players = data.players;
                 myPlayerId = data.myPlayerId;
                 myRole = data.role;
                 hasActed = false;
                 selectedPlayerId = null;
                 
+                // UI 초기화
                 initializeRoleUI(myRole);
                 renderPlayers();
                 
+                // 결과 컨테이너 초기화
+                const resultContainer = document.getElementById('result-container');
+                if (resultContainer) {
+                    resultContainer.style.display = 'none';
+                }
+                
+                // 채팅 컨테이너 초기화
+                const chatContainer = document.getElementById('chat-container');
+                if (chatContainer) {
+                    chatContainer.style.display = 'none';
+                }
+                
+                // 액션 버튼과 플레이어 목록 재표시
+                document.getElementById('action-button').style.display = 'block';
+                document.getElementById('players-list').style.display = 'block';
+                document.getElementById('action-button').disabled = myRole !== 'citizen';
+                
+                // 타이머 초기화
                 if (data.timeLimit) {
                     startTimer(data.timeLimit);
                 }
                 
                 // 액션 버튼 이벤트 리스너 설정
-                document.getElementById('action-button').addEventListener('click', submitAction);
+                const actionButton = document.getElementById('action-button');
+                // 이전 이벤트 리스너 제거
+                const newActionButton = actionButton.cloneNode(true);
+                actionButton.parentNode.replaceChild(newActionButton, actionButton);
+                newActionButton.addEventListener('click', submitAction);
             } else if (data.type === 'investigationResult') {
                 showInvestigationResult(data.isMafia);
             } else if (data.type === "hide") {

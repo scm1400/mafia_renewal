@@ -397,7 +397,10 @@
 
         // 초기화 함수
         function initialize(data) {
-
+            // 기존 상태 초기화
+            voteSubmitted = false;
+            selectedVote = null;
+            
             // 플레이어 정보 설정
             defendantId = data.defendantId;
             myPlayerId = data.myPlayerId;
@@ -416,6 +419,15 @@
             timeLeft = data.timeLimit || 30;
             updateTimerDisplay();
             startTimer();
+
+            // UI 초기화 - 결과 화면 숨기고 투표 옵션 표시
+            voteResultsElement.classList.add('hidden');
+            voteOptionsElement.classList.remove('hidden');
+            submitVoteBtn.disabled = false;
+            
+            // 옵션 선택 초기화
+            approveOptionElement.classList.remove('selected');
+            rejectOptionElement.classList.remove('selected');
 
             // 죽은 플레이어거나 자신이 피고인인 경우 투표할 수 없음
             if (!isAlive || isDefendant) {
@@ -480,6 +492,9 @@
             voteSubmitted = true;
             submitVoteBtn.disabled = true;
             
+            // 투표 옵션 UI를 숨기고 결과 UI 표시
+            voteOptionsElement.classList.add('hidden');
+            
             // 부모 창에 투표 결과 전송
             window.parent.postMessage({
                 type: 'submitApprovalVote',
@@ -488,7 +503,7 @@
         }
 
         // 투표 결과 표시
-        function showResults(results) {
+        function showResults(results, isFinalResult) {
             const approveCount = results.approve || 0;
             const rejectCount = results.reject || 0;
             const total = approveCount + rejectCount;
@@ -504,9 +519,14 @@
             approveCountElement.textContent = approveCount;
             rejectCountElement.textContent = rejectCount;
             
-            // 결과 표시
-            voteOptionsElement.classList.add('hidden');
+            // 결과 화면 표시
             voteResultsElement.classList.remove('hidden');
+            
+            // 최종 결과이거나 이미 투표한 사용자는 투표 옵션을 숨김
+            if (isFinalResult || voteSubmitted) {
+                voteOptionsElement.classList.add('hidden');
+                submitVoteBtn.disabled = true;
+            }
         }
 
         // 위젯 닫기
@@ -574,7 +594,7 @@
             } else if (data.type === 'init') {
                 initialize(data);
             } else if (data.type === 'showResults') {
-                showResults(data.results);
+                showResults(data.results, data.isFinalResult);
             } else if (data.type === 'hideWidget') {
                 // WidgetManager에서 보내는 숨김 메시지 처리
                 hideWidget();
