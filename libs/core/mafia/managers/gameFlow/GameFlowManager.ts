@@ -529,10 +529,37 @@ export class GameFlowManager {
 													this.processAbility(mafiaPlayer.id, data.targetId);
 												}
 												break;
+											case "chatMessage":
+												// 채팅 메시지 처리
+												if (data.chatTarget === "lover" && mafiaPlayer.jobId === JobId.LOVER) {
+													this.broadcastLoverMessage(player, data.message);
+												} else if (data.chatTarget === "dead") {
+													this.broadcastPermanentDeadMessage(player, data.message);
+												}
+												break;
+											case "initChat":
+												// 채팅 초기화 처리
+												if (data.chatTarget === "lover" && mafiaPlayer.jobId === JobId.LOVER) {
+													this.initLoverChat(player);
+												} else if (data.chatTarget === "dead") {
+													this.initMediumChat(player);
+												}
+												break;
 										}
 									});
 								}
 							}
+						}
+						
+						// 연인인 경우 연인 채팅 초기화
+						if (player.jobId === JobId.LOVER) {
+							ScriptApp.runLater(() => {
+								const gamePlayer = getPlayerById(player.id) as GamePlayer;
+								if (gamePlayer && gamePlayer.tag.widget.nightAction) {
+									// 연인 채팅 초기화
+									this.initLoverChat(gamePlayer);
+								}
+							}, 1); // 위젯이 로드된 후 약간의 지연시간을 줌
 						}
 					});
 
@@ -1382,7 +1409,7 @@ export class GameFlowManager {
 
 		this.room.actionToRoomPlayers((player) => {
 			const gamePlayer: GamePlayer = getPlayerById(player.id);
-			// 이미 투표한 플레이어에게만 결과를 보여줌
+			// 이미 투표한 플레이어에게만 결과를 볼 수 있게 함
 			if (!gamePlayer || !gamePlayer.tag.widget.approvalVote) return;
 			
 			// 투표한 플레이어만 결과를 볼 수 있게 함
@@ -1399,18 +1426,24 @@ export class GameFlowManager {
 	 * 연인 채팅 초기화
 	 */
 	private initLoverChat(player: GamePlayer) {
+		if (!player.tag.widget || !player.tag.widget.nightAction) return;
+
+		// 채팅 UI 초기화 메시지 전송
+		player.tag.widget.nightAction.sendMessage({
+			type: "initChat",
+			chatTarget: "lover"
+		});
+
 		// 이미 저장된 채팅 메시지 전송
 		this.chatMessages
 			.filter((msg) => msg.target === "lover")
 			.forEach((msg) => {
-				if (player.tag.widget.nightAction) {
-					player.tag.widget.nightAction.sendMessage({
-						type: "chatMessage",
-						chatTarget: "lover",
-						sender: msg.senderName,
-						message: msg.message,
-					});
-				}
+				player.tag.widget.nightAction.sendMessage({
+					type: "chatMessage",
+					chatTarget: "lover",
+					sender: msg.senderName,
+					message: msg.message,
+				});
 			});
 	}
 
@@ -1448,6 +1481,11 @@ export class GameFlowManager {
 		// 다른 연인들에게 메시지 전송
 		this.loverPlayers.forEach((loverId) => {
 			if (loverId === sender.id) return; // 자신에게는 전송하지 않음
+
+			// 플레이어 정보 얻기
+			const player = this.room?.players.find(p => p.id === loverId);
+			// 살아있는 플레이어만 메시지 수신
+			if (!player || !player.isAlive) return;
 
 			const loverPlayer = getPlayerById(loverId) as GamePlayer;
 			if (loverPlayer && loverPlayer.tag.widget.nightAction) {

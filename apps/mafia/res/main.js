@@ -1037,6 +1037,10 @@ class GameFlowManager {
       };
       this.approvalPlayerVotes = {};
     }
+    if (this.phaseCycle[nextIndex] === MafiaPhase.VOTING) {
+      this.voteResults = {};
+      this.playerVotes = {};
+    }
     if (nextIndex === 0) {
       this.dayCount++;
     }
@@ -1057,6 +1061,8 @@ class GameFlowManager {
           break;
         case MafiaPhase.VOTING:
           widgetManager.hideWidget(gamePlayer, WidgetType.VOTE);
+          this.voteResults = {};
+          this.playerVotes = {};
           break;
         case MafiaPhase.FINAL_DEFENSE:
           widgetManager.hideWidget(gamePlayer, WidgetType.FINAL_DEFENSE);
@@ -1143,10 +1149,32 @@ class GameFlowManager {
                           this.processAbility(mafiaPlayer.id, data.targetId);
                         }
                         break;
+                      case "chatMessage":
+                        if (data.chatTarget === "lover" && mafiaPlayer.jobId === JobId.LOVER) {
+                          this.broadcastLoverMessage(player, data.message);
+                        } else if (data.chatTarget === "dead") {
+                          this.broadcastPermanentDeadMessage(player, data.message);
+                        }
+                        break;
+                      case "initChat":
+                        if (data.chatTarget === "lover" && mafiaPlayer.jobId === JobId.LOVER) {
+                          this.initLoverChat(player);
+                        } else if (data.chatTarget === "dead") {
+                          this.initMediumChat(player);
+                        }
+                        break;
                     }
                   });
                 }
               }
+            }
+            if (player.jobId === JobId.LOVER) {
+              App.runLater(() => {
+                const gamePlayer = getPlayerById(player.id);
+                if (gamePlayer && gamePlayer.tag.widget.nightAction) {
+                  this.initLoverChat(gamePlayer);
+                }
+              }, 1);
             }
           });
           this.phaseTimer = phaseDurations[MafiaPhase.NIGHT];
@@ -1712,15 +1740,18 @@ class GameFlowManager {
     });
   }
   initLoverChat(player) {
+    if (!player.tag.widget || !player.tag.widget.nightAction) return;
+    player.tag.widget.nightAction.sendMessage({
+      type: "initChat",
+      chatTarget: "lover"
+    });
     this.chatMessages.filter(msg => msg.target === "lover").forEach(msg => {
-      if (player.tag.widget.nightAction) {
-        player.tag.widget.nightAction.sendMessage({
-          type: "chatMessage",
-          chatTarget: "lover",
-          sender: msg.senderName,
-          message: msg.message
-        });
-      }
+      player.tag.widget.nightAction.sendMessage({
+        type: "chatMessage",
+        chatTarget: "lover",
+        sender: msg.senderName,
+        message: msg.message
+      });
     });
   }
   initMediumChat(player) {
@@ -1743,7 +1774,10 @@ class GameFlowManager {
       message: message
     });
     this.loverPlayers.forEach(loverId => {
+      var _a;
       if (loverId === sender.id) return;
+      const player = (_a = this.room) === null || _a === void 0 ? void 0 : _a.players.find(p => p.id === loverId);
+      if (!player || !player.isAlive) return;
       const loverPlayer = getPlayerById(loverId);
       if (loverPlayer && loverPlayer.tag.widget.nightAction) {
         loverPlayer.tag.widget.nightAction.sendMessage({
