@@ -1180,7 +1180,10 @@ class GameFlowManager {
           }
           const defendant = this.room.players.find(p => p.id === defendantId);
           if (!defendant) {
-            this.nextPhase();
+            this.sayToRoom(`투표 결과가 없거나 동률이어서 변론 없이 진행됩니다.`);
+            App.runLater(() => {
+              this.nextPhase();
+            }, 5);
             return;
           }
           defendantName = defendant.name;
@@ -1737,7 +1740,11 @@ class GameFlowManager {
   }
   updateAllGameStatusWidgets() {
     if (!this.room) return;
-    this.room.actionToRoomPlayers(player => {});
+    this.room.actionToRoomPlayers(player => {
+      const gamePlayer = getPlayerById(player.id);
+      if (!gamePlayer) return;
+      this.updateGameStatusWidget(gamePlayer, player);
+    });
   }
   getDeadPlayers() {
     return [...this.deadPlayers];
@@ -1782,7 +1789,8 @@ class GameFlowManager {
       if (!gamePlayer || !gamePlayer.tag.widget || !gamePlayer.tag.widget.approvalVote) return;
       gamePlayer.tag.widget.approvalVote.sendMessage({
         type: "showResults",
-        results: this.approvalVoteResults
+        results: this.approvalVoteResults,
+        isFinalResult: true
       });
     });
     let maxVotes = 0;

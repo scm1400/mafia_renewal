@@ -311,9 +311,11 @@
             if (isDefendant) {
                 defendantView.style.display = 'block';
                 spectatorView.style.display = 'none';
+                submitDefenseBtn.disabled = false;
             } else {
                 defendantView.style.display = 'none';
                 spectatorView.style.display = 'block';
+                submitDefenseBtn.disabled = true;
             }
 
             // 위젯 표시

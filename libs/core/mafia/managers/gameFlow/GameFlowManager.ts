@@ -1434,6 +1434,11 @@ export class GameFlowManager {
 		if (!this.room) return;
 
 		this.room.actionToRoomPlayers((player) => {
+			const gamePlayer: GamePlayer = getPlayerById(player.id);
+			if (!gamePlayer) return;
+			
+			// 각 플레이어의 게임 상태 위젯 업데이트
+			this.updateGameStatusWidget(gamePlayer, player);
 		});
 	}
 
