@@ -5,6 +5,7 @@ import { getPlayerById } from "../../../../utils/Common";
 import { Job, GameMode as GameModeInterface, JobId } from "../../types/JobTypes";
 import { GameMode } from "../../gameMode/GameMode";
 import { WidgetManager } from "../widget/WidgetManager";
+import { WidgetType } from "../widget/WidgetType";
 
 // GameRoomState 열거형
 export enum GameRoomState {
@@ -251,46 +252,34 @@ export class GameRoom {
 			return false;
 		}
 		
-		// 게임 중인지 확인
-		if (this.state !== GameRoomState.WAITING) {
+		// 게임이 이미 시작됐는지 확인
+		if (this.state === GameRoomState.PLAYING) {
 			return false;
 		}
 		
-		// 플레이어 추가 (기존 코드와 호환되도록 수정)
+		// 새 플레이어 객체 생성 (나중에 게임 관련 정보를 더 추가할 예정)
 		const mafiaPlayer: MafiaPlayer = {
 			id: player.id,
 			name: player.name,
-			jobId: JobId.CITIZEN, // 기본 직업은 시민
+			jobId: JobId.CITIZEN, // 기본값은 시민으로 설정
 			isAlive: true,
-			emoji: "👤" // 기본 이모지
 		};
 		
+		// 플레이어 목록에 추가
 		this.players.push(mafiaPlayer);
 		
-		// 플레이어 태그에 마피아 플레이어 정보 저장
-		player.tag.mafiaPlayer = mafiaPlayer;
-		
-		// 플레이어 위치 설정
-		const locationInfo = GAMEROOM_LOCATIONS[parseInt(this.id)];
-		if (locationInfo) {
-			player.spawnAtLocation(`GameRoom_${this.id}`);
-			player.setCameraTarget(Math.floor(locationInfo.x + locationInfo.width / 2), Math.floor(locationInfo.y + locationInfo.height / 2), 0);
-			player.displayRatio = 1.5;
-			player.sendUpdated();
-		}
-		
-		// 방 정보 저장
+		// 플레이어에게 방 정보 태그 설정
 		player.tag.roomInfo = {
-			roomNum: parseInt(this.id),
+			roomNum: parseInt(this.id), // 방 번호
 		};
 		
-		// 첫 플레이어인 경우 호스트로 지정
-		if (!this.hostId) {
+		// 첫 번째 입장한 플레이어가 호스트가 됨
+		if (this.players.length === 1 || !this.hostId) {
 			this.hostId = player.id;
 		}
 		
-		// 입장 이벤트 발생
-		this.emit(WaitingRoomEvent.PLAYER_JOIN, player);
+		// 이벤트 발생
+		this.emit(WaitingRoomEvent.PLAYER_JOIN, this, player);
 		
 		return true;
 	}
@@ -488,6 +477,17 @@ export class GameRoom {
 		
 		// 게임 시작 처리
 		try {
+			// 플레이어들의 룸 위젯 정보 업데이트
+			this.actionToRoomPlayers((player) => {
+				const gamePlayer = getPlayerById(player.id);
+				if (gamePlayer) {
+					// 로비 위젯 숨기기
+					const widgetManager = WidgetManager.instance;
+					widgetManager.hideWidget(gamePlayer, WidgetType.LOBBY);
+				}
+			});
+			
+			// 게임 시작
 			this.flowManager.startGame();
 		} catch (error) {
 			ScriptApp.sayToStaffs("Error starting game:", error);

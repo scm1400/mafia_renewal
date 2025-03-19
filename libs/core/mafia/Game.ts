@@ -9,7 +9,7 @@ import { JOBS, GAME_MODES, getGameModeById } from "./types/JobTypes";
 import { GameMode } from "./gameMode/GameMode";
 import { createDefaultGameModes } from "./gameMode/defaultGameModes";
 import { JobId } from "./types/JobTypes";
-import { GameRoom } from "./managers/gameRoom/GameRoom";
+import { GameRoom, GameRoomState } from "./managers/gameRoom/GameRoom";
 import { MafiaPlayer } from "./managers/gameFlow/GameFlowManager";
 import { WidgetManager } from "./managers/widget/WidgetManager";
 import { WidgetType } from "./managers/widget/WidgetType";
@@ -349,6 +349,14 @@ export class Game extends GameBase {
 							const canStart = this.canStartGame(room);
 
 							if (canStart) {
+								// 방 상태를 PLAYING으로 변경
+								room.state = GameRoomState.PLAYING;
+								
+								// 방장 확인
+								if (!room.hostId) {
+									room.hostId = sender.id;
+								}
+								
 								// 게임 시작
 								room.flowManager.startGame();
 
@@ -425,6 +433,12 @@ export class Game extends GameBase {
 			const hostPlayer = players.find((p) => p.id === hostId);
 			if (hostPlayer) {
 				hostName = hostPlayer.name;
+			} else {
+				// 플레이어 목록에 없는 경우 getPlayerById로 한번 더 시도
+				const gamePlayer = getPlayerById(hostId);
+				if (gamePlayer) {
+					hostName = gamePlayer.name;
+				}
 			}
 		}
 
@@ -448,6 +462,8 @@ export class Game extends GameBase {
 				title: room.title,
 				maxPlayers: room.maxPlayers,
 				gameMode: room.gameMode.getName(),
+				state: room.state,
+				isPlaying: room.state === GameRoomState.PLAYING,
 				host: {
 					id: hostId,
 					name: hostName,
@@ -558,9 +574,17 @@ export class Game extends GameBase {
 	private notifyGameStarting(room: GameRoom) {
 		const widgetManager = WidgetManager.instance;
 		
+		// 방 상태 업데이트
+		room.state = GameRoomState.PLAYING;
+		
 		const players = room.getPlayers() as MafiaPlayer[];
 		players.forEach((p) => {
 			const gamePlayer = ScriptApp.getPlayerByID(p.id) as unknown as GamePlayer;
+			
+			// 기존 로비 위젯 숨기기
+			widgetManager.hideWidget(gamePlayer, WidgetType.LOBBY);
+			
+			// 게임 시작 메시지 전송
 			widgetManager.sendMessageToWidget(gamePlayer, WidgetType.ROOM, {
 				type: "gameStarting",
 			});
@@ -742,15 +766,8 @@ export class Game extends GameBase {
 		for (let i = 1; i <= Game.ROOM_COUNT; i++) {
 			const room = this.mafiaGameRoomManager.getRoom(i.toString());
 			if (room && room.flowManager.isGameInProgress()) {
-				// 타이머 업데이트
-				if (room.flowManager.phaseTimer > 0) {
-					room.flowManager.phaseTimer -= dt;
-
-					// 타이머가 0 이하가 되면 다음 단계로 진행
-					if (room.flowManager.phaseTimer <= 0) {
-						room.flowManager.nextPhase();
-					}
-				}
+				// 새로 추가한 updateGameState 메서드를 사용하여 게임 상태 업데이트
+				room.flowManager.updateGameState(dt);
 			}
 		}
 	}
@@ -881,13 +898,25 @@ export class Game extends GameBase {
 		for (let i = 1; i <= Game.ROOM_COUNT; i++) {
 			const room = this.mafiaGameRoomManager.getRoom(i.toString());
 			if (room) {
+				// 호스트 이름 가져오기
+				let hostName = "알 수 없음";
+				if (room.hostId) {
+					const hostPlayer = getPlayerById(room.hostId);
+					if (hostPlayer) {
+						hostName = hostPlayer.name;
+					}
+				}
+				
 				roomsList.push({
 					id: room.id,
 					title: room.title,
 					playerCount: room.getPlayersCount(),
 					maxPlayers: room.maxPlayers,
 					gameMode: room.gameMode.getName(),
-					isPlaying: room.flowManager.isGameInProgress(),
+					isPlaying: room.state === GameRoomState.PLAYING,
+					state: room.state,
+					hostId: room.hostId,
+					hostName: hostName
 				});
 			}
 		}

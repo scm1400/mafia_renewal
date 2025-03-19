@@ -65,6 +65,7 @@ export class GameFlowManager {
 	private gameMode: string = "classic"; // 기본 게임 모드
 	private roomNumber: number;
 	private room: GameRoom | null = null;
+	private phaseEndCallback: (() => void) | null = null; // 페이즈 종료 시 실행할 콜백
 
 	// 밤에 수행되는 액션들을 저장하는 변수들
 	private nightActions: AbilityAction[] = [];
@@ -246,6 +247,37 @@ export class GameFlowManager {
 		this.executePhaseActions();
 	}
 
+	/**
+	 * 게임 상태를 업데이트합니다.
+	 * dt: 델타 타임 (초 단위)
+	 */
+	updateGameState(dt: number): void {
+		if (this.state !== GameState.IN_PROGRESS) return;
+		
+		// 타이머 감소
+		if (this.phaseTimer > 0) {
+			this.phaseTimer -= dt;
+			
+			// 모든 플레이어의 게임 상태 위젯 업데이트 (매 초마다)
+			if (Math.floor(this.phaseTimer) !== Math.floor(this.phaseTimer + dt)) {
+				this.updateAllGameStatusWidgets();
+			}
+		}
+		
+		// 타이머가 0 이하로 떨어지면 페이즈 종료 처리
+		if (this.phaseTimer <= 0) {
+			if (this.phaseEndCallback) {
+				// 설정된 콜백이 있으면 실행
+				const callback = this.phaseEndCallback;
+				this.phaseEndCallback = null; // 콜백 초기화
+				callback();
+			} else {
+				// 설정된 콜백이 없으면 기본적으로 다음 페이즈로 진행
+				this.nextPhase();
+			}
+		}
+	}
+
 	// 게임 모드에 따라 사용 가능한 직업 목록 가져오기
 	private getAvailableJobs(): Job[] {
 		// JobTypes.ts에서 getJobsByGameMode 함수 사용
@@ -343,6 +375,12 @@ export class GameFlowManager {
 			this.approvalVoteResults = { approve: 0, reject: 0 };
 			this.approvalPlayerVotes = {};
 		}
+		
+		// 다음 단계가 VOTING인 경우 투표 결과 초기화
+		if (this.phaseCycle[nextIndex] === MafiaPhase.VOTING) {
+			this.voteResults = {};
+			this.playerVotes = {};
+		}
 
 		// 사이클이 처음으로 돌아오면 dayCount 증가
 		if (nextIndex === 0) {
@@ -377,6 +415,9 @@ export class GameFlowManager {
 					break;
 				case MafiaPhase.VOTING:
 					widgetManager.hideWidget(gamePlayer, WidgetType.VOTE);
+					// 투표 데이터 초기화
+					this.voteResults = {};
+					this.playerVotes = {};
 					break;
 				case MafiaPhase.FINAL_DEFENSE:
 					widgetManager.hideWidget(gamePlayer, WidgetType.FINAL_DEFENSE);
@@ -495,15 +536,18 @@ export class GameFlowManager {
 						}
 					});
 
-					// 밤 단계 타이머 설정
+					// 타이머 설정 - 페이즈 종료 시 콜백 설정
 					this.phaseTimer = phaseDurations[MafiaPhase.NIGHT];
+					this.phaseEndCallback = () => {
+						// 밤 액션 결과 평가
+						this.evaluateNightActions();
+						// 다음 페이즈로 진행
+						this.nextPhase();
+					};
 				}
 				break;
 			case MafiaPhase.DAY:
 				{
-					// 밤 액션 결과 평가
-					this.evaluateNightActions();
-
 					this.sayToRoom(`낮 단계 - 플레이어들이 토론을 진행합니다.`);
 
 					this.room.actionToRoomPlayers((player) => {
@@ -520,6 +564,10 @@ export class GameFlowManager {
 						gamePlayer.tag.mafiaPlayer = player;
 					});
 
+					// 타이머 설정 - 페이즈 종료 시 콜백 설정
+					this.phaseTimer = phaseDurations[MafiaPhase.DAY];
+					this.phaseEndCallback = () => this.nextPhase();
+					
 					// 승리 조건 체크
 					this.checkWinCondition();
 				}
@@ -545,18 +593,21 @@ export class GameFlowManager {
 							this.showVoteWidget(player);
 						}
 					});
+					
+					// 타이머 설정 - 페이즈 종료 시 콜백 설정
+					this.phaseTimer = phaseDurations[MafiaPhase.VOTING];
+					this.phaseEndCallback = () => this.finalizeVoting();
 				}
 				break;
 			case MafiaPhase.FINAL_DEFENSE:
 				{
-					this.sayToRoom(`최후 변론 단계 - 가장 많은 표를 받은 플레이어가 최후 변론을 합니다.`);
+					this.sayToRoom(`최후 변론 단계 - 투표 결과로 선정된 플레이어의 최후 변론 시간입니다.`);
 
 					// 투표 결과 확인
 					let maxVotes = 0;
-					let defendantId = null;
+					let defendantId: string | null = null;
 					let defendantName = "";
 
-					// 가장 많은 표를 받은 플레이어 찾기
 					for (const [playerId, votes] of Object.entries(this.voteResults)) {
 						if (votes > maxVotes) {
 							maxVotes = votes;
@@ -570,10 +621,9 @@ export class GameFlowManager {
 						// 피고인이 없는 경우 (투표가 없었거나 동점인 경우)
 						this.sayToRoom(`투표 결과가 없거나 동률이어서 변론 없이 진행됩니다.`);
 						
-						// 잠시 대기 후 다음 단계로 넘어감
-						ScriptApp.runLater(() => {
-							this.nextPhase();
-						}, 5); // 5초 후 다음 단계로
+						// 페이즈 종료 시 콜백 설정 (5초 후 실행)
+						this.phaseTimer = 5;
+						this.phaseEndCallback = () => this.nextPhase();
 						return;
 					}
 					defendantName = defendant.name;
@@ -586,10 +636,9 @@ export class GameFlowManager {
 						}
 					});
 
-					// 타이머 설정 - 시간이 다 되면 자동으로 다음 단계로 넘어감
-					ScriptApp.runLater(() => {
-						this.nextPhase();
-					}, phaseDurations[MafiaPhase.FINAL_DEFENSE]);
+					// 타이머 설정 - 페이즈 종료 시 콜백 설정
+					this.phaseTimer = phaseDurations[MafiaPhase.FINAL_DEFENSE];
+					this.phaseEndCallback = () => this.nextPhase();
 				}
 				break;
 			case MafiaPhase.APPROVAL_VOTING:
@@ -611,10 +660,9 @@ export class GameFlowManager {
 
 					// 투표 결과 확인
 					let maxVotes = 0;
-					let defendantId = null;
+					let defendantId: string | null = null;
 					let defendantName = "";
 
-					// 가장 많은 표를 받은 플레이어 찾기
 					for (const [playerId, votes] of Object.entries(this.voteResults)) {
 						if (votes > maxVotes) {
 							maxVotes = votes;
@@ -643,10 +691,9 @@ export class GameFlowManager {
 						}
 					});
 
-					// 타이머 설정 - 시간이 다 되면 자동으로 결과 처리
-					ScriptApp.runLater(() => {
-						this.finalizeApprovalVoting();
-					}, phaseDurations[MafiaPhase.APPROVAL_VOTING]); // 찬반 투표 단계의 정해진 시간 후 다음 단계로
+					// 타이머 설정 - 페이즈 종료 시 콜백 설정
+					this.phaseTimer = phaseDurations[MafiaPhase.APPROVAL_VOTING];
+					this.phaseEndCallback = () => this.finalizeApprovalVoting();
 				}
 				break;
 			default:
@@ -1242,8 +1289,9 @@ export class GameFlowManager {
 				}
 			});
 			
-			// 다음 단계(밤)로 이동 - nextPhase() 대신 직접 NIGHT 단계로 이동
-			ScriptApp.runLater(() => {
+			// 다음 단계(밤)로 이동 - 페이즈 종료 시 콜백 설정 (3초 후 실행)
+			this.phaseTimer = 3;
+			this.phaseEndCallback = () => {
 				// 이전 단계의 위젯 정리
 				this.cleanupPhaseWidgets();
 				
@@ -1256,7 +1304,7 @@ export class GameFlowManager {
 				
 				// 단계별 액션 실행
 				this.executePhaseActions();
-			}, 3); // 3초 후 다음 단계로
+			};
 			
 			return null;
 		}
@@ -1270,10 +1318,9 @@ export class GameFlowManager {
 			}
 		});
 		
-		// 최후 변론으로 넘어감
-		ScriptApp.runLater(() => {
-			this.nextPhase();
-		}, 3); // 3초 후 다음 단계로
+		// 최후 변론으로 넘어감 - 페이즈 종료 시 콜백 설정 (3초 후 실행)
+		this.phaseTimer = 3;
+		this.phaseEndCallback = () => this.nextPhase();
 		
 		return executedPlayerId;
 	}
@@ -1285,9 +1332,18 @@ export class GameFlowManager {
 	 */
 	processApprovalVote(voterId: string, vote: string) {
 		// 상태 확인 (승인 투표 단계가 아니면 처리하지 않음)
-		if (this.currentPhase !== MafiaPhase.APPROVAL_VOTING) return;
+		if (this.currentPhase !== MafiaPhase.APPROVAL_VOTING) {
+			this.sayToRoom(`현재 단계는 찬반 투표 단계가 아닙니다.`);
+			return;
+		}
 
-		// 이미 투표한 경우 이전 투표 취소
+		// 중복 투표 확인
+		if (this.approvalPlayerVotes[voterId] === vote) {
+			this.sayToRoom(`이미 ${vote === "approve" ? "찬성" : "반대"}에 투표했습니다.`);
+			return;
+		}
+
+		// 기존 투표 취소 (있는 경우)
 		if (this.approvalPlayerVotes[voterId]) {
 			const previousVote = this.approvalPlayerVotes[voterId];
 			if (this.approvalVoteResults[previousVote] > 0) {
@@ -1295,7 +1351,7 @@ export class GameFlowManager {
 			}
 		}
 
-		// 새 투표 등록
+		// 새 투표 저장
 		this.approvalPlayerVotes[voterId] = vote;
 		
 		// 투표 결과 업데이트
@@ -1304,38 +1360,16 @@ export class GameFlowManager {
 		} else {
 			this.approvalVoteResults[vote]++;
 		}
-
-		// 투표 결과 업데이트 - 현재 투표한 사람에게만 결과를 보여줌
+		
+		// 모든 플레이어에게 투표 결과 업데이트
 		this.updateApprovalVoteResults();
 
-		// 모든 살아있는 플레이어가 투표했는지 확인
-		// 단, 피고인은 제외
+		// 모든 플레이어가 투표했는지 확인
 		const alivePlayers = this.room.players.filter(p => p.isAlive);
+		const votablePlayerCount = alivePlayers.length - 1; // 피고인 제외
 		
-		// 투표 결과 확인
-		let maxVotes = 0;
-		let defendantId = null;
-		for (const [playerId, votes] of Object.entries(this.voteResults)) {
-			if (votes > maxVotes) {
-				maxVotes = votes;
-				defendantId = playerId;
-			}
-		}
-		
-		// 피고인 확인
-		const defendant = defendantId ? this.room.players.find(p => p.id === defendantId) : null;
-		
-		// 피고인을 제외한 살아있는 플레이어 수
-		const eligibleVoters = defendant ? alivePlayers.filter(p => p.id !== defendant.id).length : alivePlayers.length;
-		
-		// 살아있는 플레이어 중에서 투표한 플레이어 수 계산 (피고인 제외)
-		const aliveVoters = Object.keys(this.approvalPlayerVotes).filter(playerId => {
-			const player = this.room.players.find(p => p.id === playerId);
-			return player && player.isAlive && player.id !== defendantId;
-		});
-
-		if (aliveVoters.length >= eligibleVoters) {
-			// 모든 살아있는 플레이어가 투표 완료 (피고인 제외)
+		if (Object.keys(this.approvalPlayerVotes).length >= votablePlayerCount) {
+			// 모든 사람이 투표 완료
 			this.finalizeApprovalVoting();
 		}
 	}
@@ -1455,13 +1489,34 @@ export class GameFlowManager {
 	 * @param targetId 투표 대상 플레이어 ID
 	 */
 	processVote(voterId: string, targetId: string) {
-		// 이미 투표한 경우 이전 투표 취소
-		if (this.playerVotes[voterId]) {
-			const previousTarget = this.playerVotes[voterId];
-			this.voteResults[previousTarget]--;
+		// 상태 확인 (투표 단계가 아니면 처리하지 않음)
+		if (this.currentPhase !== MafiaPhase.VOTING) {
+			this.sayToRoom(`현재 단계는 투표 단계가 아닙니다.`);
+			return;
 		}
 
-		// 새 투표 등록
+		// 중복 투표 확인
+		if (this.playerVotes[voterId] === targetId) {
+			this.sayToRoom(`이미 해당 플레이어에게 투표했습니다.`);
+			return;
+		}
+
+		// 타겟이 유효한지 확인
+		const targetPlayer = this.room.players.find(p => p.id === targetId);
+		if (!targetPlayer || !targetPlayer.isAlive) {
+			this.sayToRoom(`대상 플레이어가 유효하지 않습니다.`);
+			return;
+		}
+
+		// 기존 투표 취소 (있는 경우)
+		if (this.playerVotes[voterId]) {
+			const previousTargetId = this.playerVotes[voterId];
+			if (this.voteResults[previousTargetId] > 0) {
+				this.voteResults[previousTargetId]--;
+			}
+		}
+
+		// 새 투표 저장
 		this.playerVotes[voterId] = targetId;
 		
 		// 투표 결과 업데이트
@@ -1470,7 +1525,7 @@ export class GameFlowManager {
 		} else {
 			this.voteResults[targetId]++;
 		}
-
+		
 		// 모든 플레이어에게 투표 결과 업데이트
 		this.updateVoteResults();
 		
@@ -1485,7 +1540,12 @@ export class GameFlowManager {
 
 		if (aliveVoters.length >= alivePlayers.length) {
 			// 모든 살아있는 플레이어가 투표 완료
-			this.finalizeVoting();
+			// 페이즈 종료 콜백을 즉시 실행하여 타이머와 상관없이 바로 다음 단계로 진행
+			if (this.phaseEndCallback) {
+				const callback = this.phaseEndCallback;
+				this.phaseEndCallback = null;
+				callback();
+			}
 		}
 	}
 
@@ -1537,7 +1597,7 @@ export class GameFlowManager {
 		}
 
 		// 피고인 확인
-		const defendant = defendantId ? this.room.players.find((p) => p.id === defendantId) : null;
+		const defendant = defendantId ? this.room.players.find(p => p.id === defendantId) : null;
 
 		// 처형 결과 처리
 		if (defendant && this.approvalVoteResults.approve > this.approvalVoteResults.reject) {
@@ -1559,8 +1619,9 @@ export class GameFlowManager {
 		// 모든 플레이어의 게임 상태 위젯 업데이트
 		this.updateAllGameStatusWidgets();
 
-		// 위젯 정리 및 다음 단계로 진행
-		ScriptApp.runLater(() => {
+		// 위젯 정리 및 다음 단계로 진행 - 페이즈 종료 시 콜백 설정 (5초 후 실행)
+		this.phaseTimer = 5;
+		this.phaseEndCallback = () => {
 			// 모든 플레이어의 찬반 투표 위젯 숨기기
 			this.room.actionToRoomPlayers((player) => {
 				const gamePlayer: GamePlayer = getPlayerById(player.id);
@@ -1580,6 +1641,6 @@ export class GameFlowManager {
 			if (this.state === GameState.IN_PROGRESS) {
 				this.nextPhase();
 			}
-		}, 5); // 5초 후 다음 단계로
+		};
 	}
 }
