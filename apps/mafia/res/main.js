@@ -667,7 +667,8 @@ class WidgetManager {
       hideWidget: () => this.hideWidget(player, widgetType),
       sendMessage: message => widget.sendMessage(message),
       initialize: data => {},
-      destroy: () => widget.destroy()
+      destroy: () => widget.destroy(),
+      hasMessageHandler: false
     };
   }
   showWidget(player, widgetType) {
@@ -787,6 +788,79 @@ class WidgetManager {
     if (!widget) return;
     widget.initialize(data);
   }
+  registerMessageHandler(player, widgetType, callback) {
+    const widgetMap = this.playerWidgetMap[player.id];
+    if (!widgetMap) return false;
+    const widget = widgetMap[widgetType];
+    if (!widget) return false;
+    if (widget.hasMessageHandler) {
+      return false;
+    }
+    widget.element.onMessage.Add(callback);
+    widget.hasMessageHandler = true;
+    return true;
+  }
+  clearMessageHandlers(player, widgetType) {
+    const widgetMap = this.playerWidgetMap[player.id];
+    if (!widgetMap) return;
+    const widget = widgetMap[widgetType];
+    if (!widget) return;
+    this.hideWidget(player, widgetType);
+    let widgetPath = "";
+    let anchor = "middle";
+    switch (widgetType) {
+      case WidgetType.LOBBY:
+        widgetPath = "widgets/lobby_widget.html";
+        break;
+      case WidgetType.ROOM:
+        widgetPath = "widgets/room_widget.html";
+        break;
+      case WidgetType.GAME_STATUS:
+        widgetPath = "widgets/game_status.html";
+        anchor = "middleright";
+        break;
+      case WidgetType.NIGHT_ACTION:
+        widgetPath = "widgets/night_action.html";
+        break;
+      case WidgetType.VOTE:
+        widgetPath = "widgets/vote_widget.html";
+        break;
+      case WidgetType.FINAL_DEFENSE:
+        widgetPath = "widgets/final_defense_widget.html";
+        break;
+      case WidgetType.APPROVAL_VOTE:
+        widgetPath = "widgets/approval_vote_widget.html";
+        break;
+      case WidgetType.DEAD_CHAT:
+        widgetPath = "widgets/dead_chat_widget.html";
+        anchor = "middleright";
+        break;
+      case WidgetType.ROLE_CARD:
+        widgetPath = "widgets/role_card.html";
+        break;
+      case WidgetType.GAME_MODE_SELECT:
+        widgetPath = "widgets/game_mode_select.html";
+        break;
+      default:
+        return;
+    }
+    const newWidget = player.showWidget(widgetPath, anchor, 0, 0);
+    newWidget.sendMessage({
+      type: "setWidget",
+      isMobile: player.isMobile,
+      isTablet: player.isTablet
+    });
+    widgetMap[widgetType] = {
+      element: newWidget,
+      widgetType: widgetType,
+      revealWidget: () => this.showWidget(player, widgetType),
+      hideWidget: () => this.hideWidget(player, widgetType),
+      sendMessage: message => newWidget.sendMessage(message),
+      initialize: data => {},
+      destroy: () => newWidget.destroy(),
+      hasMessageHandler: false
+    };
+  }
   cleanupPlayerWidgets(player) {
     const widgetMap = this.playerWidgetMap[player.id];
     if (!widgetMap) return;
@@ -794,6 +868,7 @@ class WidgetManager {
       widget.sendMessage({
         type: "hideWidget"
       });
+      widget.hasMessageHandler = false;
     });
     if (player.tag && player.tag.widget) {
       player.tag.widget.lobby = null;
@@ -1089,7 +1164,7 @@ class GameFlowManager {
           this.playerVotes = {};
           this.nightActions = [];
           this.room.actionToRoomPlayers(player => {
-            var _a, _b;
+            var _a;
             const gamePlayer = getPlayerById(player.id);
             if (!gamePlayer) {
               player.isAlive = false;
@@ -1097,6 +1172,7 @@ class GameFlowManager {
             }
             widgetManager.hideWidget(gamePlayer, WidgetType.APPROVAL_VOTE);
             if (player.isAlive) {
+              widgetManager.clearMessageHandlers(gamePlayer, WidgetType.NIGHT_ACTION);
               widgetManager.showWidget(gamePlayer, WidgetType.NIGHT_ACTION);
               widgetManager.sendMessageToWidget(gamePlayer, WidgetType.NIGHT_ACTION, {
                 type: "init",
@@ -1106,67 +1182,51 @@ class GameFlowManager {
                 timeLimit: phaseDurations[MafiaPhase.NIGHT],
                 serverTime: Date.now()
               });
-              const nightActionWidget = widgetManager.getWidget(gamePlayer, WidgetType.NIGHT_ACTION);
-              if (nightActionWidget) {
-                widgetManager.hideWidget(gamePlayer, WidgetType.NIGHT_ACTION);
-                widgetManager.showWidget(gamePlayer, WidgetType.NIGHT_ACTION);
-                widgetManager.sendMessageToWidget(gamePlayer, WidgetType.NIGHT_ACTION, {
-                  type: "init",
-                  players: ((_b = this.room) === null || _b === void 0 ? void 0 : _b.players) || [],
-                  myPlayerId: player.id,
-                  role: player.jobId.toLowerCase(),
-                  timeLimit: phaseDurations[MafiaPhase.NIGHT],
-                  serverTime: Date.now()
-                });
-                const refreshedWidget = widgetManager.getWidget(gamePlayer, WidgetType.NIGHT_ACTION);
-                if (refreshedWidget) {
-                  refreshedWidget.element.onMessage.Add((player, data) => {
-                    const mafiaPlayer = player.tag.mafiaPlayer;
-                    if (!mafiaPlayer) return;
-                    switch (data.type) {
-                      case "kill":
-                        if (mafiaPlayer.jobId === JobId.MAFIA) {
-                          this.mafiaAction(data.targetId);
-                        }
-                        break;
-                      case "investigate":
-                        if (mafiaPlayer.jobId === JobId.POLICE) {
-                          this.policeAction(data.targetId, player);
-                        }
-                        break;
-                      case "heal":
-                        if (mafiaPlayer.jobId === JobId.DOCTOR) {
-                          this.doctorAction(data.targetId);
-                        }
-                        break;
-                      case "contact":
-                        if (mafiaPlayer.jobId === JobId.SPY || mafiaPlayer.jobId === JobId.MADAM) {
-                          this.processAbility(mafiaPlayer.id, data.targetId);
-                        }
-                        break;
-                      case "listen":
-                        if (mafiaPlayer.jobId === JobId.MEDIUM) {
-                          this.processAbility(mafiaPlayer.id, data.targetId);
-                        }
-                        break;
-                      case "chatMessage":
-                        if (data.chatTarget === "lover" && mafiaPlayer.jobId === JobId.LOVER) {
-                          this.broadcastLoverMessage(player, data.message);
-                        } else if (data.chatTarget === "dead") {
-                          this.broadcastPermanentDeadMessage(player, data.message);
-                        }
-                        break;
-                      case "initChat":
-                        if (data.chatTarget === "lover" && mafiaPlayer.jobId === JobId.LOVER) {
-                          this.initLoverChat(player);
-                        } else if (data.chatTarget === "dead") {
-                          this.initMediumChat(player);
-                        }
-                        break;
+              widgetManager.registerMessageHandler(gamePlayer, WidgetType.NIGHT_ACTION, (player, data) => {
+                const mafiaPlayer = player.tag.mafiaPlayer;
+                if (!mafiaPlayer) return;
+                switch (data.type) {
+                  case "kill":
+                    if (mafiaPlayer.jobId === JobId.MAFIA) {
+                      this.mafiaAction(data.targetId);
                     }
-                  });
+                    break;
+                  case "investigate":
+                    if (mafiaPlayer.jobId === JobId.POLICE) {
+                      this.policeAction(data.targetId, player);
+                    }
+                    break;
+                  case "heal":
+                    if (mafiaPlayer.jobId === JobId.DOCTOR) {
+                      this.doctorAction(data.targetId);
+                    }
+                    break;
+                  case "contact":
+                    if (mafiaPlayer.jobId === JobId.SPY || mafiaPlayer.jobId === JobId.MADAM) {
+                      this.processAbility(mafiaPlayer.id, data.targetId);
+                    }
+                    break;
+                  case "listen":
+                    if (mafiaPlayer.jobId === JobId.MEDIUM) {
+                      this.processAbility(mafiaPlayer.id, data.targetId);
+                    }
+                    break;
+                  case "chatMessage":
+                    if (data.chatTarget === "lover" && mafiaPlayer.jobId === JobId.LOVER) {
+                      this.broadcastLoverMessage(player, data.message);
+                    } else if (data.chatTarget === "dead") {
+                      this.broadcastPermanentDeadMessage(player, data.message);
+                    }
+                    break;
+                  case "initChat":
+                    if (data.chatTarget === "lover" && mafiaPlayer.jobId === JobId.LOVER) {
+                      this.initLoverChat(player);
+                    } else if (data.chatTarget === "dead") {
+                      this.initMediumChat(player);
+                    }
+                    break;
                 }
-              }
+              });
             }
             if (player.jobId === JobId.LOVER) {
               App.runLater(() => {
@@ -1311,17 +1371,14 @@ class GameFlowManager {
       timeLimit: phaseDurations[MafiaPhase.VOTING],
       serverTime: Date.now()
     });
-    const voteWidget = widgetManager.getWidget(gamePlayer, WidgetType.VOTE);
-    if (voteWidget) {
-      voteWidget.element.onMessage.Add((sender, data) => {
-        if (data.type === "vote" && data.targetId) {
-          const mafiaPlayer = sender.tag.mafiaPlayer;
-          if (mafiaPlayer && mafiaPlayer.isAlive) {
-            this.processVote(mafiaPlayer.id, data.targetId);
-          }
+    widgetManager.registerMessageHandler(gamePlayer, WidgetType.VOTE, (sender, data) => {
+      if (data.type === "vote" && data.targetId) {
+        const mafiaPlayer = sender.tag.mafiaPlayer;
+        if (mafiaPlayer && mafiaPlayer.isAlive) {
+          this.processVote(mafiaPlayer.id, data.targetId);
         }
-      });
-    }
+      }
+    });
   }
   showFinalDefenseWidget(player, targetPlayer) {
     const gamePlayer = getPlayerById(player.id);
@@ -1337,22 +1394,19 @@ class GameFlowManager {
       defendantId: targetPlayer.id,
       myPlayerId: player.id
     });
-    const finalDefenseWidget = widgetManager.getWidget(gamePlayer, WidgetType.FINAL_DEFENSE);
-    if (finalDefenseWidget) {
-      finalDefenseWidget.element.onMessage.Add((sender, data) => {
-        if (data.type === "submitDefense" && sender.id === targetPlayer.id) {
-          this.defenseText = data.defense || "";
-          this.broadcastDefense(this.defenseText);
-        }
-      });
-    }
+    widgetManager.registerMessageHandler(gamePlayer, WidgetType.FINAL_DEFENSE, (sender, data) => {
+      if (data.type === "submitDefense" && sender.id === targetPlayer.id) {
+        this.defenseText = data.defense || "";
+        this.broadcastDefense(this.defenseText);
+      }
+    });
   }
   showApprovalVoteWidget(player, targetPlayer) {
     if (!player.isAlive || player.id === targetPlayer.id) return;
     const gamePlayer = getPlayerById(player.id);
     if (!gamePlayer) return;
     const widgetManager = WidgetManager.instance;
-    widgetManager.hideWidget(gamePlayer, WidgetType.APPROVAL_VOTE);
+    widgetManager.clearMessageHandlers(gamePlayer, WidgetType.APPROVAL_VOTE);
     App.runLater(() => {
       widgetManager.showWidget(gamePlayer, WidgetType.APPROVAL_VOTE);
       widgetManager.sendMessageToWidget(gamePlayer, WidgetType.APPROVAL_VOTE, {
@@ -1365,17 +1419,14 @@ class GameFlowManager {
         isAlive: player.isAlive,
         defenseText: this.defenseText
       });
-      const approvalVoteWidget = widgetManager.getWidget(gamePlayer, WidgetType.APPROVAL_VOTE);
-      if (approvalVoteWidget) {
-        approvalVoteWidget.element.onMessage.Add((sender, data) => {
-          if (data.type === "submitApprovalVote" && (data.vote === "approve" || data.vote === "reject")) {
-            const mafiaPlayer = sender.tag.mafiaPlayer;
-            if (mafiaPlayer && mafiaPlayer.isAlive && mafiaPlayer.id !== targetPlayer.id) {
-              this.processApprovalVote(mafiaPlayer.id, data.vote);
-            }
+      widgetManager.registerMessageHandler(gamePlayer, WidgetType.APPROVAL_VOTE, (sender, data) => {
+        if (data.type === "submitApprovalVote" && (data.vote === "approve" || data.vote === "reject")) {
+          const mafiaPlayer = sender.tag.mafiaPlayer;
+          if (mafiaPlayer && mafiaPlayer.isAlive && mafiaPlayer.id !== targetPlayer.id) {
+            this.processApprovalVote(mafiaPlayer.id, data.vote);
           }
-        });
-      }
+        }
+      });
     }, 0.1);
   }
   showPermanentDeadChatWidget(player) {
@@ -1388,14 +1439,11 @@ class GameFlowManager {
       type: "initDeadChat",
       messages: this.chatMessages.filter(msg => msg.target === "dead")
     });
-    const deadChatWidget = widgetManager.getWidget(player, WidgetType.DEAD_CHAT);
-    if (deadChatWidget) {
-      deadChatWidget.element.onMessage.Add((sender, data) => {
-        if (data.type === "sendMessage" && data.message) {
-          this.broadcastPermanentDeadMessage(sender, data.message);
-        }
-      });
-    }
+    widgetManager.registerMessageHandler(player, WidgetType.DEAD_CHAT, (sender, data) => {
+      if (data.type === "sendMessage" && data.message) {
+        this.broadcastPermanentDeadMessage(sender, data.message);
+      }
+    });
     this.deadChatWidgetShown[player.id] = true;
   }
   showMediumChatWidget(player) {
@@ -1408,14 +1456,11 @@ class GameFlowManager {
       type: "initMediumChat",
       messages: this.chatMessages.filter(msg => msg.target === "dead")
     });
-    const deadChatWidget = widgetManager.getWidget(player, WidgetType.DEAD_CHAT);
-    if (deadChatWidget) {
-      deadChatWidget.element.onMessage.Add((sender, data) => {
-        if (data.type === "sendMessage" && data.message) {
-          this.broadcastPermanentDeadMessage(sender, data.message);
-        }
-      });
-    }
+    widgetManager.registerMessageHandler(player, WidgetType.DEAD_CHAT, (sender, data) => {
+      if (data.type === "sendMessage" && data.message) {
+        this.broadcastPermanentDeadMessage(sender, data.message);
+      }
+    });
     this.deadChatWidgetShown[player.id] = true;
   }
   broadcastPermanentDeadMessage(sender, message) {

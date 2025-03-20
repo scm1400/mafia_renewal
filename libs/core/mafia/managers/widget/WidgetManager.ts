@@ -1,6 +1,19 @@
 import { WidgetType } from "./WidgetType";
-import { IWidget } from "./IWidget";
 import { GamePlayer } from "../../types/GamePlayer";
+
+/**
+ * 위젯 인터페이스
+ */
+export interface IWidget {
+    element: any; // ZepWidgetElement 타입 대신 any 사용
+    widgetType: WidgetType;
+    revealWidget: () => void;
+    hideWidget: () => void;
+    sendMessage: (message: any) => void;
+    initialize: (data: any) => void;
+    destroy: () => void;
+    hasMessageHandler?: boolean; // 메시지 핸들러가 등록되었는지 여부를 추적
+}
 
 /**
  * 위젯 관리자 클래스
@@ -97,7 +110,8 @@ export class WidgetManager {
             hideWidget: () => this.hideWidget(player, widgetType),
             sendMessage: (message) => widget.sendMessage(message),
             initialize: (data) => {},
-            destroy: () => widget.destroy()
+            destroy: () => widget.destroy(),
+            hasMessageHandler: false // 초기값은 false로 설정
         };
     }
     
@@ -259,6 +273,109 @@ export class WidgetManager {
     }
     
     /**
+     * 위젯에 메시지 핸들러 등록 (한 번만 등록)
+     * @param player 게임 플레이어
+     * @param widgetType 위젯 타입
+     * @param callback 메시지 핸들러 콜백 함수
+     * @returns 핸들러가 새로 등록되었는지 여부
+     */
+    public registerMessageHandler(
+        player: GamePlayer, 
+        widgetType: WidgetType, 
+        callback: (sender: GamePlayer, data: any) => void
+    ): boolean {
+        const widgetMap = this.playerWidgetMap[player.id];
+        if (!widgetMap) return false;
+        
+        const widget = widgetMap[widgetType];
+        if (!widget) return false;
+        
+        // 이미 핸들러가 등록되어 있으면 등록하지 않음
+        if (widget.hasMessageHandler) {
+            return false;
+        }
+        
+        // 핸들러 등록
+        widget.element.onMessage.Add(callback);
+        widget.hasMessageHandler = true;
+        
+        return true;
+    }
+    
+    /**
+     * 위젯 메시지 핸들러 제거
+     * @param player 게임 플레이어
+     * @param widgetType 위젯 타입
+     */
+    public clearMessageHandlers(player: GamePlayer, widgetType: WidgetType): void {
+        const widgetMap = this.playerWidgetMap[player.id];
+        if (!widgetMap) return;
+        
+        const widget = widgetMap[widgetType];
+        if (!widget) return;
+        
+        // 기존 핸들러가 있는 경우 우선 widget 객체를 완전히 재생성
+        this.hideWidget(player, widgetType);
+        
+        // 위젯 타입에 따라 적절한 경로와 앵커 설정
+        let widgetPath = "";
+        let anchor: "popup" | "sidebar" | "top" | "topleft" | "topright" | "middle" | "middleleft" | "middleright" | "bottom" | "bottomleft" | "bottomright" = "middle";
+        
+        switch (widgetType) {
+            case WidgetType.LOBBY:
+                widgetPath = "widgets/lobby_widget.html";
+                break;
+            case WidgetType.ROOM:
+                widgetPath = "widgets/room_widget.html";
+                break;
+            case WidgetType.GAME_STATUS:
+                widgetPath = "widgets/game_status.html";
+                anchor = "middleright";
+                break;
+            case WidgetType.NIGHT_ACTION:
+                widgetPath = "widgets/night_action.html";
+                break;
+            case WidgetType.VOTE:
+                widgetPath = "widgets/vote_widget.html";
+                break;
+            case WidgetType.FINAL_DEFENSE:
+                widgetPath = "widgets/final_defense_widget.html";
+                break;
+            case WidgetType.APPROVAL_VOTE:
+                widgetPath = "widgets/approval_vote_widget.html";
+                break;
+            case WidgetType.DEAD_CHAT:
+                widgetPath = "widgets/dead_chat_widget.html";
+                anchor = "middleright";
+                break;
+            case WidgetType.ROLE_CARD:
+                widgetPath = "widgets/role_card.html";
+                break;
+            case WidgetType.GAME_MODE_SELECT:
+                widgetPath = "widgets/game_mode_select.html";
+                break;
+            default:
+                return;
+        }
+        
+        // 위젯 다시 생성
+        const newWidget = player.showWidget(widgetPath, anchor, 0, 0);
+        newWidget.sendMessage({ type: "setWidget", isMobile: player.isMobile, isTablet: player.isTablet });
+        
+        // 위젯 맵 업데이트
+        widgetMap[widgetType] = {
+            element: newWidget,
+            widgetType: widgetType,
+            revealWidget: () => this.showWidget(player, widgetType),
+            hideWidget: () => this.hideWidget(player, widgetType),
+            sendMessage: (message) => newWidget.sendMessage(message),
+            initialize: (data) => {},
+            destroy: () => newWidget.destroy(),
+            hasMessageHandler: false // 핸들러 초기화
+        };
+    }
+    
+    /**
      * 플레이어의 모든 위젯 정리 (제거 대신 숨김 - 오브젝트 풀 패턴)
      * @param player 게임 플레이어
      */
@@ -272,6 +389,9 @@ export class WidgetManager {
             widget.sendMessage({
                 type: "hideWidget"
             });
+            
+            // 핸들러 등록 상태 초기화
+            widget.hasMessageHandler = false;
         });
         
         // player.tag.widget에서 모든 위젯 참조 제거 (기존 코드와의 호환성 유지)
