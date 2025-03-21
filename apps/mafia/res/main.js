@@ -1,7 +1,7 @@
 /******/ (() => { // webpackBootstrap
 /******/ 	"use strict";
 
-;// ../../libs/utils/Localizer.ts
+;// CONCATENATED MODULE: ../../libs/utils/Localizer.ts
 const LOCALIZE_KEYS = {};
 const LOCALIZE_CONTAINER = {
   ko: null,
@@ -32,7 +32,7 @@ class Localizer_Localizer {
     return acc;
   }
 }
-;// ../../libs/utils/Common.ts
+;// CONCATENATED MODULE: ../../libs/utils/Common.ts
 
 let log;
 function isDevServer() {
@@ -117,7 +117,7 @@ function getLocationAreaCoordinates(locationName) {
   }
   return coordinates;
 }
-;// ../../libs/utils/CustomLabelFunctions.ts
+;// CONCATENATED MODULE: ../../libs/utils/CustomLabelFunctions.ts
 
 const LABEL_SPACING = 60;
 const labelCounts = {};
@@ -274,7 +274,7 @@ function showLabel(player, key, options = {}) {
   };
   player.showCustomLabel(htmlStr, 0xffffff, backgroundColor, topGap, labelPercentWidth, 0.64, labelDisplayTime, customLabelOption);
 }
-;// ../../libs/core/GameBase.ts
+;// CONCATENATED MODULE: ../../libs/core/GameBase.ts
 class GameBase {
   constructor() {
     this.onStartCallbacks = [];
@@ -348,7 +348,7 @@ class GameBase {
     this.onTriggerObjectCallbacks.push(callback);
   }
 }
-;// ../../libs/core/mafia/types/JobTypes.ts
+;// CONCATENATED MODULE: ../../libs/core/mafia/types/JobTypes.ts
 var JobId;
 (function (JobId) {
   JobId["MAFIA"] = "mafia";
@@ -606,7 +606,7 @@ function getJobsByGameMode(modeId) {
     return job ? job : null;
   }).filter(job => job !== null);
 }
-;// ../../libs/core/mafia/managers/widget/WidgetType.ts
+;// CONCATENATED MODULE: ../../libs/core/mafia/managers/widget/WidgetType.ts
 var WidgetType;
 (function (WidgetType) {
   WidgetType["LOBBY"] = "LOBBY";
@@ -620,7 +620,7 @@ var WidgetType;
   WidgetType["ROLE_CARD"] = "ROLE_CARD";
   WidgetType["GAME_MODE_SELECT"] = "GAME_MODE_SELECT";
 })(WidgetType || (WidgetType = {}));
-;// ../../libs/core/mafia/managers/widget/WidgetManager.ts
+;// CONCATENATED MODULE: ../../libs/core/mafia/managers/widget/WidgetManager.ts
 
 class WidgetManager {
   constructor() {
@@ -858,7 +858,7 @@ class WidgetManager {
     return widgetMap[widgetType];
   }
 }
-;// ../../libs/core/mafia/managers/gameFlow/GameFlowManager.ts
+;// CONCATENATED MODULE: ../../libs/core/mafia/managers/gameFlow/GameFlowManager.ts
 
 
 
@@ -1146,6 +1146,7 @@ class GameFlowManager {
                 timeLimit: phaseDurations[MafiaPhase.NIGHT],
                 serverTime: Date.now()
               });
+              widgetManager.clearMessageHandlers(gamePlayer, WidgetType.NIGHT_ACTION);
               widgetManager.registerMessageHandler(gamePlayer, WidgetType.NIGHT_ACTION, (player, data) => {
                 const mafiaPlayer = player.tag.mafiaPlayer;
                 if (!mafiaPlayer) return;
@@ -1333,6 +1334,7 @@ class GameFlowManager {
       timeLimit: phaseDurations[MafiaPhase.VOTING],
       serverTime: Date.now()
     });
+    widgetManager.clearMessageHandlers(gamePlayer, WidgetType.VOTE);
     widgetManager.registerMessageHandler(gamePlayer, WidgetType.VOTE, (sender, data) => {
       if (data.type === "vote" && data.targetId) {
         const mafiaPlayer = sender.tag.mafiaPlayer;
@@ -1396,6 +1398,7 @@ class GameFlowManager {
         isAlive: player.isAlive,
         defenseText: this.defenseText
       });
+      widgetManager.clearMessageHandlers(gamePlayer, WidgetType.APPROVAL_VOTE);
       widgetManager.registerMessageHandler(gamePlayer, WidgetType.APPROVAL_VOTE, (sender, data) => {
         if (data.type === "submitApprovalVote" && (data.vote === "approve" || data.vote === "reject")) {
           const mafiaPlayer = sender.tag.mafiaPlayer;
@@ -1417,6 +1420,7 @@ class GameFlowManager {
       type: "initDeadChat",
       messages: this.chatMessages.filter(msg => msg.target === "dead")
     });
+    widgetManager.clearMessageHandlers(player, WidgetType.DEAD_CHAT);
     widgetManager.registerMessageHandler(player, WidgetType.DEAD_CHAT, (sender, data) => {
       if (data.type === "sendMessage" && data.message) {
         this.broadcastPermanentDeadMessage(sender, data.message);
@@ -1434,6 +1438,7 @@ class GameFlowManager {
       type: "initMediumChat",
       messages: this.chatMessages.filter(msg => msg.target === "dead")
     });
+    widgetManager.clearMessageHandlers(player, WidgetType.DEAD_CHAT);
     widgetManager.registerMessageHandler(player, WidgetType.DEAD_CHAT, (sender, data) => {
       if (data.type === "sendMessage" && data.message) {
         this.broadcastPermanentDeadMessage(sender, data.message);
@@ -1572,6 +1577,27 @@ class GameFlowManager {
         });
       }
     });
+    App.runLater(() => {
+      if (this.room) {
+        this.room.endGame();
+        this.room.actionToRoomPlayers(player => {
+          const gamePlayer = getPlayerById(player.id);
+          if (!gamePlayer) return;
+          const widgetManager = WidgetManager.instance;
+          widgetManager.hideWidget(gamePlayer, WidgetType.GAME_STATUS);
+          widgetManager.hideWidget(gamePlayer, WidgetType.NIGHT_ACTION);
+          widgetManager.hideWidget(gamePlayer, WidgetType.VOTE);
+          widgetManager.hideWidget(gamePlayer, WidgetType.FINAL_DEFENSE);
+          widgetManager.hideWidget(gamePlayer, WidgetType.APPROVAL_VOTE);
+          widgetManager.hideWidget(gamePlayer, WidgetType.DEAD_CHAT);
+          if (gamePlayer.tag.widget.room) {
+            gamePlayer.tag.widget.room.sendMessage({
+              type: "gameEnded"
+            });
+          }
+        });
+      }
+    }, 5);
   }
   resetGame() {
     if (!this.room) return;
@@ -1923,18 +1949,12 @@ class GameFlowManager {
     });
   }
 }
-;// ../../libs/core/mafia/managers/gameRoom/GameRoom.ts
+;// CONCATENATED MODULE: ../../libs/core/mafia/managers/gameRoom/GameRoom.ts
 
 
 
 
 
-var GameRoomState;
-(function (GameRoomState) {
-  GameRoomState["WAITING"] = "waiting";
-  GameRoomState["PLAYING"] = "playing";
-  GameRoomState["ENDED"] = "ended";
-})(GameRoomState || (GameRoomState = {}));
 var WaitingRoomEvent;
 (function (WaitingRoomEvent) {
   WaitingRoomEvent["PLAYER_JOIN"] = "playerJoin";
@@ -1946,7 +1966,6 @@ var WaitingRoomEvent;
   WaitingRoomEvent["GAME_END"] = "gameEnd";
   WaitingRoomEvent["CHAT_MESSAGE"] = "chatMessage";
 })(WaitingRoomEvent || (WaitingRoomEvent = {}));
-const STATE_INIT = "INIT";
 const GAMEROOM_LOCATIONS = {
   1: Map.getLocation("GameRoom_1") ? Map.getLocationList("GameRoom_1")[0] : null,
   2: Map.getLocation("GameRoom_2") ? Map.getLocationList("GameRoom_2")[0] : null,
@@ -1957,13 +1976,13 @@ const GAMEROOM_LOCATIONS = {
   7: Map.getLocation("GameRoom_7") ? Map.getLocationList("GameRoom_7")[0] : null,
   8: Map.getLocation("GameRoom_8") ? Map.getLocationList("GameRoom_8")[0] : null
 };
-const START_WAIT_TIME = 30;
 class GameRoom {
   constructor(config) {
     this.hostId = null;
     this.players = [];
     this.readyPlayers = new Set();
-    this.state = GameRoomState.WAITING;
+    this.state = GameState.WAITING;
+    this.roomLocation = null;
     this.callbacks = {};
     this.id = config.id;
     this.title = config.title;
@@ -1971,6 +1990,7 @@ class GameRoom {
     this.maxPlayers = config.maxPlayers;
     this.password = config.password;
     this.createdAt = Date.now();
+    this.roomLocation = GAMEROOM_LOCATIONS[parseInt(this.id)];
     this.flowManager = new GameFlowManager(parseInt(this.id));
     this.flowManager.setGameRoom(this);
   }
@@ -1978,7 +1998,7 @@ class GameRoom {
     return getPlayerById(playerId);
   }
   actionToRoomPlayers(action, data) {
-    if (typeof action === 'function') {
+    if (typeof action === "function") {
       this.players.forEach(player => {
         action(player);
       });
@@ -2075,7 +2095,7 @@ class GameRoom {
     if (this.isFull()) {
       return false;
     }
-    if (this.state === GameRoomState.PLAYING) {
+    if (this.state === GameState.IN_PROGRESS) {
       return false;
     }
     const mafiaPlayer = {
@@ -2091,6 +2111,10 @@ class GameRoom {
     if (this.players.length === 1 || !this.hostId) {
       this.hostId = player.id;
     }
+    const x = this.roomLocation.x + Math.floor(Math.random() * this.roomLocation.width);
+    const y = this.roomLocation.y + Math.floor(Math.random() * this.roomLocation.height);
+    player.spawnAt(x, y);
+    player.setCameraTarget(this.roomLocation.x + this.roomLocation.width / 2, this.roomLocation.y + this.roomLocation.height / 2, 0);
     this.emit(WaitingRoomEvent.PLAYER_JOIN, this, player);
     return true;
   }
@@ -2114,6 +2138,7 @@ class GameRoom {
       player.tag.roomInfo = null;
       player.tag.mafiaPlayer = null;
       player.spawnAtLocation("Lobby");
+      player.setCameraTarget(-1);
       const widgetManager = WidgetManager.instance;
       widgetManager.cleanupPlayerWidgets(player);
     }
@@ -2198,7 +2223,7 @@ class GameRoom {
     if (!this.areAllPlayersReady()) {
       return false;
     }
-    this.state = GameRoomState.PLAYING;
+    this.state = GameState.IN_PROGRESS;
     try {
       this.actionToRoomPlayers(player => {
         const gamePlayer = getPlayerById(player.id);
@@ -2210,14 +2235,14 @@ class GameRoom {
       this.flowManager.startGame();
     } catch (error) {
       App.sayToStaffs("Error starting game:", error);
-      this.state = GameRoomState.WAITING;
+      this.state = GameState.WAITING;
       return false;
     }
     this.emit(WaitingRoomEvent.GAME_START);
     return true;
   }
   endGame() {
-    this.state = GameRoomState.WAITING;
+    this.state = GameState.WAITING;
     this.readyPlayers.clear();
     this.emit(WaitingRoomEvent.GAME_END);
   }
@@ -2231,7 +2256,7 @@ class GameRoom {
     this.players = [];
     this.readyPlayers.clear();
     this.hostId = null;
-    this.state = GameRoomState.WAITING;
+    this.state = GameState.WAITING;
     this.flowManager = new GameFlowManager(parseInt(this.id));
     this.flowManager.setGameRoom(this);
   }
@@ -2246,7 +2271,7 @@ class GameRoom {
       playersCount: this.getPlayersCount(),
       host: this.hostId ? {
         id: this.hostId,
-        name: hostPlayer ? hostPlayer.name : '알 수 없음'
+        name: hostPlayer ? hostPlayer.name : "알 수 없음"
       } : null,
       state: this.state,
       players: this.players.map(player => ({
@@ -2259,7 +2284,7 @@ class GameRoom {
     };
   }
 }
-;// ../../libs/core/mafia/managers/gameRoom/GameRoomManager.ts
+;// CONCATENATED MODULE: ../../libs/core/mafia/managers/gameRoom/GameRoomManager.ts
 
 
 class GameRoomManager {
@@ -2391,7 +2416,7 @@ class GameRoomManager {
     }
   }
 }
-;// ../../libs/core/mafia/gameMode/GameMode.ts
+;// CONCATENATED MODULE: ../../libs/core/mafia/gameMode/GameMode.ts
 class GameMode {
   constructor(config) {
     this.jobs = [];
@@ -2434,7 +2459,7 @@ class GameMode {
     };
   }
 }
-;// ../../libs/core/mafia/gameMode/defaultGameModes.ts
+;// CONCATENATED MODULE: ../../libs/core/mafia/gameMode/defaultGameModes.ts
 
 
 function createDefaultGameModes() {
@@ -2457,7 +2482,7 @@ function createDefaultGameModes() {
   });
   return modes;
 }
-;// ../../libs/core/mafia/Game.ts
+;// CONCATENATED MODULE: ../../libs/core/mafia/Game.ts
 
 
 
@@ -2504,6 +2529,10 @@ class Game extends GameBase {
       isReady: false,
       profile: this.getDefaultProfile(player)
     };
+    if (!player.isMobile) {
+      player.displayRatio = 1.25;
+      player.sendUpdated();
+    }
     Localizer_Localizer.prepareLocalizationContainer(player);
     const customData = parseJsonString(player.customData);
     const widgetManager = WidgetManager.instance;
@@ -2532,7 +2561,9 @@ class Game extends GameBase {
         }
       }
     } else {
-      this.showLobbyWidget(player);
+      App.runLater(() => {
+        this.showLobbyWidget(player);
+      }, 1);
     }
     this.updateUsersInfo();
   }
@@ -2556,7 +2587,7 @@ class Game extends GameBase {
         modes: gameModes
       });
       this.sendUsersList(player);
-      this.sendRoomsList(player);
+      this.updateRoomInfo();
     }, 0.1);
     const lobbyWidget = widgetManager.getWidget(player, WidgetType.LOBBY);
     if (lobbyWidget && lobbyWidget.element) {
@@ -2569,7 +2600,7 @@ class Game extends GameBase {
             modes: gameModes
           });
         } else if (data.type === "requestRooms") {
-          this.sendRoomsList(sender);
+          this.updateRoomInfo();
         } else if (data.type === "requestUsers") {
           this.sendUsersList(sender);
         } else if (data.type === "createRoom" && data.data) {
@@ -2698,7 +2729,7 @@ class Game extends GameBase {
             if (room) {
               const canStart = this.canStartGame(room);
               if (canStart) {
-                room.state = GameRoomState.PLAYING;
+                room.state = GameState.IN_PROGRESS;
                 if (!room.hostId) {
                   room.hostId = sender.id;
                 }
@@ -2779,7 +2810,7 @@ class Game extends GameBase {
         maxPlayers: room.maxPlayers,
         gameMode: room.gameMode.getName(),
         state: room.state,
-        isPlaying: room.state === GameRoomState.PLAYING,
+        isPlaying: room.state === GameState.IN_PROGRESS,
         host: {
           id: hostId,
           name: hostName
@@ -2828,17 +2859,19 @@ class Game extends GameBase {
     });
   }
   notifyPlayerLeftRoom(room, player) {
-    const widgetManager = WidgetManager.instance;
-    const players = room.getPlayers();
-    players.forEach(p => {
-      const gamePlayer = App.getPlayerByID(p.id);
-      widgetManager.sendMessageToWidget(gamePlayer, WidgetType.ROOM, {
-        type: "playerLeft",
-        playerId: player.id,
-        playerName: player.name
-      });
-      this.sendRoomInfoToPlayer(gamePlayer, room);
+    room.actionToRoomPlayers(p => {
+      if (p.id === player.id) return;
+      const gamePlayer = getPlayerById(p.id);
+      if (!gamePlayer) return;
+      if (gamePlayer.tag.widget.room) {
+        gamePlayer.tag.widget.room.sendMessage({
+          type: "playerLeft",
+          playerId: player.id,
+          playerName: player.name
+        });
+      }
     });
+    this.updateRoomInfo();
   }
   notifyReadyStatusChanged(room, player) {
     const widgetManager = WidgetManager.instance;
@@ -2855,7 +2888,7 @@ class Game extends GameBase {
   }
   notifyGameStarting(room) {
     const widgetManager = WidgetManager.instance;
-    room.state = GameRoomState.PLAYING;
+    room.state = GameState.IN_PROGRESS;
     const players = room.getPlayers();
     players.forEach(p => {
       const gamePlayer = App.getPlayerByID(p.id);
@@ -3028,27 +3061,6 @@ class Game extends GameBase {
       }
     }
   }
-  sendRoomsList(player) {
-    const widgetManager = WidgetManager.instance;
-    const roomsList = [];
-    for (let i = 1; i <= Game.ROOM_COUNT; i++) {
-      const room = this.mafiaGameRoomManager.getRoom(i.toString());
-      if (room) {
-        roomsList.push({
-          id: room.id,
-          title: room.title,
-          playerCount: room.getPlayersCount(),
-          maxPlayers: room.maxPlayers,
-          gameMode: room.gameMode.getName(),
-          isPlaying: room.flowManager.isGameInProgress()
-        });
-      }
-    }
-    widgetManager.sendMessageToWidget(player, WidgetType.LOBBY, {
-      type: "roomsList",
-      rooms: roomsList
-    });
-  }
   updateRoomInfo() {
     var _a;
     const widgetManager = WidgetManager.instance;
@@ -3069,7 +3081,7 @@ class Game extends GameBase {
           playerCount: room.getPlayersCount(),
           maxPlayers: room.maxPlayers,
           gameMode: room.gameMode.getName(),
-          isPlaying: room.state === GameRoomState.PLAYING,
+          isPlaying: room.state === GameState.IN_PROGRESS,
           state: room.state,
           hostId: room.hostId,
           hostName: hostName
@@ -3161,7 +3173,7 @@ class Game extends GameBase {
   }
 }
 Game.ROOM_COUNT = 0;
-;// ./main.ts
+;// CONCATENATED MODULE: ./main.ts
 
 App.onInit.Add(() => {
   App.cameraEffect = 1;

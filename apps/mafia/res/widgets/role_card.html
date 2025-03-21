@@ -503,9 +503,9 @@
                                         'gangster', 'detective', 'gravedigger', 'terrorist', 'madam');
                 
                 if (data.team === "마피아팀") {
-                    roleCard.classList.add('mafia');
+                    roleCard.classList.add(data.role);
                 } else if (data.team === "시민팀") {
-                    roleCard.classList.add('citizen');
+                    roleCard.classList.add(data.role);
                 } else {
                     // 해당 역할 ID로 클래스 추가
                     roleCard.classList.add(role);

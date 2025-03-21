@@ -585,6 +585,10 @@
                 if (data.timeRemaining) {
                     updateTimer(data.timeRemaining, data.serverTime);
                 }
+            } else if (data.type === "gameResult") {
+                // 게임 결과 처리
+                console.log("게임 결과 수신:", data);
+                showGameResult(data.winnerTeam);
             } else if (data.type === "hide") {
                 hideWidget();
             } else if (data.type === "reveal") {
@@ -609,6 +613,52 @@
             } else {
                 document.body.classList.remove('mobile');
             }
+        }
+
+        // 게임 결과 표시 함수 추가
+        function showGameResult(winnerTeam) {
+            const resultElement = document.createElement('div');
+            resultElement.style.position = 'fixed';
+            resultElement.style.top = '0';
+            resultElement.style.left = '0';
+            resultElement.style.width = '100%';
+            resultElement.style.height = '100%';
+            resultElement.style.backgroundColor = 'rgba(0, 0, 0, 0.8)';
+            resultElement.style.display = 'flex';
+            resultElement.style.flexDirection = 'column';
+            resultElement.style.justifyContent = 'center';
+            resultElement.style.alignItems = 'center';
+            resultElement.style.zIndex = '9999';
+            resultElement.style.color = '#ffffff';
+            resultElement.style.textAlign = 'center';
+            resultElement.style.padding = '20px';
+            
+            const resultTitle = document.createElement('h1');
+            resultTitle.textContent = winnerTeam === 'MAFIA' ? '마피아 승리!' : '시민 승리!';
+            resultTitle.style.fontSize = '36px';
+            resultTitle.style.marginBottom = '20px';
+            resultTitle.style.color = winnerTeam === 'MAFIA' ? '#ff5252' : '#4caf50';
+            
+            const resultMessage = document.createElement('p');
+            resultMessage.textContent = winnerTeam === 'MAFIA' ? '마피아가 도시를 장악했습니다!' : '시민들이 모든 마피아를 제거했습니다!';
+            resultMessage.style.fontSize = '18px';
+            resultMessage.style.marginBottom = '30px';
+            
+            const infoMessage = document.createElement('p');
+            infoMessage.textContent = '잠시 후 대기실로 돌아갑니다...';
+            infoMessage.style.fontSize = '14px';
+            infoMessage.style.opacity = '0.8';
+            
+            resultElement.appendChild(resultTitle);
+            resultElement.appendChild(resultMessage);
+            resultElement.appendChild(infoMessage);
+            
+            document.body.appendChild(resultElement);
+            
+            // 10초 후에 자동으로 결과 화면 제거
+            setTimeout(() => {
+                document.body.removeChild(resultElement);
+            }, 10000);
         }
 
         window.addEventListener('resize', checkMobile);

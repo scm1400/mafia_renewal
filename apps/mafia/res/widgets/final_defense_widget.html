@@ -297,6 +297,7 @@
             defendantId = data.defendantId;
             myPlayerId = data.myPlayerId;
             isDefendant = defendantId === myPlayerId;
+            defenseSubmitted = false;
 
             // 플레이어 이름과 아바타 설정
             playerNameElement.textContent = data.defendantName;
@@ -408,7 +409,7 @@
                 window.parent.postMessage({
                     type: "WidgetRearrange",
                     anchor: "middle",
-                    width: `500px`,
+                    width: `100%`,
                     height: `${document.querySelector('.final-defense-container').offsetHeight + 10}px`,
                 }, "*")
             }

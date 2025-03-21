@@ -9,7 +9,7 @@ import { JOBS, GAME_MODES, getGameModeById } from "./types/JobTypes";
 import { GameMode } from "./gameMode/GameMode";
 import { createDefaultGameModes } from "./gameMode/defaultGameModes";
 import { JobId } from "./types/JobTypes";
-import { GameRoom, GameRoomState } from "./managers/gameRoom/GameRoom";
+import { GameRoom } from "./managers/gameRoom/GameRoom";
 import { MafiaPlayer } from "./managers/gameFlow/GameFlowManager";
 import { WidgetManager } from "./managers/widget/WidgetManager";
 import { WidgetType } from "./managers/widget/WidgetType";
@@ -64,6 +64,10 @@ export class Game extends GameBase {
 			isReady: false,
 			profile: this.getDefaultProfile(player)
 		};
+		if (!player.isMobile) {
+			player.displayRatio = 1.25;
+			player.sendUpdated();
+		}
 		
 		// 로컬라이징
 		Localizer.prepareLocalizationContainer(player);
@@ -108,7 +112,9 @@ export class Game extends GameBase {
 			}
 		} else {
 			// 로비 위젯 표시 - showLobbyWidget 메서드를 사용하도록 수정
-			this.showLobbyWidget(player);
+			ScriptApp.runLater(() => {
+				this.showLobbyWidget(player);
+			}, 1);
 		}
 		
 		// 모든 플레이어에게 유저 목록 업데이트 전송 (기존 코드 유지)
@@ -153,7 +159,7 @@ export class Game extends GameBase {
 			this.sendUsersList(player);
 
 			// 방 목록 전송
-			this.sendRoomsList(player);
+			this.updateRoomInfo();
 		}, 0.1); // 0.1초 딜레이 (위젯이 준비되는 시간)
 
 		// 로비 위젯 메시지 처리 설정
@@ -169,7 +175,7 @@ export class Game extends GameBase {
 						modes: gameModes,
 					});
 				} else if (data.type === "requestRooms") {
-					this.sendRoomsList(sender);
+					this.updateRoomInfo();
 				} else if (data.type === "requestUsers") {
 					this.sendUsersList(sender);
 				} else if (data.type === "createRoom" && data.data) {
@@ -350,7 +356,7 @@ export class Game extends GameBase {
 
 							if (canStart) {
 								// 방 상태를 PLAYING으로 변경
-								room.state = GameRoomState.PLAYING;
+								room.state = GameState.IN_PROGRESS;
 								
 								// 방장 확인
 								if (!room.hostId) {
@@ -463,7 +469,7 @@ export class Game extends GameBase {
 				maxPlayers: room.maxPlayers,
 				gameMode: room.gameMode.getName(),
 				state: room.state,
-				isPlaying: room.state === GameRoomState.PLAYING,
+				isPlaying: room.state === GameState.IN_PROGRESS,
 				host: {
 					id: hostId,
 					name: hostName,
@@ -529,23 +535,28 @@ export class Game extends GameBase {
 	}
 
 	/**
-	 * 플레이어가 방에서 나갔음을 알립니다.
+	 * 플레이어가 방을 나갔을 때 다른 플레이어들에게 알립니다.
 	 */
 	private notifyPlayerLeftRoom(room: GameRoom, player: GamePlayer) {
-		const widgetManager = WidgetManager.instance;
-		
-		const players = room.getPlayers() as MafiaPlayer[];
-		players.forEach((p) => {
-			const gamePlayer = ScriptApp.getPlayerByID(p.id) as unknown as GamePlayer;
-			widgetManager.sendMessageToWidget(gamePlayer, WidgetType.ROOM, {
-				type: "playerLeft",
-				playerId: player.id,
-				playerName: player.name,
-			});
-
-			// 방 정보 업데이트
-			this.sendRoomInfoToPlayer(gamePlayer, room);
+		// 남은 플레이어들에게 알림
+		room.actionToRoomPlayers((p) => {
+			// 자신은 제외
+			if (p.id === player.id) return;
+			
+			const gamePlayer = getPlayerById(p.id);
+			if (!gamePlayer) return;
+			
+			if (gamePlayer.tag.widget.room) {
+				gamePlayer.tag.widget.room.sendMessage({
+					type: "playerLeft",
+					playerId: player.id,
+					playerName: player.name,
+				});
+			}
 		});
+		
+		// 방 정보 업데이트
+		this.updateRoomInfo();
 	}
 
 	/**
@@ -575,7 +586,7 @@ export class Game extends GameBase {
 		const widgetManager = WidgetManager.instance;
 		
 		// 방 상태 업데이트
-		room.state = GameRoomState.PLAYING;
+		room.state = GameState.IN_PROGRESS;
 		
 		const players = room.getPlayers() as MafiaPlayer[];
 		players.forEach((p) => {
@@ -860,34 +871,6 @@ export class Game extends GameBase {
 	}
 
 	/**
-	 * 플레이어에게 방 목록을 전송합니다.
-	 */
-	private sendRoomsList(player: GamePlayer) {
-		const widgetManager = WidgetManager.instance;
-		
-		// 모든 방을 배열로 변환
-		const roomsList = [];
-		for (let i = 1; i <= Game.ROOM_COUNT; i++) {
-			const room = this.mafiaGameRoomManager.getRoom(i.toString());
-			if (room) {
-				roomsList.push({
-					id: room.id,
-					title: room.title,
-					playerCount: room.getPlayersCount(),
-					maxPlayers: room.maxPlayers,
-					gameMode: room.gameMode.getName(),
-					isPlaying: room.flowManager.isGameInProgress(),
-				});
-			}
-		}
-
-		widgetManager.sendMessageToWidget(player, WidgetType.LOBBY, {
-			type: "roomsList",
-			rooms: roomsList,
-		});
-	}
-
-	/**
 	 * 모든 플레이어에게 방 목록 업데이트를 전송합니다.
 	 */
 	private updateRoomInfo() {
@@ -913,7 +896,7 @@ export class Game extends GameBase {
 					playerCount: room.getPlayersCount(),
 					maxPlayers: room.maxPlayers,
 					gameMode: room.gameMode.getName(),
-					isPlaying: room.state === GameRoomState.PLAYING,
+					isPlaying: room.state === GameState.IN_PROGRESS,
 					state: room.state,
 					hostId: room.hostId,
 					hostName: hostName

@@ -1130,6 +1130,37 @@ export class GameFlowManager {
 				});
 			}
 		});
+		
+		// 5초 후에 게임 종료 처리 및 대기실로 돌아가기
+		ScriptApp.runLater(() => {
+			// 게임룸 상태 변경
+			if (this.room) {
+				// 게임 종료 이벤트 발생
+				this.room.endGame();
+				
+				// 모든 플레이어의 위젯 업데이트
+				this.room.actionToRoomPlayers((player) => {
+					const gamePlayer: GamePlayer = getPlayerById(player.id);
+					if (!gamePlayer) return;
+					
+					// 게임 관련 위젯 정리
+					const widgetManager = WidgetManager.instance;
+					widgetManager.hideWidget(gamePlayer, WidgetType.GAME_STATUS);
+					widgetManager.hideWidget(gamePlayer, WidgetType.NIGHT_ACTION);
+					widgetManager.hideWidget(gamePlayer, WidgetType.VOTE);
+					widgetManager.hideWidget(gamePlayer, WidgetType.FINAL_DEFENSE);
+					widgetManager.hideWidget(gamePlayer, WidgetType.APPROVAL_VOTE);
+					widgetManager.hideWidget(gamePlayer, WidgetType.DEAD_CHAT);
+					
+					// 방 위젯이 있으면 게임 종료 메시지 전송
+					if (gamePlayer.tag.widget.room) {
+						gamePlayer.tag.widget.room.sendMessage({
+							type: "gameEnded"
+						});
+					}
+				});
+			}
+		}, 5);
 	}
 
 	// 게임 리셋: 게임 상태와 단계 등을 초기화합니다.
