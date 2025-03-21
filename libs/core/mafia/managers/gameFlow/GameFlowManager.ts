@@ -473,6 +473,8 @@ export class GameFlowManager {
 								serverTime: Date.now(), // 서버 시간 전송
 							});
 
+							widgetManager.clearMessageHandlers(gamePlayer, WidgetType.NIGHT_ACTION);
+
 							// 밤 액션 위젯 메시지 처리 - 최초 한 번만 등록
 							widgetManager.registerMessageHandler(gamePlayer, WidgetType.NIGHT_ACTION, (player: GamePlayer, data) => {
 								const mafiaPlayer = player.tag.mafiaPlayer;
@@ -722,6 +724,8 @@ export class GameFlowManager {
 			serverTime: Date.now(), // 서버 시간 전송
 		});
 
+		widgetManager.clearMessageHandlers(gamePlayer, WidgetType.VOTE);
+
 		// 투표 위젯 메시지 처리 - 최초 한 번만 등록
 		widgetManager.registerMessageHandler(gamePlayer, WidgetType.VOTE, (sender: GamePlayer, data) => {
 			if (data.type === "vote" && data.targetId) {
@@ -827,6 +831,8 @@ export class GameFlowManager {
 				defenseText: this.defenseText,
 			});
 
+			widgetManager.clearMessageHandlers(gamePlayer, WidgetType.APPROVAL_VOTE);
+
 			// 찬반 투표 위젯 메시지 처리
 			widgetManager.registerMessageHandler(gamePlayer, WidgetType.APPROVAL_VOTE, (sender: GamePlayer, data) => {
 				if (data.type === "submitApprovalVote" && (data.vote === "approve" || data.vote === "reject")) {
@@ -860,6 +866,8 @@ export class GameFlowManager {
 			messages: this.chatMessages.filter((msg) => msg.target === "dead"),
 		});
 
+		widgetManager.clearMessageHandlers(player, WidgetType.DEAD_CHAT);
+
 		// 사망자 채팅 위젯 메시지 처리 - 최초 한 번만 등록
 		widgetManager.registerMessageHandler(player, WidgetType.DEAD_CHAT, (sender: GamePlayer, data) => {
 			if (data.type === "sendMessage" && data.message) {
@@ -888,6 +896,8 @@ export class GameFlowManager {
 			type: "initMediumChat",
 			messages: this.chatMessages.filter((msg) => msg.target === "dead"),
 		});
+
+		widgetManager.clearMessageHandlers(player, WidgetType.DEAD_CHAT);
 
 		// 영매 채팅 위젯 메시지 처리 - 최초 한 번만 등록
 		widgetManager.registerMessageHandler(player, WidgetType.DEAD_CHAT, (sender: GamePlayer, data) => {
