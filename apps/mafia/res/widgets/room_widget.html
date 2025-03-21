@@ -450,6 +450,159 @@
             width: 50%;
             background-color: var(--bg-color);
         }
+        
+        /* 모바일 UI 스타일 */
+        body.mobile .room-header {
+            padding: 10px 15px;
+        }
+        
+        body.mobile .room-title {
+            font-size: 18px;
+        }
+        
+        body.mobile .room-info {
+            font-size: 12px;
+        }
+        
+        body.mobile .main-content {
+            flex-direction: column;
+        }
+        
+        body.mobile .players-container {
+            padding: 10px;
+            width: 100%;
+        }
+        
+        body.mobile .chat-sidebar {
+            width: 100%;
+            height: 250px;
+            border-left: none;
+            border-top: 1px solid #e0e0e0;
+        }
+        
+        body.mobile .section-title {
+            font-size: 16px;
+            margin-bottom: 10px;
+        }
+        
+        body.mobile .players-grid {
+            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            gap: 10px;
+        }
+        
+        body.mobile .player-card {
+            padding: 10px;
+        }
+        
+        body.mobile .player-avatar {
+            width: 48px;
+            height: 48px;
+            font-size: 18px;
+        }
+        
+        body.mobile .player-name {
+            font-size: 14px;
+        }
+        
+        body.mobile .player-level {
+            font-size: 11px;
+        }
+        
+        body.mobile .player-status {
+            font-size: 10px;
+            padding: 2px 6px;
+        }
+        
+        body.mobile .chat-header {
+            padding: 10px;
+        }
+        
+        body.mobile .chat-messages {
+            padding: 10px;
+            gap: 8px;
+        }
+        
+        body.mobile .message {
+            padding: 6px 10px;
+            font-size: 14px;
+            max-width: 90%;
+        }
+        
+        body.mobile .sender-name {
+            font-size: 11px;
+        }
+        
+        body.mobile .chat-input input {
+            font-size: 16px;
+            padding: 8px;
+        }
+        
+        body.mobile .action-buttons .button {
+            padding: 10px;
+            font-size: 14px;
+        }
+        
+        body.mobile .button {
+            font-size: 12px;
+            padding: 6px 12px;
+        }
+        
+        body.mobile .settings-section {
+            padding: 10px;
+        }
+        
+        body.mobile .mode-name {
+            font-size: 14px;
+        }
+        
+        body.mobile .mode-description {
+            font-size: 12px;
+        }
+        
+        body.mobile .job-tag {
+            font-size: 10px;
+            padding: 3px 6px;
+        }
+        
+        /* 모바일 가로 모드에서의 조정 */
+        @media (orientation: landscape) {
+            body.mobile .main-content {
+                flex-direction: row;
+            }
+            
+            body.mobile .players-container {
+                width: 70%;
+            }
+            
+            body.mobile .chat-sidebar {
+                width: 30%;
+                height: auto;
+                border-top: none;
+                border-left: 1px solid #e0e0e0;
+            }
+            
+            body.mobile .players-grid {
+                grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            }
+        }
+        
+        /* 모바일 세로 모드에서의 조정 */
+        @media (orientation: portrait) {
+            body.mobile .main-content {
+                flex-direction: column;
+            }
+            
+            body.mobile .players-container {
+                width: 100%;
+            }
+            
+            body.mobile .chat-sidebar {
+                width: 100%;
+                height: 250px;
+                border-top: 1px solid #e0e0e0;
+                border-left: none;
+            }
+        }
     </style>
 </head>
 
@@ -810,6 +963,7 @@
                 _isTablet = data.isTablet;
                 if(data.isMobile && !data.isTablet){
                     document.body.classList.add('mobile');
+                    adjustMobileUI();
                 }else{
                     document.body.classList.remove('mobile');
                 }
@@ -901,6 +1055,47 @@
 
         // 초기화
         initializeRoom();
+        
+        // 모바일 UI 조정 함수
+        function adjustMobileUI() {
+            // 화면 방향 감지 (가로 또는 세로)
+            const isLandscape = window.innerWidth > window.innerHeight;
+            
+            if (isLandscape) {
+                // 가로 모드일 때 추가 조정
+                document.querySelector('.main-content').style.flexDirection = 'row';
+                document.querySelector('.players-container').style.width = '70%';
+                document.querySelector('.chat-sidebar').style.width = '30%';
+                document.querySelector('.chat-sidebar').style.height = 'auto';
+                document.querySelector('.chat-sidebar').style.borderTop = 'none';
+                document.querySelector('.chat-sidebar').style.borderLeft = '1px solid #e0e0e0';
+            } else {
+                // 세로 모드일 때 추가 조정
+                document.querySelector('.main-content').style.flexDirection = 'column';
+                document.querySelector('.players-container').style.width = '100%';
+                document.querySelector('.chat-sidebar').style.width = '100%';
+                document.querySelector('.chat-sidebar').style.height = '250px';
+                document.querySelector('.chat-sidebar').style.borderTop = '1px solid #e0e0e0';
+                document.querySelector('.chat-sidebar').style.borderLeft = 'none';
+            }
+            
+            // 모바일 키보드 대응
+            chatInput.addEventListener('focus', () => {
+                if (_isMobile) {
+                    // 입력창에 포커스시 스크롤 조정
+                    setTimeout(() => {
+                        chatMessages.scrollTop = chatMessages.scrollHeight;
+                    }, 300);
+                }
+            });
+        }
+        
+        // 화면 방향 변경 감지
+        window.addEventListener('resize', function() {
+            if (_isMobile) {
+                adjustMobileUI();
+            }
+        });
     </script>
 </body>
 

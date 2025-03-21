@@ -436,6 +436,232 @@
             width: 50%;
             background-color: var(--bg-color);
         }
+        
+        /* 채팅 UI 스타일 */
+        .chat-container {
+            border-top: 1px solid #e0e0e0;
+            padding: 10px;
+            background-color: white;
+            display: flex;
+            flex-direction: column;
+            height: 200px;
+        }
+        
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            margin-bottom: 10px;
+            padding: 5px;
+            max-height: 140px;
+            border: 1px solid #eee;
+            border-radius: 5px;
+            background-color: #f9f9f9;
+        }
+        
+        .chat-input-container {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .chat-input {
+            flex: 1;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+        
+        .chat-submit {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 5px;
+            padding: 8px 15px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+        
+        .chat-submit:hover {
+            background-color: var(--primary-dark);
+        }
+        
+        .chat-message {
+            margin-bottom: 5px;
+            padding: 5px;
+            border-radius: 5px;
+            word-break: break-word;
+        }
+        
+        .chat-message .sender {
+            font-weight: 600;
+            margin-right: 5px;
+        }
+        
+        .chat-message .timestamp {
+            font-size: 10px;
+            color: #999;
+            margin-left: 5px;
+        }
+        
+        .chat-message.self {
+            background-color: #e3f2fd;
+        }
+        
+        .chat-message.system {
+            background-color: #f5f5f5;
+            color: #666;
+            font-style: italic;
+        }
+        
+        /* 모바일 UI 스타일 */
+        body.mobile .header {
+            padding: 10px 15px;
+        }
+        
+        body.mobile .header h1 {
+            font-size: 20px;
+        }
+        
+        body.mobile .header-controls {
+            flex-direction: column;
+            gap: 5px;
+        }
+        
+        body.mobile .search-bar {
+            width: 100%;
+        }
+        
+        body.mobile .main-content {
+            flex-direction: column;
+        }
+        
+        body.mobile .rooms-container {
+            padding: 15px 10px;
+            width: 100%;
+        }
+        
+        body.mobile .user-sidebar {
+            width: 100%;
+            border-left: none;
+            border-top: 1px solid #e0e0e0;
+            max-height: 200px;
+            padding: 15px 10px;
+        }
+        
+        body.mobile .room-card {
+            padding: 10px;
+        }
+        
+        body.mobile .room-title {
+            font-size: 16px;
+        }
+        
+        body.mobile .chat-container {
+            height: 160px;
+        }
+        
+        body.mobile .chat-messages {
+            max-height: 100px;
+        }
+        
+        body.mobile .chat-input {
+            font-size: 16px;
+            padding: 10px;
+        }
+        
+        body.mobile .chat-message {
+            padding: 8px;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+        
+        body.mobile .chat-submit {
+            font-size: 14px;
+            padding: 10px 15px;
+        }
+        
+        body.mobile .filter-btn {
+            font-size: 12px;
+            padding: 4px 8px;
+        }
+        
+        body.mobile .create-room-modal {
+            width: 95%;
+            padding: 15px;
+        }
+        
+        body.mobile .game-mode-item {
+            flex: 1 0 100%;
+        }
+        
+        body.mobile .section-title {
+            font-size: 16px;
+            padding: 5px 0;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+        
+        body.mobile .user-item {
+            padding: 6px;
+            gap: 8px;
+        }
+        
+        body.mobile .user-avatar {
+            width: 32px;
+            height: 32px;
+            font-size: 14px;
+        }
+        
+        body.mobile .user-name {
+            font-size: 14px;
+        }
+        
+        body.mobile .status-tag {
+            font-size: 10px;
+            padding: 2px 6px;
+        }
+        
+        /* 모바일 가로 모드에서의 조정 */
+        @media (orientation: landscape) {
+            body.mobile .main-content {
+                flex-direction: row;
+            }
+            
+            body.mobile .rooms-container {
+                width: 70%;
+            }
+            
+            body.mobile .user-sidebar {
+                width: 30%;
+                border-top: none;
+                border-left: 1px solid #e0e0e0;
+            }
+            
+            body.mobile .chat-container {
+                height: 120px;
+            }
+        }
+        
+        /* 모바일 세로 모드에서의 조정 */
+        @media (orientation: portrait) {
+            body.mobile .main-content {
+                flex-direction: column;
+            }
+            
+            body.mobile .rooms-container {
+                width: 100%;
+            }
+            
+            body.mobile .user-sidebar {
+                width: 100%;
+                border-top: 1px solid #e0e0e0;
+                border-left: none;
+            }
+            
+            body.mobile .chat-container {
+                height: 160px;
+            }
+        }
     </style>
 </head>
 
@@ -481,6 +707,20 @@
                 <div id="usersList" class="user-list">
                     <!-- 유저 목록이 동적으로 추가됩니다 -->
                 </div>
+            </div>
+        </div>
+
+        <!-- 채팅 영역 추가 -->
+        <div class="chat-container">
+            <div id="chatMessages" class="chat-messages">
+                <!-- 채팅 메시지가 동적으로 추가됩니다 -->
+                <div class="chat-message system">
+                    <span>로비 채팅에 오신 것을 환영합니다. 다른 플레이어와 대화를 나눠보세요!</span>
+                </div>
+            </div>
+            <div class="chat-input-container">
+                <input type="text" id="chatInput" class="chat-input" placeholder="메시지를 입력하세요..." autocomplete="off">
+                <button id="chatSubmit" class="chat-submit">전송</button>
             </div>
         </div>
 
@@ -534,14 +774,19 @@
         let currentFilter = 'all';
         let refreshInterval = null; // 주기적 갱신을 위한 인터벌 변수
         let isVisible = false;
-        let isMobile = false;
-        let isTablet = false;
+        let _isMobile = false;
+        let _isTablet = false;
         let lastRequestTime = { // 마지막 요청 시간을 추적하기 위한 객체
             rooms: 0,
             users: 0,
             gameModes: 0
         };
         let requestCooldown = 3000; // 요청 간 최소 간격 (밀리초)
+        
+        // 채팅 관련 변수
+        let chatMessages = [];
+        let currentUserId = null;
+        let currentUserName = null;
         
         // DOM 요소 참조
         const roomsList = document.getElementById('roomsList');
@@ -556,6 +801,11 @@
         const refreshBtn = document.getElementById('refreshBtn');
         const filterBtns = document.querySelectorAll('.filter-btn');
         
+        // 채팅 관련 DOM 요소
+        const chatMessagesContainer = document.getElementById('chatMessages');
+        const chatInput = document.getElementById('chatInput');
+        const chatSubmit = document.getElementById('chatSubmit');
+        
         // 이벤트 리스너 설정
         createRoomBtn.addEventListener('click', showCreateRoomModal);
         closeModalBtn.addEventListener('click', hideCreateRoomModal);
@@ -565,6 +815,14 @@
             // 수동 갱신 - 방 목록과 유저 목록 모두 갱신 (딜레이 적용)
             requestRoomsWithDelay();
             requestUsersWithDelay();
+        });
+        
+        // 채팅 이벤트 리스너
+        chatSubmit.addEventListener('click', sendChatMessage);
+        chatInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                sendChatMessage();
+            }
         });
         
         // 검색 기능
@@ -598,7 +856,7 @@
             document.getElementById('widget-container').style.display = 'flex';
             isVisible = true;
             
-            if (isMobile) {
+            if (_isMobile) {
                 const rtcAndNotchHeight = 160 + parseInt(getComputedStyle(document.documentElement,).getPropertyValue("--sat"));
                 window.parent.postMessage({
                     type: 'WidgetRearrange',
@@ -607,6 +865,9 @@
                     width: '100%',
                     top: `-${parseInt(0)}px`
                 }, '*');
+                
+                // 화면 비율에 맞게 위젯 조정
+                adjustMobileUI();
             } else {
                 window.parent.postMessage({
                     type: "WidgetRearrange",
@@ -616,6 +877,41 @@
                 }, "*");
             }
         }
+
+        // 모바일 UI 조정
+        function adjustMobileUI() {
+            // 화면 방향 감지 (가로 또는 세로)
+            const isLandscape = window.innerWidth > window.innerHeight;
+            
+            // CSS 미디어 쿼리가 동작하므로 일부 중복 스타일 제거
+            // 필요한 경우 추가적인 동적 조정만 수행
+            
+            if (isLandscape) {
+                // 가로 모드에서 필요한 추가 조정
+                document.querySelector('.chat-messages').style.maxHeight = '60px';
+            } else {
+                // 세로 모드에서 필요한 추가 조정
+                document.querySelector('.chat-messages').style.maxHeight = '100px';
+            }
+            
+            // 모바일 키보드 대응
+            chatInput.addEventListener('focus', () => {
+                if (_isMobile) {
+                    // 입력창에 포커스시 스크롤 조정
+                    setTimeout(() => {
+                        window.scrollTo(0, document.body.scrollHeight);
+                        chatMessagesContainer.scrollTop = chatMessagesContainer.scrollHeight;
+                    }, 300);
+                }
+            });
+        }
+        
+        // 화면 방향 변경 감지
+        window.addEventListener('resize', function() {
+            if (_isMobile) {
+                adjustMobileUI();
+            }
+        });
 
         // 메시지 전송 함수
         function sendMessage(message) {
@@ -976,13 +1272,20 @@
             const data = e.data;
             
             if (data.type === 'init') {
-                isMobile = data.isMobile;
-                isTablet = data.isTablet;
+                _isMobile = data.isMobile;
+                _isTablet = data.isTablet;
                 
                 if(data.isMobile && !data.isTablet){
                     document.body.classList.add('mobile');
+                    adjustMobileUI();
                 }else{
                     document.body.classList.remove('mobile');
+                }
+                
+                // 현재 사용자 정보 저장
+                if (data.userId && data.userName) {
+                    currentUserId = data.userId;
+                    currentUserName = data.userName;
                 }
                 
                 revealWidget();
@@ -1054,8 +1357,76 @@
                         }
                     }, 30000); // 30초마다 갱신
                 }
+            } else if (data.type === 'chatMessage') {
+                // 채팅 메시지 수신 처리
+                addChatMessage(data.senderId, data.senderName, data.content, data.timestamp);
             }
         });
+        
+        /**
+         * 채팅 메시지를 전송합니다.
+         */
+        function sendChatMessage() {
+            const content = chatInput.value.trim();
+            if (!content) return;
+            
+            // 서버로 메시지 전송
+            sendMessage({
+                type: 'lobbyChatMessage',
+                content: content
+            });
+            
+            // 로컬에 내 메시지 표시 (서버에서 확인 후 다시 표시될 수 있음)
+            addChatMessage(currentUserId, currentUserName, content, Date.now());
+            
+            // 입력 필드 비우기
+            chatInput.value = '';
+            chatInput.focus();
+        }
+        
+        /**
+         * 채팅 메시지를 추가합니다.
+         */
+        function addChatMessage(senderId, senderName, content, timestamp) {
+            const messageElement = document.createElement('div');
+            messageElement.className = 'chat-message';
+            
+            // 자신의 메시지인지 확인
+            if (senderId === currentUserId) {
+                messageElement.classList.add('self');
+            } else if (!senderId) {
+                messageElement.classList.add('system');
+            }
+            
+            // 메시지 생성 시간 포맷
+            const time = new Date(timestamp);
+            const formattedTime = `${time.getHours().toString().padStart(2, '0')}:${time.getMinutes().toString().padStart(2, '0')}`;
+            
+            // 메시지 내용 구성
+            if (senderId) {
+                messageElement.innerHTML = `
+                    <span class="sender">${senderName}</span>: ${content}
+                    <span class="timestamp">${formattedTime}</span>
+                `;
+            } else {
+                // 시스템 메시지
+                messageElement.innerHTML = `
+                    <span>${content}</span>
+                    <span class="timestamp">${formattedTime}</span>
+                `;
+            }
+            
+            // 채팅 영역에 메시지 추가
+            chatMessagesContainer.appendChild(messageElement);
+            
+            // 스크롤을 최신 메시지로 이동
+            chatMessagesContainer.scrollTop = chatMessagesContainer.scrollHeight;
+            
+            // 최대 50개 메시지만 유지 (DOM 부하 방지)
+            while (chatMessagesContainer.children.length > 50) {
+                chatMessagesContainer.removeChild(chatMessagesContainer.firstChild);
+            }
+        }
     </script>
 </body>
 
