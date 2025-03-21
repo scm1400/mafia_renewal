@@ -2533,6 +2533,7 @@ class Game extends GameBase {
       player.displayRatio = 1.25;
       player.sendUpdated();
     }
+    player.playSound("sounds/lobby_bgm.mp3", true, true, "bgm", 0.5);
     Localizer_Localizer.prepareLocalizationContainer(player);
     const customData = parseJsonString(player.customData);
     const widgetManager = WidgetManager.instance;
