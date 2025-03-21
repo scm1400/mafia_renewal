@@ -429,6 +429,11 @@
             if(data.type === "setWidget"){
                 _isMobile = data.isMobile;
                 _isTablet = data.isTablet;
+                if(data.isMobile && !data.isTablet){
+                    document.body.classList.add('mobile');
+                }else{
+                    document.body.classList.remove('mobile');
+                }
                 hideWidget();
             } else if (data.type === 'init') {
                 initialize(data);

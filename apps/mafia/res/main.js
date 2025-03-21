@@ -1,7 +1,7 @@
 /******/ (() => { // webpackBootstrap
 /******/ 	"use strict";
 
-;// CONCATENATED MODULE: ../../libs/utils/Localizer.ts
+;// ../../libs/utils/Localizer.ts
 const LOCALIZE_KEYS = {};
 const LOCALIZE_CONTAINER = {
   ko: null,
@@ -32,7 +32,7 @@ class Localizer_Localizer {
     return acc;
   }
 }
-;// CONCATENATED MODULE: ../../libs/utils/Common.ts
+;// ../../libs/utils/Common.ts
 
 let log;
 function isDevServer() {
@@ -117,7 +117,7 @@ function getLocationAreaCoordinates(locationName) {
   }
   return coordinates;
 }
-;// CONCATENATED MODULE: ../../libs/utils/CustomLabelFunctions.ts
+;// ../../libs/utils/CustomLabelFunctions.ts
 
 const LABEL_SPACING = 60;
 const labelCounts = {};
@@ -274,7 +274,7 @@ function showLabel(player, key, options = {}) {
   };
   player.showCustomLabel(htmlStr, 0xffffff, backgroundColor, topGap, labelPercentWidth, 0.64, labelDisplayTime, customLabelOption);
 }
-;// CONCATENATED MODULE: ../../libs/core/GameBase.ts
+;// ../../libs/core/GameBase.ts
 class GameBase {
   constructor() {
     this.onStartCallbacks = [];
@@ -348,7 +348,7 @@ class GameBase {
     this.onTriggerObjectCallbacks.push(callback);
   }
 }
-;// CONCATENATED MODULE: ../../libs/core/mafia/types/JobTypes.ts
+;// ../../libs/core/mafia/types/JobTypes.ts
 var JobId;
 (function (JobId) {
   JobId["MAFIA"] = "mafia";
@@ -606,7 +606,7 @@ function getJobsByGameMode(modeId) {
     return job ? job : null;
   }).filter(job => job !== null);
 }
-;// CONCATENATED MODULE: ../../libs/core/mafia/managers/widget/WidgetType.ts
+;// ../../libs/core/mafia/managers/widget/WidgetType.ts
 var WidgetType;
 (function (WidgetType) {
   WidgetType["LOBBY"] = "LOBBY";
@@ -620,7 +620,7 @@ var WidgetType;
   WidgetType["ROLE_CARD"] = "ROLE_CARD";
   WidgetType["GAME_MODE_SELECT"] = "GAME_MODE_SELECT";
 })(WidgetType || (WidgetType = {}));
-;// CONCATENATED MODULE: ../../libs/core/mafia/managers/widget/WidgetManager.ts
+;// ../../libs/core/mafia/managers/widget/WidgetManager.ts
 
 class WidgetManager {
   constructor() {
@@ -890,7 +890,7 @@ class WidgetManager {
     return widgetMap[widgetType];
   }
 }
-;// CONCATENATED MODULE: ../../libs/core/mafia/managers/gameFlow/GameFlowManager.ts
+;// ../../libs/core/mafia/managers/gameFlow/GameFlowManager.ts
 
 
 
@@ -1136,8 +1136,6 @@ class GameFlowManager {
           break;
         case MafiaPhase.VOTING:
           widgetManager.hideWidget(gamePlayer, WidgetType.VOTE);
-          this.voteResults = {};
-          this.playerVotes = {};
           break;
         case MafiaPhase.FINAL_DEFENSE:
           widgetManager.hideWidget(gamePlayer, WidgetType.FINAL_DEFENSE);
@@ -1160,8 +1158,6 @@ class GameFlowManager {
       case MafiaPhase.NIGHT:
         {
           this.sayToRoom(`밤 단계 - 마피아가 희생자를 선택합니다.`);
-          this.voteResults = {};
-          this.playerVotes = {};
           this.nightActions = [];
           this.room.actionToRoomPlayers(player => {
             var _a;
@@ -1264,8 +1260,6 @@ class GameFlowManager {
       case MafiaPhase.VOTING:
         {
           this.sayToRoom(`투표 단계 - 마피아로 의심되는 플레이어에게 투표하세요.`);
-          this.voteResults = {};
-          this.playerVotes = {};
           this.room.actionToRoomPlayers(player => {
             const gamePlayer = getPlayerById(player.id);
             if (!gamePlayer) {
@@ -1292,6 +1286,7 @@ class GameFlowManager {
               defendantId = playerId;
             }
           }
+          App.sayToAll(JSON.stringify(this.voteResults));
           const defendant = this.room.players.find(p => p.id === defendantId);
           if (!defendant) {
             this.sayToRoom(`투표 결과가 없거나 동률이어서 변론 없이 진행됩니다.`);
@@ -1945,7 +1940,7 @@ class GameFlowManager {
     };
   }
 }
-;// CONCATENATED MODULE: ../../libs/core/mafia/managers/gameRoom/GameRoom.ts
+;// ../../libs/core/mafia/managers/gameRoom/GameRoom.ts
 
 
 
@@ -2281,7 +2276,7 @@ class GameRoom {
     };
   }
 }
-;// CONCATENATED MODULE: ../../libs/core/mafia/managers/gameRoom/GameRoomManager.ts
+;// ../../libs/core/mafia/managers/gameRoom/GameRoomManager.ts
 
 
 class GameRoomManager {
@@ -2413,7 +2408,7 @@ class GameRoomManager {
     }
   }
 }
-;// CONCATENATED MODULE: ../../libs/core/mafia/gameMode/GameMode.ts
+;// ../../libs/core/mafia/gameMode/GameMode.ts
 class GameMode {
   constructor(config) {
     this.jobs = [];
@@ -2456,7 +2451,7 @@ class GameMode {
     };
   }
 }
-;// CONCATENATED MODULE: ../../libs/core/mafia/gameMode/defaultGameModes.ts
+;// ../../libs/core/mafia/gameMode/defaultGameModes.ts
 
 
 function createDefaultGameModes() {
@@ -2479,7 +2474,7 @@ function createDefaultGameModes() {
   });
   return modes;
 }
-;// CONCATENATED MODULE: ../../libs/core/mafia/Game.ts
+;// ../../libs/core/mafia/Game.ts
 
 
 
@@ -3183,7 +3178,7 @@ class Game extends GameBase {
   }
 }
 Game.ROOM_COUNT = 0;
-;// CONCATENATED MODULE: ./main.ts
+;// ./main.ts
 
 App.onInit.Add(() => {
   App.cameraEffect = 1;

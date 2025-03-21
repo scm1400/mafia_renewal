@@ -979,8 +979,10 @@
                 isMobile = data.isMobile;
                 isTablet = data.isTablet;
                 
-                if (isMobile || isTablet) {
+                if(data.isMobile && !data.isTablet){
                     document.body.classList.add('mobile');
+                }else{
+                    document.body.classList.remove('mobile');
                 }
                 
                 revealWidget();

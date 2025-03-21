@@ -415,9 +415,6 @@ export class GameFlowManager {
 					break;
 				case MafiaPhase.VOTING:
 					widgetManager.hideWidget(gamePlayer, WidgetType.VOTE);
-					// 투표 데이터 초기화
-					this.voteResults = {};
-					this.playerVotes = {};
 					break;
 				case MafiaPhase.FINAL_DEFENSE:
 					widgetManager.hideWidget(gamePlayer, WidgetType.FINAL_DEFENSE);
@@ -444,10 +441,6 @@ export class GameFlowManager {
 			case MafiaPhase.NIGHT:
 				{
 					this.sayToRoom(`밤 단계 - 마피아가 희생자를 선택합니다.`);
-
-					// 투표 결과 초기화
-					this.voteResults = {};
-					this.playerVotes = {};
 
 					// 밤 액션 초기화
 					this.nightActions = [];
@@ -583,10 +576,6 @@ export class GameFlowManager {
 			case MafiaPhase.VOTING:
 				{
 					this.sayToRoom(`투표 단계 - 마피아로 의심되는 플레이어에게 투표하세요.`);
-
-					// 투표 결과 초기화
-					this.voteResults = {};
-					this.playerVotes = {};
 
 					this.room.actionToRoomPlayers((player) => {
 						const gamePlayer: GamePlayer = getPlayerById(player.id);
@@ -1498,6 +1487,8 @@ export class GameFlowManager {
 			this.sayToRoom(`현재 단계는 투표 단계가 아닙니다.`);
 			return;
 		}
+
+		
 
 		// 중복 투표 확인
 		if (this.playerVotes[voterId] === targetId) {
