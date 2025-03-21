@@ -301,6 +301,7 @@ export class GameFlowManager {
 		// 역할 정보 전송
 		widgetManager.sendMessageToWidget(player, WidgetType.ROLE_CARD, {
 			type: "role_info",
+			roleId: job.id,
 			role: job.name,
 			team: job.team,
 			description: job.description,

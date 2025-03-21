@@ -2,7 +2,7 @@ import { GameRoom, GameRoomConfig, WaitingRoomEvent } from "./GameRoom";
 import { GameMode } from "../../gameMode/GameMode";
 import { GamePlayer } from "../../types/GamePlayer";
 import { getJobsByGameMode } from "../../types/JobTypes";
-import { getPlayerById } from "../../../../utils/Common";
+import { getPlayerById, sendAdminConsoleMessage } from "../../../../utils/Common";
 import { Game } from "../../Game";
 
 /**
@@ -218,7 +218,7 @@ export class GameRoomManager {
 			try {
 				callback(...args);
 			} catch (error) {
-				ScriptApp.sayToStaffs(`Error in event listener for ${event}:`, error);
+				sendAdminConsoleMessage(`Error in event listener for ${event}:`+ error);
 			}
 		});
 	}

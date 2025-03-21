@@ -1,5 +1,6 @@
 ﻿import { Localizer } from "./Localizer";
 import { GamePlayer } from "../core/mafia/types/GamePlayer";
+import { adminList } from "../core/mafia/Game";
 
 
 export let log: (message: string) => void;
@@ -29,11 +30,15 @@ export function isEmpty(obj: object): boolean {
 	return true;
 }
 
-export function sendConsoleMessage(player, message) {
-	const playerId = getPlayerId(player);
-	ScriptApp.runLater(() => {
-		if (!getPlayerById(playerId)) return;
-	}, 0.5);
+export function sendAdminConsoleMessage(message) {
+	if(adminList.length === 0) return;
+	adminList.forEach((adminId)=>{
+		const player = getPlayerById(adminId);
+		if(!player) return;
+		if(player.tag.widget.system){
+			player.tag.widget.system.sendMessage(message);
+		}
+	})
 }
 
 export function getPlayerId(player) {

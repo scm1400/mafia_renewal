@@ -1,7 +1,7 @@
 import { LocationInfo } from "zep-script";
 import { GameFlowManager, GameState, MafiaPlayer } from "../gameFlow/GameFlowManager";
 import { GamePlayer } from "../../types/GamePlayer";
-import { getPlayerById } from "../../../../utils/Common";
+import { getPlayerById, sendAdminConsoleMessage } from "../../../../utils/Common";
 import { Job, GameMode as GameModeInterface, JobId } from "../../types/JobTypes";
 import { GameMode } from "../../gameMode/GameMode";
 import { WidgetManager } from "../widget/WidgetManager";
@@ -220,7 +220,7 @@ export class GameRoom {
 			try {
 				callback(...args);
 			} catch (error) {
-				ScriptApp.sayToStaffs(`Error in event listener for ${event}:`, error);
+				sendAdminConsoleMessage(`Error in event listener for ${event}:`+ error);
 			}
 		});
 	}
@@ -479,7 +479,7 @@ export class GameRoom {
 			// 게임 시작
 			this.flowManager.startGame();
 		} catch (error) {
-			ScriptApp.sayToStaffs("Error starting game:", error);
+			sendAdminConsoleMessage("Error starting game:" + error);
 			this.state = GameState.WAITING;
 			return false;
 		}

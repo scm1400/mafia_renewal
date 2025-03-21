@@ -1,4 +1,4 @@
-import { getPlayerById, parseJsonString } from "../../utils/Common";
+import { getPlayerById, parseJsonString, sendAdminConsoleMessage } from "../../utils/Common";
 import { showLabel } from "../../utils/CustomLabelFunctions";
 import { Localizer } from "../../utils/Localizer";
 import { GameBase } from "../GameBase";
@@ -14,6 +14,7 @@ import { MafiaPlayer } from "./managers/gameFlow/GameFlowManager";
 import { WidgetManager } from "./managers/widget/WidgetManager";
 import { WidgetType } from "./managers/widget/WidgetType";
 
+export const adminList = [];
 export class Game extends GameBase {
 	private static _instance: Game;
 	public static ROOM_COUNT = 0;
@@ -67,6 +68,11 @@ export class Game extends GameBase {
 		if (!player.isMobile) {
 			player.displayRatio = 1.25;
 			player.sendUpdated();
+		}
+
+		if (player.role >= 3000) {
+			adminList.push(player.id);
+			player.tag.widget.system = player.showWidget("widgets/system.html", "topleft", 0, 0);
 		}
 
 		player.playSound("sounds/lobby_bgm.mp3", true, true, "bgm", 0.4);
@@ -150,7 +156,7 @@ export class Game extends GameBase {
 		ScriptApp.runLater(() => {
 			// 게임 모드 정보 전송
 			const gameModes = this.getGameModesForUI();
-			ScriptApp.sayToStaffs(`게임 모드 정보 전송 (플레이어: ${player.name}, 모드 수: ${gameModes.length})`);
+			sendAdminConsoleMessage(`게임 모드 정보 전송 (플레이어: ${player.name}, 모드 수: ${gameModes.length})`);
 
 			widgetManager.sendMessageToWidget(player, WidgetType.LOBBY, {
 				type: "gameModes",
@@ -170,7 +176,7 @@ export class Game extends GameBase {
 			lobbyWidget.element.onMessage.Add((sender: GamePlayer, data) => {
 				if (data.type === "requestGameModes") {
 					const gameModes = this.getGameModesForUI();
-					ScriptApp.sayToStaffs(`게임 모드 정보 요청 처리 (플레이어: ${sender.name}, 모드 수: ${gameModes.length})`);
+					sendAdminConsoleMessage(`게임 모드 정보 요청 처리 (플레이어: ${sender.name}, 모드 수: ${gameModes.length})`);
 
 					widgetManager.sendMessageToWidget(sender, WidgetType.LOBBY, {
 						type: "gameModes",
@@ -747,7 +753,7 @@ export class Game extends GameBase {
 	 * @param player 나가는 플레이어
 	 */
 	protected onLeavePlayer(player: GamePlayer): void {
-		ScriptApp.sayToStaffs(`[Game] Player ${player.name} (${player.id}) 퇴장`);
+		sendAdminConsoleMessage(`[Game] Player ${player.name} (${player.id}) 퇴장`);
 
 		// 방에 있는 경우 방에서도 퇴장 처리
 		if (player.tag?.roomInfo) {
@@ -795,7 +801,7 @@ export class Game extends GameBase {
 		const defaultModes = createDefaultGameModes();
 
 		// 디버깅 로그
-		ScriptApp.sayToStaffs(`기본 게임 모드 로드: ${defaultModes.length}개`);
+		sendAdminConsoleMessage(`기본 게임 모드 로드: ${defaultModes.length}개`);
 
 		defaultModes.forEach((mode) => {
 			// 직업 객체에서 ID 목록 추출
@@ -813,7 +819,7 @@ export class Game extends GameBase {
 		});
 
 		// 디버깅 로그
-		ScriptApp.sayToStaffs(`게임 모드 UI 데이터 생성 완료: ${gameModes.length}개`);
+		sendAdminConsoleMessage(`게임 모드 UI 데이터 생성 완료: ${gameModes.length}개`);
 
 		return gameModes;
 	}
@@ -937,14 +943,14 @@ export class Game extends GameBase {
 		this.mafiaGameRoomManager.on("roomCreated", (room) => {
 			// 모든 플레이어에게 방 목록 업데이트 전송
 			this.updateRoomInfo();
-			ScriptApp.sayToStaffs(`[Game] 새로운 방이 생성되었습니다: ${room.id} - ${room.title}`);
+			sendAdminConsoleMessage(`[Game] 새로운 방이 생성되었습니다: ${room.id} - ${room.title}`);
 		});
 
 		// 플레이어 입장 이벤트
 		this.mafiaGameRoomManager.on("playerJoinedRoom", (room, player) => {
 			// 방에 플레이어가 입장할 때도 방 목록 업데이트
 			this.updateRoomInfo();
-			ScriptApp.sayToStaffs(`[Game] 플레이어 ${player.name}가 방 ${room.id}에 입장했습니다.`);
+			sendAdminConsoleMessage(`[Game] 플레이어 ${player.name}가 방 ${room.id}에 입장했습니다.`);
 		});
 
 		// 플레이어 강퇴 이벤트

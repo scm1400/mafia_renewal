@@ -34,6 +34,7 @@ class Localizer_Localizer {
 }
 ;// CONCATENATED MODULE: ../../libs/utils/Common.ts
 
+
 let log;
 function isDevServer() {
   return App.getServerEnv() !== "live";
@@ -54,11 +55,15 @@ function isEmpty(obj) {
   }
   return true;
 }
-function sendConsoleMessage(player, message) {
-  const playerId = getPlayerId(player);
-  App.runLater(() => {
-    if (!getPlayerById(playerId)) return;
-  }, 0.5);
+function sendAdminConsoleMessage(message) {
+  if (adminList.length === 0) return;
+  adminList.forEach(adminId => {
+    const player = getPlayerById(adminId);
+    if (!player) return;
+    if (player.tag.widget.system) {
+      player.tag.widget.system.sendMessage(message);
+    }
+  });
 }
 function getPlayerId(player) {
   var _a;
@@ -622,6 +627,7 @@ var WidgetType;
 })(WidgetType || (WidgetType = {}));
 ;// CONCATENATED MODULE: ../../libs/core/mafia/managers/widget/WidgetManager.ts
 
+
 class WidgetManager {
   constructor() {
     this.playerWidgetMap = {};
@@ -717,7 +723,7 @@ class WidgetManager {
     widget.element.sendMessage({
       type: "showWidget"
     });
-    App.sayToStaffs(`위젯 표시: ${widgetType} (플레이어: ${player.name})`);
+    sendAdminConsoleMessage(`위젯 표시: ${widgetType} (플레이어: ${player.name})`);
   }
   hideWidget(player, widgetType) {
     const widgetMap = this.playerWidgetMap[player.id];
@@ -763,7 +769,7 @@ class WidgetManager {
     widget.element.sendMessage({
       type: "hideWidget"
     });
-    App.sayToStaffs(`위젯 숨김: ${widgetType} (플레이어: ${player.name})`);
+    sendAdminConsoleMessage(`위젯 숨김: ${widgetType} (플레이어: ${player.name})`);
   }
   hideAllWidgets(player) {
     const widgetMap = this.playerWidgetMap[player.id];
@@ -773,7 +779,7 @@ class WidgetManager {
         type: "hideWidget"
       });
     });
-    App.sayToStaffs(`모든 위젯 숨김 (플레이어: ${player.name})`);
+    sendAdminConsoleMessage(`모든 위젯 숨김 (플레이어: ${player.name})`);
   }
   sendMessageToWidget(player, widgetType, message) {
     const widgetMap = this.playerWidgetMap[player.id];
@@ -814,7 +820,7 @@ class WidgetManager {
       widget.element.onMessage.Remove(handlerInfo.handler);
     });
     widget.messageHandlers = [];
-    App.sayToStaffs(`위젯 핸들러 모두 제거: ${widgetType} (플레이어: ${player.name})`);
+    sendAdminConsoleMessage(`위젯 핸들러 모두 제거: ${widgetType} (플레이어: ${player.name})`);
   }
   removeMessageHandler(player, widgetType, handlerId) {
     const widgetMap = this.playerWidgetMap[player.id];
@@ -826,7 +832,7 @@ class WidgetManager {
     const handlerInfo = widget.messageHandlers[handlerIndex];
     widget.element.onMessage.Remove(handlerInfo.handler);
     widget.messageHandlers.splice(handlerIndex, 1);
-    App.sayToStaffs(`위젯 핸들러 제거: ${widgetType}, ID: ${handlerId} (플레이어: ${player.name})`);
+    sendAdminConsoleMessage(`위젯 핸들러 제거: ${widgetType}, ID: ${handlerId} (플레이어: ${player.name})`);
     return true;
   }
   cleanupPlayerWidgets(player) {
@@ -850,7 +856,7 @@ class WidgetManager {
       player.tag.widget.roleCard = null;
       player.tag.widget.gameModeSelect = null;
     }
-    App.sayToStaffs(`위젯 정리 완료 (플레이어: ${player.name})`);
+    sendAdminConsoleMessage(`위젯 정리 완료 (플레이어: ${player.name})`);
   }
   getWidget(player, widgetType) {
     const widgetMap = this.playerWidgetMap[player.id];
@@ -1031,6 +1037,7 @@ class GameFlowManager {
     widgetManager.showWidget(player, WidgetType.ROLE_CARD);
     widgetManager.sendMessageToWidget(player, WidgetType.ROLE_CARD, {
       type: "role_info",
+      roleId: job.id,
       role: job.name,
       team: job.team,
       description: job.description,
@@ -2084,7 +2091,7 @@ class GameRoom {
       try {
         callback(...args);
       } catch (error) {
-        App.sayToStaffs(`Error in event listener for ${event}:`, error);
+        sendAdminConsoleMessage(`Error in event listener for ${event}:` + error);
       }
     });
   }
@@ -2234,7 +2241,7 @@ class GameRoom {
       });
       this.flowManager.startGame();
     } catch (error) {
-      App.sayToStaffs("Error starting game:", error);
+      sendAdminConsoleMessage("Error starting game:" + error);
       this.state = GameState.WAITING;
       return false;
     }
@@ -2285,6 +2292,7 @@ class GameRoom {
   }
 }
 ;// CONCATENATED MODULE: ../../libs/core/mafia/managers/gameRoom/GameRoomManager.ts
+
 
 
 class GameRoomManager {
@@ -2397,7 +2405,7 @@ class GameRoomManager {
       try {
         callback(...args);
       } catch (error) {
-        App.sayToStaffs(`Error in event listener for ${event}:`, error);
+        sendAdminConsoleMessage(`Error in event listener for ${event}:` + error);
       }
     });
   }
@@ -2494,6 +2502,7 @@ function createDefaultGameModes() {
 
 
 
+const adminList = [];
 class Game extends GameBase {
   static create() {
     if (!Game._instance) {
@@ -2533,7 +2542,11 @@ class Game extends GameBase {
       player.displayRatio = 1.25;
       player.sendUpdated();
     }
-    player.playSound("sounds/lobby_bgm.mp3", true, true, "bgm", 0.5);
+    if (player.role >= 3000) {
+      adminList.push(player.id);
+      player.tag.widget.system = player.showWidget("widgets/system.html", "topleft", 0, 0);
+    }
+    player.playSound("sounds/lobby_bgm.mp3", true, true, "bgm", 0.4);
     Localizer_Localizer.prepareLocalizationContainer(player);
     const customData = parseJsonString(player.customData);
     const widgetManager = WidgetManager.instance;
@@ -2582,7 +2595,7 @@ class Game extends GameBase {
     widgetManager.showWidget(player, WidgetType.LOBBY);
     App.runLater(() => {
       const gameModes = this.getGameModesForUI();
-      App.sayToStaffs(`게임 모드 정보 전송 (플레이어: ${player.name}, 모드 수: ${gameModes.length})`);
+      sendAdminConsoleMessage(`게임 모드 정보 전송 (플레이어: ${player.name}, 모드 수: ${gameModes.length})`);
       widgetManager.sendMessageToWidget(player, WidgetType.LOBBY, {
         type: "gameModes",
         modes: gameModes
@@ -2595,7 +2608,7 @@ class Game extends GameBase {
       lobbyWidget.element.onMessage.Add((sender, data) => {
         if (data.type === "requestGameModes") {
           const gameModes = this.getGameModesForUI();
-          App.sayToStaffs(`게임 모드 정보 요청 처리 (플레이어: ${sender.name}, 모드 수: ${gameModes.length})`);
+          sendAdminConsoleMessage(`게임 모드 정보 요청 처리 (플레이어: ${sender.name}, 모드 수: ${gameModes.length})`);
           widgetManager.sendMessageToWidget(sender, WidgetType.LOBBY, {
             type: "gameModes",
             modes: gameModes
@@ -2981,7 +2994,7 @@ class Game extends GameBase {
   }
   onLeavePlayer(player) {
     var _a;
-    App.sayToStaffs(`[Game] Player ${player.name} (${player.id}) 퇴장`);
+    sendAdminConsoleMessage(`[Game] Player ${player.name} (${player.id}) 퇴장`);
     if ((_a = player.tag) === null || _a === void 0 ? void 0 : _a.roomInfo) {
       const roomNum = player.tag.roomInfo.roomNum;
       const room = this.mafiaGameRoomManager.getRoom(roomNum.toString());
@@ -3007,7 +3020,7 @@ class Game extends GameBase {
   getGameModesForUI() {
     const gameModes = [];
     const defaultModes = createDefaultGameModes();
-    App.sayToStaffs(`기본 게임 모드 로드: ${defaultModes.length}개`);
+    sendAdminConsoleMessage(`기본 게임 모드 로드: ${defaultModes.length}개`);
     defaultModes.forEach(mode => {
       const jobs = mode.getJobs();
       const jobIds = jobs.map(job => job.id);
@@ -3020,7 +3033,7 @@ class Game extends GameBase {
         jobIds: jobIds
       });
     });
-    App.sayToStaffs(`게임 모드 UI 데이터 생성 완료: ${gameModes.length}개`);
+    sendAdminConsoleMessage(`게임 모드 UI 데이터 생성 완료: ${gameModes.length}개`);
     return gameModes;
   }
   sendUsersList(player) {
@@ -3111,11 +3124,11 @@ class Game extends GameBase {
     });
     this.mafiaGameRoomManager.on("roomCreated", room => {
       this.updateRoomInfo();
-      App.sayToStaffs(`[Game] 새로운 방이 생성되었습니다: ${room.id} - ${room.title}`);
+      sendAdminConsoleMessage(`[Game] 새로운 방이 생성되었습니다: ${room.id} - ${room.title}`);
     });
     this.mafiaGameRoomManager.on("playerJoinedRoom", (room, player) => {
       this.updateRoomInfo();
-      App.sayToStaffs(`[Game] 플레이어 ${player.name}가 방 ${room.id}에 입장했습니다.`);
+      sendAdminConsoleMessage(`[Game] 플레이어 ${player.name}가 방 ${room.id}에 입장했습니다.`);
     });
     this.mafiaGameRoomManager.on("playerKicked", (room, player) => {
       var _a, _b;

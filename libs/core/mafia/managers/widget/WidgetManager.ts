@@ -1,5 +1,6 @@
 import { WidgetType } from "./WidgetType";
 import { GamePlayer } from "../../types/GamePlayer";
+import { sendAdminConsoleMessage } from "../../../../utils/Common";
 
 /**
  * 위젯 인터페이스
@@ -173,7 +174,7 @@ export class WidgetManager {
         }
         
         widget.element.sendMessage({ type: "showWidget" });
-        ScriptApp.sayToStaffs(`위젯 표시: ${widgetType} (플레이어: ${player.name})`);
+        sendAdminConsoleMessage(`위젯 표시: ${widgetType} (플레이어: ${player.name})`);
     }
     
     /**
@@ -227,7 +228,7 @@ export class WidgetManager {
         }
         
         widget.element.sendMessage({ type: "hideWidget" });
-        ScriptApp.sayToStaffs(`위젯 숨김: ${widgetType} (플레이어: ${player.name})`);
+        sendAdminConsoleMessage(`위젯 숨김: ${widgetType} (플레이어: ${player.name})`);
     }
     
     /**
@@ -242,7 +243,7 @@ export class WidgetManager {
         Object.values(widgetMap).forEach(widget => {
             widget.element.sendMessage({ type: "hideWidget" });
         });
-        ScriptApp.sayToStaffs(`모든 위젯 숨김 (플레이어: ${player.name})`);
+        sendAdminConsoleMessage(`모든 위젯 숨김 (플레이어: ${player.name})`);
     }
     
     /**
@@ -336,7 +337,7 @@ export class WidgetManager {
         // 핸들러 배열 초기화
         widget.messageHandlers = [];
         
-        ScriptApp.sayToStaffs(`위젯 핸들러 모두 제거: ${widgetType} (플레이어: ${player.name})`);
+        sendAdminConsoleMessage(`위젯 핸들러 모두 제거: ${widgetType} (플레이어: ${player.name})`);
     }
     
     /**
@@ -366,7 +367,7 @@ export class WidgetManager {
         // 배열에서 핸들러 제거
         widget.messageHandlers.splice(handlerIndex, 1);
         
-        ScriptApp.sayToStaffs(`위젯 핸들러 제거: ${widgetType}, ID: ${handlerId} (플레이어: ${player.name})`);
+        sendAdminConsoleMessage(`위젯 핸들러 제거: ${widgetType}, ID: ${handlerId} (플레이어: ${player.name})`);
         return true;
     }
     
@@ -404,7 +405,7 @@ export class WidgetManager {
             player.tag.widget.gameModeSelect = null;
         }
         
-        ScriptApp.sayToStaffs(`위젯 정리 완료 (플레이어: ${player.name})`);
+        sendAdminConsoleMessage(`위젯 정리 완료 (플레이어: ${player.name})`);
     }
     
     /**
