@@ -734,6 +734,24 @@ export class GameFlowManager {
 	}
 
 	/**
+	 * 현재 최대 투표를 받은 피고인의 ID를 반환합니다.
+	 * @returns 최대 투표를 받은 피고인의 ID 또는 null
+	 */
+	private findFinalDefenseDefendant(): string | null {
+		let maxVotes = 0;
+		let defendantId: string | null = null;
+		
+		for (const [playerId, votes] of Object.entries(this.voteResults)) {
+			if (votes > maxVotes) {
+				maxVotes = votes;
+				defendantId = playerId;
+			}
+		}
+		
+		return defendantId;
+	}
+
+	/**
 	 * 최후 변론 위젯 표시
 	 * @param player 게임 플레이어
 	 * @param targetPlayer 투표 대상 플레이어
@@ -758,11 +776,20 @@ export class GameFlowManager {
 			myPlayerId: player.id,
 		});
 
-		// 최후 변론 위젯 메시지 처리 - 최초 한 번만 등록
+		// 핸들러 등록 전 기존 핸들러 정리
+		widgetManager.clearMessageHandlers(gamePlayer, WidgetType.FINAL_DEFENSE);
+
+		// 최후 변론 위젯 메시지 처리
 		widgetManager.registerMessageHandler(gamePlayer, WidgetType.FINAL_DEFENSE, (sender: GamePlayer, data) => {
-			if (data.type === "submitDefense" && sender.id === targetPlayer.id) {
-				this.defenseText = data.defense || "";
-				this.broadcastDefense(this.defenseText);
+			if (data.type === "submitDefense") {
+				// 현재 최대 투표를 받은 피고인 확인
+				const currentDefendantId = this.findFinalDefenseDefendant();
+				
+				// 피고인이 변론을 제출한 경우에만 처리
+				if (sender.id === currentDefendantId) {
+					this.defenseText = data.defense || "";
+					this.broadcastDefense(this.defenseText);
+				}
 			}
 		});
 	}
@@ -800,11 +827,13 @@ export class GameFlowManager {
 				defenseText: this.defenseText,
 			});
 
-			// 찬반 투표 위젯 메시지 처리 - 최초 한 번만 등록
+			// 찬반 투표 위젯 메시지 처리
 			widgetManager.registerMessageHandler(gamePlayer, WidgetType.APPROVAL_VOTE, (sender: GamePlayer, data) => {
 				if (data.type === "submitApprovalVote" && (data.vote === "approve" || data.vote === "reject")) {
 					const mafiaPlayer = sender.tag.mafiaPlayer;
-					if (mafiaPlayer && mafiaPlayer.isAlive && mafiaPlayer.id !== targetPlayer.id) {
+					const currentDefendantId = this.findFinalDefenseDefendant();
+					
+					if (mafiaPlayer && mafiaPlayer.isAlive && mafiaPlayer.id !== currentDefendantId) {
 						this.processApprovalVote(mafiaPlayer.id, data.vote);
 					}
 				}
@@ -871,196 +900,173 @@ export class GameFlowManager {
 	}
 
 	/**
-	 * 죽은 플레이어 메시지 브로드캐스트 (상시)
+	 * 죽은 플레이어 목록 반환
 	 */
-	private broadcastPermanentDeadMessage(sender: GamePlayer, message: string) {
-		// 메시지 저장
-		this.chatMessages.push({
-			target: "dead",
-			sender: sender.id,
-			senderName: sender.name,
-			message: message,
-		});
+	public getDeadPlayers(): string[] {
+		return [...this.deadPlayers];
+	}
 
-		// 다른 죽은 플레이어들과 영매에게 메시지 전송
-		this.room?.actionToRoomPlayers((player) => {
-			// 죽은 플레이어에게 전송
-			if (!player.isAlive || this.deadPlayers.includes(player.id)) {
-				const deadPlayer = getPlayerById(player.id) as GamePlayer;
-				if (deadPlayer && deadPlayer.tag.widget.deadChat && deadPlayer.id !== sender.id) {
-					deadPlayer.tag.widget.deadChat.sendMessage({
-						type: "chatMessage",
-						senderId: sender.id,
-						senderName: sender.name,
-						message: message,
-					});
-				}
+	/**
+	 * 투표 처리
+	 * @param voterId 투표한 플레이어 ID
+	 * @param targetId 투표 대상 플레이어 ID
+	 */
+	processVote(voterId: string, targetId: string) {
+		// 상태 확인 (투표 단계가 아니면 처리하지 않음)
+		if (this.currentPhase !== MafiaPhase.VOTING) {
+			this.sayToRoom(`현재 단계는 투표 단계가 아닙니다.`);
+			return;
+		}
+
+		
+
+		// 중복 투표 확인
+		if (this.playerVotes[voterId] === targetId) {
+			this.sayToRoom(`이미 해당 플레이어에게 투표했습니다.`);
+			return;
+		}
+
+		// 타겟이 유효한지 확인
+		const targetPlayer = this.room.players.find(p => p.id === targetId);
+		if (!targetPlayer || !targetPlayer.isAlive) {
+			this.sayToRoom(`대상 플레이어가 유효하지 않습니다.`);
+			return;
+		}
+
+		// 기존 투표 취소 (있는 경우)
+		if (this.playerVotes[voterId]) {
+			const previousTargetId = this.playerVotes[voterId];
+			if (this.voteResults[previousTargetId] > 0) {
+				this.voteResults[previousTargetId]--;
 			}
-			// 영매에게도 전송
-			else if (player.jobId === JobId.MEDIUM) {
-				const mediumPlayer = getPlayerById(player.id) as GamePlayer;
-				if (mediumPlayer && mediumPlayer.tag.widget.deadChat) {
-					mediumPlayer.tag.widget.deadChat.sendMessage({
-						type: "chatMessage",
-						senderId: sender.id,
-						senderName: sender.name,
-						message: message,
-					});
-				}
+		}
+
+		// 새 투표 저장
+		this.playerVotes[voterId] = targetId;
+		
+		// 투표 결과 업데이트
+		if (!this.voteResults[targetId]) {
+			this.voteResults[targetId] = 1;
+		} else {
+			this.voteResults[targetId]++;
+		}
+		
+		// 모든 플레이어에게 투표 결과 업데이트
+		this.updateVoteResults();
+		
+		// 모든 살아있는 플레이어가 투표했는지 확인
+		const alivePlayers = this.room.players.filter(p => p.isAlive);
+		
+		// 살아있는 플레이어 중에서 투표한 플레이어 수 계산
+		const aliveVoters = Object.keys(this.playerVotes).filter(playerId => {
+			const player = this.room.players.find(p => p.id === playerId);
+			return player && player.isAlive;
+		});
+
+		if (aliveVoters.length >= alivePlayers.length) {
+			// 모든 살아있는 플레이어가 투표 완료
+			// 페이즈 종료 콜백을 즉시 실행하여 타이머와 상관없이 바로 다음 단계로 진행
+			if (this.phaseEndCallback) {
+				const callback = this.phaseEndCallback;
+				this.phaseEndCallback = null;
+				callback();
 			}
-		});
+		}
 	}
 
 	/**
-	 * 밤 단계에서 마피아가 희생 대상을 선택합니다.
-	 * @param targetPlayerId 선택한 대상 플레이어의 ID
+	 * 모든 플레이어에게 투표 결과 업데이트
 	 */
-	mafiaAction(targetPlayerId: string): void {
-		if (this.currentPhase !== MafiaPhase.NIGHT) {
-			return;
-		}
-		this.nightActions.push({
-			playerId: targetPlayerId,
-			targetId: targetPlayerId,
-			jobId: JobId.MAFIA,
-		});
-	}
+	updateVoteResults() {
+		if (!this.room) return;
+		const widgetManager = WidgetManager.instance;
 
-	/**
-	 * 밤 단계에서 의사가 보호할 대상을 선택합니다.
-	 * @param targetPlayerId 선택한 보호 대상 플레이어의 ID
-	 */
-	doctorAction(targetPlayerId: string): void {
-		if (this.currentPhase !== MafiaPhase.NIGHT) {
-			return;
-		}
-		this.nightActions.push({
-			playerId: targetPlayerId,
-			targetId: targetPlayerId,
-			jobId: JobId.DOCTOR,
-		});
-	}
+		this.room.actionToRoomPlayers((player) => {
+			const gamePlayer: GamePlayer = getPlayerById(player.id);
+			if (!gamePlayer) return;
 
-	/**
-	 * 밤 단계에서 경찰이 조사할 대상을 선택합니다.
-	 * @param targetPlayerId 조사할 플레이어의 ID
-	 * @param policePlayer 경찰 플레이어
-	 */
-	policeAction(targetPlayerId: string, policePlayer: GamePlayer): void {
-		if (this.currentPhase !== MafiaPhase.NIGHT) {
-			return;
-		}
-		this.nightActions.push({
-			playerId: targetPlayerId,
-			targetId: targetPlayerId,
-			jobId: JobId.POLICE,
-		});
-
-		// 대상 플레이어 찾기
-		const targetPlayer = this.room.players.find((p) => p.id === targetPlayerId);
-		if (!targetPlayer) return;
-
-		// 조사 결과 전송
-		const isMafia = targetPlayer.jobId === JobId.MAFIA;
-
-		// 경찰 플레이어에게 결과 전송
-		if (policePlayer.tag.widget.nightAction) {
-			policePlayer.tag.widget.nightAction.sendMessage({
-				type: "investigationResult",
-				isMafia: isMafia,
+			widgetManager.sendMessageToWidget(gamePlayer, WidgetType.VOTE, {
+				type: "updateVotes",
+				votes: this.voteResults,
 			});
-		}
+		});
 	}
 
 	/**
-	 * 밤 단계 액션 평가
+	 * 찬반 투표 결과를 최종 처리합니다.
 	 */
-	evaluateNightActions(): void {
-		// 밤 액션 처리 로직
-		const killedPlayers: string[] = [];
-		const protectedPlayers: string[] = [];
-		const blockedPlayers: string[] = [];
+	finalizeApprovalVoting() {
+		if (!this.room) return;
 
-		// 보호 액션 먼저 처리
-		this.nightActions.forEach((action) => {
-			const job = getJobById(action.jobId);
-			if (!job) return;
+		// 모든 플레이어에게 찬반 투표 결과 표시 (최종 결과임을 명시)
+		this.room.actionToRoomPlayers((player) => {
+			const gamePlayer: GamePlayer = getPlayerById(player.id);
+			if (!gamePlayer || !gamePlayer.tag.widget || !gamePlayer.tag.widget.approvalVote) return;
 
-			// 의사 등의 보호 능력
-			if (job.abilityType === JobAbilityType.PROTECT) {
-				protectedPlayers.push(action.targetId);
-			}
-
-			// 투표 방해 능력
-			if (job.abilityType === JobAbilityType.BLOCK) {
-				blockedPlayers.push(action.targetId);
-			}
+			// 모든 플레이어에게 최종 결과를 표시하고 투표 UI를 숨김
+			gamePlayer.tag.widget.approvalVote.sendMessage({
+				type: "showResults",
+				results: this.approvalVoteResults,
+				isFinalResult: true // 최종 결과임을 표시하는 플래그 추가
+			});
 		});
 
-		// 살해 액션 처리
-		this.nightActions.forEach((action) => {
-			const job = getJobById(action.jobId);
-			if (!job) return;
-
-			// 마피아 등의 살해 능력
-			if (job.abilityType === JobAbilityType.KILL) {
-				const target = this.room.players.find((p) => p.id === action.targetId);
-				if (!target || !target.isAlive) return;
-
-				// 보호되지 않았고, 면역이 없으면 사망
-				if (!protectedPlayers.includes(action.targetId) && !target.isImmune) {
-					killedPlayers.push(action.targetId);
-				} else if (target.isImmune) {
-					// 면역이 있으면 면역 소모
-					target.isImmune = false;
-				}
+		// 찬성이 더 많으면 플레이어 처형
+		let maxVotes = 0;
+		let defendantId = null;
+		for (const [playerId, votes] of Object.entries(this.voteResults)) {
+			if (votes > maxVotes) {
+				maxVotes = votes;
+				defendantId = playerId;
 			}
-		});
+		}
 
-		// 투표 방해 상태 적용
-		blockedPlayers.forEach((playerId) => {
-			const player = this.room.players.find((p) => p.id === playerId);
-			if (player) {
-				player.isBlocked = true;
+		// 피고인 확인
+		const defendant = defendantId ? this.room.players.find(p => p.id === defendantId) : null;
+
+		// 처형 결과 처리
+		if (defendant && this.approvalVoteResults.approve > this.approvalVoteResults.reject) {
+			// 찬성이 더 많으면 플레이어 처형
+			defendant.isAlive = false;
+			this.sayToRoom(`${defendant.name}님이 처형되었습니다.`);
+
+			// 사망자 채팅 위젯 표시
+			const gamePlayer = getPlayerById(defendant.id);
+			if (gamePlayer) {
+				this.showPermanentDeadChatWidget(gamePlayer);
 			}
-		});
+		} else if (defendant) {
+			// 반대가 더 많거나 같으면 처형 무효
+			this.sayToRoom(`처형이 부결되었습니다.`);
+		}
+		// 피고인이 없는 경우 (defendantId가 null인 경우)는 메시지를 표시하지 않음
 
-		// 사망 처리
-		killedPlayers.forEach((playerId) => {
-			const player = this.room.players.find((p) => p.id === playerId);
-			if (player) {
-				player.isAlive = false;
+		// 모든 플레이어의 게임 상태 위젯 업데이트
+		this.updateAllGameStatusWidgets();
 
-				// 죽은 플레이어 목록에 추가
-				if (!this.deadPlayers.includes(playerId)) {
-					this.deadPlayers.push(playerId);
-				}
+		// 위젯 정리 및 다음 단계로 진행 - 페이즈 종료 시 콜백 설정 (5초 후 실행)
+		this.phaseTimer = 5;
+		this.phaseEndCallback = () => {
+			// 모든 플레이어의 찬반 투표 위젯 숨기기
+			this.room.actionToRoomPlayers((player) => {
+				const gamePlayer: GamePlayer = getPlayerById(player.id);
+				if (!gamePlayer) return;
 
-				// 사망 메시지 표시
-				this.showRoomLabel(`${player.name}님이 사망했습니다.`);
+				// WidgetManager를 통해 찬반 투표 위젯 숨기기
+				const widgetManager = WidgetManager.instance;
+				widgetManager.hideWidget(gamePlayer, WidgetType.APPROVAL_VOTE);
+			});
 
-				// 사망한 플레이어에게 메시지 전송
-				const gamePlayer = getPlayerById(playerId) as GamePlayer;
-				if (gamePlayer) {
-					// 메인 위젯에 사망 알림
-					if (gamePlayer.tag.widget.main) {
-						gamePlayer.tag.widget.main.sendMessage({
-							type: "player_died",
-							message: "당신은 사망했습니다.",
-						});
-					}
-
-					// 죽은 플레이어용 채팅 위젯 표시
-					this.showPermanentDeadChatWidget(gamePlayer);
-				}
+			// 승리 조건 체크
+			if (this.checkWinCondition()) {
+				return; // 게임이 종료되었으므로 여기서 종료
 			}
-		});
 
-		// 밤 액션 초기화
-		this.nightActions = [];
-
-		// 승리 조건 확인
-		this.checkWinCondition();
+			// 다음 단계로
+			if (this.state === GameState.IN_PROGRESS) {
+				this.nextPhase();
+			}
+		};
 	}
 
 	/**
@@ -1237,77 +1243,6 @@ export class GameFlowManager {
 	}
 
 	/**
-	 * 투표 종료 및 결과 처리
-	 */
-	finalizeVoting() {
-		if (!this.room) return;
-
-		// 최종 투표 결과 확인
-		let maxVotes = 0;
-		let executedPlayerId = null;
-
-		for (const [playerId, votes] of Object.entries(this.voteResults)) {
-			if (votes > maxVotes) {
-				maxVotes = votes;
-				executedPlayerId = playerId;
-			}
-		}
-
-		// 동률인 경우 처형하지 않음
-		const tiedPlayers = Object.entries(this.voteResults)
-			.filter(([_, votes]) => votes === maxVotes)
-			.map(([playerId, _]) => playerId);
-
-		// 투표 결과가 아예 없거나 동률인 경우 처형하지 않음
-		if (tiedPlayers.length > 1 || maxVotes === 0 || Object.keys(this.voteResults).length === 0) {
-			this.sayToRoom(`투표 결과 ${tiedPlayers.length > 1 ? '동률로' : '유효표가 없어'} 처형이 진행되지 않습니다.`);
-			
-			// 투표 위젯 숨기기
-			this.room.actionToRoomPlayers((player) => {
-				const gamePlayer = getPlayerById(player.id);
-				if (gamePlayer) {
-					const widgetManager = WidgetManager.instance;
-					widgetManager.hideWidget(gamePlayer, WidgetType.VOTE);
-				}
-			});
-			
-			// 다음 단계(밤)로 이동 - 페이즈 종료 시 콜백 설정 (3초 후 실행)
-			this.phaseTimer = 3;
-			this.phaseEndCallback = () => {
-				// 이전 단계의 위젯 정리
-				this.cleanupPhaseWidgets();
-				
-				// NIGHT 단계로 직접 설정
-				this.setPhase(MafiaPhase.NIGHT);
-				this.sayToRoom(`단계 전환 -> ${this.currentPhase} (Day ${this.dayCount})`);
-				
-				// 모든 플레이어의 게임 상태 위젯 업데이트
-				this.updateAllGameStatusWidgets();
-				
-				// 단계별 액션 실행
-				this.executePhaseActions();
-			};
-			
-			return null;
-		}
-		
-		// 투표 위젯 숨기기
-		this.room.actionToRoomPlayers((player) => {
-			const gamePlayer = getPlayerById(player.id);
-			if (gamePlayer) {
-				const widgetManager = WidgetManager.instance;
-				widgetManager.hideWidget(gamePlayer, WidgetType.VOTE);
-			}
-		});
-		
-		// 최후 변론으로 넘어감 - 페이즈 종료 시 콜백 설정 (3초 후 실행)
-		this.phaseTimer = 3;
-		this.phaseEndCallback = () => this.nextPhase();
-		
-		return executedPlayerId;
-	}
-
-	/**
 	 * 찬반 투표 처리
 	 * @param voterId 투표한 플레이어 ID
 	 * @param vote 투표 (approve 또는 reject)
@@ -1470,172 +1405,266 @@ export class GameFlowManager {
 	}
 
 	/**
-	 * 죽은 플레이어 목록 반환
+	 * 밤 단계에서 마피아가 희생 대상을 선택합니다.
+	 * @param targetPlayerId 선택한 대상 플레이어의 ID
 	 */
-	public getDeadPlayers(): string[] {
-		return [...this.deadPlayers];
+	mafiaAction(targetPlayerId: string): void {
+		if (this.currentPhase !== MafiaPhase.NIGHT) {
+			return;
+		}
+		this.nightActions.push({
+			playerId: targetPlayerId,
+			targetId: targetPlayerId,
+			jobId: JobId.MAFIA,
+		});
 	}
 
 	/**
-	 * 투표 처리
-	 * @param voterId 투표한 플레이어 ID
-	 * @param targetId 투표 대상 플레이어 ID
+	 * 밤 단계에서 의사가 보호할 대상을 선택합니다.
+	 * @param targetPlayerId 선택한 보호 대상 플레이어의 ID
 	 */
-	processVote(voterId: string, targetId: string) {
-		// 상태 확인 (투표 단계가 아니면 처리하지 않음)
-		if (this.currentPhase !== MafiaPhase.VOTING) {
-			this.sayToRoom(`현재 단계는 투표 단계가 아닙니다.`);
+	doctorAction(targetPlayerId: string): void {
+		if (this.currentPhase !== MafiaPhase.NIGHT) {
 			return;
 		}
+		this.nightActions.push({
+			playerId: targetPlayerId,
+			targetId: targetPlayerId,
+			jobId: JobId.DOCTOR,
+		});
+	}
 
-		
-
-		// 중복 투표 확인
-		if (this.playerVotes[voterId] === targetId) {
-			this.sayToRoom(`이미 해당 플레이어에게 투표했습니다.`);
+	/**
+	 * 밤 단계에서 경찰이 조사할 대상을 선택합니다.
+	 * @param targetPlayerId 조사할 플레이어의 ID
+	 * @param policePlayer 경찰 플레이어
+	 */
+	policeAction(targetPlayerId: string, policePlayer: GamePlayer): void {
+		if (this.currentPhase !== MafiaPhase.NIGHT) {
 			return;
 		}
-
-		// 타겟이 유효한지 확인
-		const targetPlayer = this.room.players.find(p => p.id === targetId);
-		if (!targetPlayer || !targetPlayer.isAlive) {
-			this.sayToRoom(`대상 플레이어가 유효하지 않습니다.`);
-			return;
-		}
-
-		// 기존 투표 취소 (있는 경우)
-		if (this.playerVotes[voterId]) {
-			const previousTargetId = this.playerVotes[voterId];
-			if (this.voteResults[previousTargetId] > 0) {
-				this.voteResults[previousTargetId]--;
-			}
-		}
-
-		// 새 투표 저장
-		this.playerVotes[voterId] = targetId;
-		
-		// 투표 결과 업데이트
-		if (!this.voteResults[targetId]) {
-			this.voteResults[targetId] = 1;
-		} else {
-			this.voteResults[targetId]++;
-		}
-		
-		// 모든 플레이어에게 투표 결과 업데이트
-		this.updateVoteResults();
-		
-		// 모든 살아있는 플레이어가 투표했는지 확인
-		const alivePlayers = this.room.players.filter(p => p.isAlive);
-		
-		// 살아있는 플레이어 중에서 투표한 플레이어 수 계산
-		const aliveVoters = Object.keys(this.playerVotes).filter(playerId => {
-			const player = this.room.players.find(p => p.id === playerId);
-			return player && player.isAlive;
+		this.nightActions.push({
+			playerId: targetPlayerId,
+			targetId: targetPlayerId,
+			jobId: JobId.POLICE,
 		});
 
-		if (aliveVoters.length >= alivePlayers.length) {
-			// 모든 살아있는 플레이어가 투표 완료
-			// 페이즈 종료 콜백을 즉시 실행하여 타이머와 상관없이 바로 다음 단계로 진행
-			if (this.phaseEndCallback) {
-				const callback = this.phaseEndCallback;
-				this.phaseEndCallback = null;
-				callback();
-			}
-		}
-	}
+		// 대상 플레이어 찾기
+		const targetPlayer = this.room.players.find((p) => p.id === targetPlayerId);
+		if (!targetPlayer) return;
 
-	/**
-	 * 모든 플레이어에게 투표 결과 업데이트
-	 */
-	updateVoteResults() {
-		if (!this.room) return;
-		const widgetManager = WidgetManager.instance;
+		// 조사 결과 전송
+		const isMafia = targetPlayer.jobId === JobId.MAFIA;
 
-		this.room.actionToRoomPlayers((player) => {
-			const gamePlayer: GamePlayer = getPlayerById(player.id);
-			if (!gamePlayer) return;
-
-			widgetManager.sendMessageToWidget(gamePlayer, WidgetType.VOTE, {
-				type: "updateVotes",
-				votes: this.voteResults,
+		// 경찰 플레이어에게 결과 전송
+		if (policePlayer.tag.widget.nightAction) {
+			policePlayer.tag.widget.nightAction.sendMessage({
+				type: "investigationResult",
+				isMafia: isMafia,
 			});
-		});
+		}
 	}
 
 	/**
-	 * 찬반 투표 결과를 최종 처리합니다.
+	 * 밤 단계 액션 평가
 	 */
-	finalizeApprovalVoting() {
-		if (!this.room) return;
+	evaluateNightActions(): void {
+		// 밤 액션 처리 로직
+		const killedPlayers: string[] = [];
+		const protectedPlayers: string[] = [];
+		const blockedPlayers: string[] = [];
 
-		// 모든 플레이어에게 찬반 투표 결과 표시 (최종 결과임을 명시)
-		this.room.actionToRoomPlayers((player) => {
-			const gamePlayer: GamePlayer = getPlayerById(player.id);
-			if (!gamePlayer || !gamePlayer.tag.widget || !gamePlayer.tag.widget.approvalVote) return;
+		// 보호 액션 먼저 처리
+		this.nightActions.forEach((action) => {
+			const job = getJobById(action.jobId);
+			if (!job) return;
 
-			// 모든 플레이어에게 최종 결과를 표시하고 투표 UI를 숨김
-			gamePlayer.tag.widget.approvalVote.sendMessage({
-				type: "showResults",
-				results: this.approvalVoteResults,
-				isFinalResult: true // 최종 결과임을 표시하는 플래그 추가
-			});
+			// 의사 등의 보호 능력
+			if (job.abilityType === JobAbilityType.PROTECT) {
+				protectedPlayers.push(action.targetId);
+			}
+
+			// 투표 방해 능력
+			if (job.abilityType === JobAbilityType.BLOCK) {
+				blockedPlayers.push(action.targetId);
+			}
 		});
 
-		// 찬성이 더 많으면 플레이어 처형
+		// 살해 액션 처리
+		this.nightActions.forEach((action) => {
+			const job = getJobById(action.jobId);
+			if (!job) return;
+
+			// 마피아 등의 살해 능력
+			if (job.abilityType === JobAbilityType.KILL) {
+				const target = this.room.players.find((p) => p.id === action.targetId);
+				if (!target || !target.isAlive) return;
+
+				// 보호되지 않았고, 면역이 없으면 사망
+				if (!protectedPlayers.includes(action.targetId) && !target.isImmune) {
+					killedPlayers.push(action.targetId);
+				} else if (target.isImmune) {
+					// 면역이 있으면 면역 소모
+					target.isImmune = false;
+				}
+			}
+		});
+
+		// 투표 방해 상태 적용
+		blockedPlayers.forEach((playerId) => {
+			const player = this.room.players.find((p) => p.id === playerId);
+			if (player) {
+				player.isBlocked = true;
+			}
+		});
+
+		// 사망 처리
+		killedPlayers.forEach((playerId) => {
+			const player = this.room.players.find((p) => p.id === playerId);
+			if (player) {
+				player.isAlive = false;
+
+				// 죽은 플레이어 목록에 추가
+				if (!this.deadPlayers.includes(playerId)) {
+					this.deadPlayers.push(playerId);
+				}
+
+				// 사망 메시지 표시
+				this.showRoomLabel(`${player.name}님이 사망했습니다.`);
+
+				// 사망한 플레이어에게 메시지 전송
+				const gamePlayer = getPlayerById(playerId) as GamePlayer;
+				if (gamePlayer) {
+					// 메인 위젯에 사망 알림
+					if (gamePlayer.tag.widget.main) {
+						gamePlayer.tag.widget.main.sendMessage({
+							type: "player_died",
+							message: "당신은 사망했습니다.",
+						});
+					}
+
+					// 죽은 플레이어용 채팅 위젯 표시
+					this.showPermanentDeadChatWidget(gamePlayer);
+				}
+			}
+		});
+
+		// 밤 액션 초기화
+		this.nightActions = [];
+
+		// 승리 조건 확인
+		this.checkWinCondition();
+	}
+
+	/**
+	 * 투표 종료 및 결과 처리
+	 */
+	finalizeVoting() {
+		if (!this.room) return;
+
+		// 최종 투표 결과 확인
 		let maxVotes = 0;
-		let defendantId = null;
+		let executedPlayerId = null;
+
 		for (const [playerId, votes] of Object.entries(this.voteResults)) {
 			if (votes > maxVotes) {
 				maxVotes = votes;
-				defendantId = playerId;
+				executedPlayerId = playerId;
 			}
 		}
 
-		// 피고인 확인
-		const defendant = defendantId ? this.room.players.find(p => p.id === defendantId) : null;
+		// 동률인 경우 처형하지 않음
+		const tiedPlayers = Object.entries(this.voteResults)
+			.filter(([_, votes]) => votes === maxVotes)
+			.map(([playerId, _]) => playerId);
 
-		// 처형 결과 처리
-		if (defendant && this.approvalVoteResults.approve > this.approvalVoteResults.reject) {
-			// 찬성이 더 많으면 플레이어 처형
-			defendant.isAlive = false;
-			this.sayToRoom(`${defendant.name}님이 처형되었습니다.`);
-
-			// 사망자 채팅 위젯 표시
-			const gamePlayer = getPlayerById(defendant.id);
-			if (gamePlayer) {
-				this.showPermanentDeadChatWidget(gamePlayer);
-			}
-		} else if (defendant) {
-			// 반대가 더 많거나 같으면 처형 무효
-			this.sayToRoom(`처형이 부결되었습니다.`);
-		}
-		// 피고인이 없는 경우 (defendantId가 null인 경우)는 메시지를 표시하지 않음
-
-		// 모든 플레이어의 게임 상태 위젯 업데이트
-		this.updateAllGameStatusWidgets();
-
-		// 위젯 정리 및 다음 단계로 진행 - 페이즈 종료 시 콜백 설정 (5초 후 실행)
-		this.phaseTimer = 5;
-		this.phaseEndCallback = () => {
-			// 모든 플레이어의 찬반 투표 위젯 숨기기
+		// 투표 결과가 아예 없거나 동률인 경우 처형하지 않음
+		if (tiedPlayers.length > 1 || maxVotes === 0 || Object.keys(this.voteResults).length === 0) {
+			this.sayToRoom(`투표 결과 ${tiedPlayers.length > 1 ? '동률로' : '유효표가 없어'} 처형이 진행되지 않습니다.`);
+			
+			// 투표 위젯 숨기기
 			this.room.actionToRoomPlayers((player) => {
-				const gamePlayer: GamePlayer = getPlayerById(player.id);
-				if (!gamePlayer) return;
-
-				// WidgetManager를 통해 찬반 투표 위젯 숨기기
-				const widgetManager = WidgetManager.instance;
-				widgetManager.hideWidget(gamePlayer, WidgetType.APPROVAL_VOTE);
+				const gamePlayer = getPlayerById(player.id);
+				if (gamePlayer) {
+					const widgetManager = WidgetManager.instance;
+					widgetManager.hideWidget(gamePlayer, WidgetType.VOTE);
+				}
 			});
-
-			// 승리 조건 체크
-			if (this.checkWinCondition()) {
-				return; // 게임이 종료되었으므로 여기서 종료
+			
+			// 다음 단계(밤)로 이동 - 페이즈 종료 시 콜백 설정 (3초 후 실행)
+			this.phaseTimer = 3;
+			this.phaseEndCallback = () => {
+				// 이전 단계의 위젯 정리
+				this.cleanupPhaseWidgets();
+				
+				// NIGHT 단계로 직접 설정
+				this.setPhase(MafiaPhase.NIGHT);
+				this.sayToRoom(`단계 전환 -> ${this.currentPhase} (Day ${this.dayCount})`);
+				
+				// 모든 플레이어의 게임 상태 위젯 업데이트
+				this.updateAllGameStatusWidgets();
+				
+				// 단계별 액션 실행
+				this.executePhaseActions();
+			};
+			
+			return null;
+		}
+		
+		// 투표 위젯 숨기기
+		this.room.actionToRoomPlayers((player) => {
+			const gamePlayer = getPlayerById(player.id);
+			if (gamePlayer) {
+				const widgetManager = WidgetManager.instance;
+				widgetManager.hideWidget(gamePlayer, WidgetType.VOTE);
 			}
+		});
+		
+		// 최후 변론으로 넘어감 - 페이즈 종료 시 콜백 설정 (3초 후 실행)
+		this.phaseTimer = 3;
+		this.phaseEndCallback = () => this.nextPhase();
+		
+		return executedPlayerId;
+	}
 
-			// 다음 단계로
-			if (this.state === GameState.IN_PROGRESS) {
-				this.nextPhase();
+	/**
+	 * 죽은 플레이어 메시지 브로드캐스트 (상시)
+	 */
+	private broadcastPermanentDeadMessage(sender: GamePlayer, message: string) {
+		// 메시지 저장
+		this.chatMessages.push({
+			target: "dead",
+			sender: sender.id,
+			senderName: sender.name,
+			message: message,
+		});
+
+		// 다른 죽은 플레이어들과 영매에게 메시지 전송
+		this.room?.actionToRoomPlayers((player) => {
+			// 죽은 플레이어에게 전송
+			if (!player.isAlive || this.deadPlayers.includes(player.id)) {
+				const deadPlayer = getPlayerById(player.id) as GamePlayer;
+				if (deadPlayer && deadPlayer.tag.widget.deadChat && deadPlayer.id !== sender.id) {
+					deadPlayer.tag.widget.deadChat.sendMessage({
+						type: "chatMessage",
+						senderId: sender.id,
+						senderName: sender.name,
+						message: message,
+					});
+				}
 			}
-		};
+			// 영매에게도 전송
+			else if (player.jobId === JobId.MEDIUM) {
+				const mediumPlayer = getPlayerById(player.id) as GamePlayer;
+				if (mediumPlayer && mediumPlayer.tag.widget.deadChat) {
+					mediumPlayer.tag.widget.deadChat.sendMessage({
+						type: "chatMessage",
+						senderId: sender.id,
+						senderName: sender.name,
+						message: message,
+					});
+				}
+			}
+		});
 	}
 }

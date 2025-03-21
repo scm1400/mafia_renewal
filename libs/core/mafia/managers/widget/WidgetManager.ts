@@ -12,7 +12,11 @@ export interface IWidget {
     sendMessage: (message: any) => void;
     initialize: (data: any) => void;
     destroy: () => void;
-    hasMessageHandler?: boolean; // 메시지 핸들러가 등록되었는지 여부를 추적
+    messageHandlers: Array<{
+        id: number;  // 핸들러 고유 ID
+        handler: (sender: GamePlayer, data: any) => void;  // 핸들러 함수
+    }>;
+    lastHandlerId: number;  // 핸들러 ID 생성용 카운터
 }
 
 /**
@@ -111,7 +115,8 @@ export class WidgetManager {
             sendMessage: (message) => widget.sendMessage(message),
             initialize: (data) => {},
             destroy: () => widget.destroy(),
-            hasMessageHandler: false // 초기값은 false로 설정
+            messageHandlers: [], // 메시지 핸들러 배열 초기화
+            lastHandlerId: 0 // 핸들러 ID 카운터 초기화
         };
     }
     
@@ -273,37 +278,45 @@ export class WidgetManager {
     }
     
     /**
-     * 위젯에 메시지 핸들러 등록 (한 번만 등록)
+     * 위젯에 메시지 핸들러 등록
      * @param player 게임 플레이어
      * @param widgetType 위젯 타입
      * @param callback 메시지 핸들러 콜백 함수
-     * @returns 핸들러가 새로 등록되었는지 여부
+     * @returns 핸들러 ID 또는 -1 (등록 실패 시)
      */
     public registerMessageHandler(
         player: GamePlayer, 
         widgetType: WidgetType, 
         callback: (sender: GamePlayer, data: any) => void
-    ): boolean {
+    ): number {
         const widgetMap = this.playerWidgetMap[player.id];
-        if (!widgetMap) return false;
+        if (!widgetMap) return -1;
         
         const widget = widgetMap[widgetType];
-        if (!widget) return false;
+        if (!widget) return -1;
         
-        // 이미 핸들러가 등록되어 있으면 등록하지 않음
-        if (widget.hasMessageHandler) {
-            return false;
-        }
+        // 핸들러 ID 생성
+        const handlerId = ++widget.lastHandlerId;
         
-        // 핸들러 등록
-        widget.element.onMessage.Add(callback);
-        widget.hasMessageHandler = true;
+        // 핸들러 래퍼 함수 생성
+        const handlerWrapper = (sender: GamePlayer, data: any) => {
+            callback(sender, data);
+        };
         
-        return true;
+        // 핸들러 배열에 추가
+        widget.messageHandlers.push({
+            id: handlerId,
+            handler: handlerWrapper
+        });
+        
+        // 실제 위젯에 핸들러 등록
+        widget.element.onMessage.Add(handlerWrapper);
+        
+        return handlerId;
     }
     
     /**
-     * 위젯 메시지 핸들러 제거
+     * 위젯의 모든 메시지 핸들러 제거
      * @param player 게임 플레이어
      * @param widgetType 위젯 타입
      */
@@ -314,65 +327,47 @@ export class WidgetManager {
         const widget = widgetMap[widgetType];
         if (!widget) return;
         
-        // 기존 핸들러가 있는 경우 우선 widget 객체를 완전히 재생성
-        this.hideWidget(player, widgetType);
+        // 모든 핸들러 제거
+        widget.messageHandlers.forEach(handlerInfo => {
+            // ZEP API에서 핸들러 제거
+            widget.element.onMessage.Remove(handlerInfo.handler);
+        });
         
-        // 위젯 타입에 따라 적절한 경로와 앵커 설정
-        let widgetPath = "";
-        let anchor: "popup" | "sidebar" | "top" | "topleft" | "topright" | "middle" | "middleleft" | "middleright" | "bottom" | "bottomleft" | "bottomright" = "middle";
+        // 핸들러 배열 초기화
+        widget.messageHandlers = [];
         
-        switch (widgetType) {
-            case WidgetType.LOBBY:
-                widgetPath = "widgets/lobby_widget.html";
-                break;
-            case WidgetType.ROOM:
-                widgetPath = "widgets/room_widget.html";
-                break;
-            case WidgetType.GAME_STATUS:
-                widgetPath = "widgets/game_status.html";
-                anchor = "middleright";
-                break;
-            case WidgetType.NIGHT_ACTION:
-                widgetPath = "widgets/night_action.html";
-                break;
-            case WidgetType.VOTE:
-                widgetPath = "widgets/vote_widget.html";
-                break;
-            case WidgetType.FINAL_DEFENSE:
-                widgetPath = "widgets/final_defense_widget.html";
-                break;
-            case WidgetType.APPROVAL_VOTE:
-                widgetPath = "widgets/approval_vote_widget.html";
-                break;
-            case WidgetType.DEAD_CHAT:
-                widgetPath = "widgets/dead_chat_widget.html";
-                anchor = "middleright";
-                break;
-            case WidgetType.ROLE_CARD:
-                widgetPath = "widgets/role_card.html";
-                break;
-            case WidgetType.GAME_MODE_SELECT:
-                widgetPath = "widgets/game_mode_select.html";
-                break;
-            default:
-                return;
-        }
+        ScriptApp.sayToStaffs(`위젯 핸들러 모두 제거: ${widgetType} (플레이어: ${player.name})`);
+    }
+    
+    /**
+     * 위젯의 특정 메시지 핸들러 제거
+     * @param player 게임 플레이어
+     * @param widgetType 위젯 타입
+     * @param handlerId 제거할 핸들러 ID
+     * @returns 제거 성공 여부
+     */
+    public removeMessageHandler(player: GamePlayer, widgetType: WidgetType, handlerId: number): boolean {
+        const widgetMap = this.playerWidgetMap[player.id];
+        if (!widgetMap) return false;
         
-        // 위젯 다시 생성
-        const newWidget = player.showWidget(widgetPath, anchor, 0, 0);
-        newWidget.sendMessage({ type: "setWidget", isMobile: player.isMobile, isTablet: player.isTablet });
+        const widget = widgetMap[widgetType];
+        if (!widget) return false;
         
-        // 위젯 맵 업데이트
-        widgetMap[widgetType] = {
-            element: newWidget,
-            widgetType: widgetType,
-            revealWidget: () => this.showWidget(player, widgetType),
-            hideWidget: () => this.hideWidget(player, widgetType),
-            sendMessage: (message) => newWidget.sendMessage(message),
-            initialize: (data) => {},
-            destroy: () => newWidget.destroy(),
-            hasMessageHandler: false // 핸들러 초기화
-        };
+        // 핸들러 ID로 찾기
+        const handlerIndex = widget.messageHandlers.findIndex(info => info.id === handlerId);
+        if (handlerIndex === -1) return false;
+        
+        // 핸들러 정보 가져오기
+        const handlerInfo = widget.messageHandlers[handlerIndex];
+        
+        // ZEP API에서 핸들러 제거
+        widget.element.onMessage.Remove(handlerInfo.handler);
+        
+        // 배열에서 핸들러 제거
+        widget.messageHandlers.splice(handlerIndex, 1);
+        
+        ScriptApp.sayToStaffs(`위젯 핸들러 제거: ${widgetType}, ID: ${handlerId} (플레이어: ${player.name})`);
+        return true;
     }
     
     /**
@@ -386,12 +381,12 @@ export class WidgetManager {
         // 모든 위젯 순회하며 숨김
         Array.from(Object.entries(widgetMap)).forEach(([type, widget]) => {
             // 위젯에 hideWidget 메시지 전송
-            widget.sendMessage({
+            widget.element.sendMessage({
                 type: "hideWidget"
             });
             
-            // 핸들러 등록 상태 초기화
-            widget.hasMessageHandler = false;
+            // 모든 메시지 핸들러 제거
+            this.clearMessageHandlers(player, widget.widgetType);
         });
         
         // player.tag.widget에서 모든 위젯 참조 제거 (기존 코드와의 호환성 유지)
