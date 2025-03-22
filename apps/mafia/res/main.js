@@ -61,7 +61,9 @@ function sendAdminConsoleMessage(message) {
     const player = getPlayerById(adminId);
     if (!player) return;
     if (player.tag.widget.system) {
-      player.tag.widget.system.sendMessage(message);
+      player.tag.widget.system.sendMessage({
+        message
+      });
     }
   });
 }
