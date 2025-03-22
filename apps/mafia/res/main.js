@@ -2580,6 +2580,7 @@ class Game extends GameBase {
       }, 1);
     }
     this.updateUsersInfo();
+    this.sendSystemLobbyChatMessage(`${player.name}님이 게임에 입장했습니다.`);
   }
   getDefaultProfile(player) {
     return {
@@ -2594,6 +2595,13 @@ class Game extends GameBase {
     const widgetManager = WidgetManager.instance;
     widgetManager.showWidget(player, WidgetType.LOBBY);
     App.runLater(() => {
+      widgetManager.sendMessageToWidget(player, WidgetType.LOBBY, {
+        type: "init",
+        isMobile: player.isMobile,
+        isTablet: false,
+        userId: player.id,
+        userName: player.name
+      });
       const gameModes = this.getGameModesForUI();
       sendAdminConsoleMessage(`게임 모드 정보 전송 (플레이어: ${player.name}, 모드 수: ${gameModes.length})`);
       widgetManager.sendMessageToWidget(player, WidgetType.LOBBY, {
@@ -2617,6 +2625,8 @@ class Game extends GameBase {
           this.updateRoomInfo();
         } else if (data.type === "requestUsers") {
           this.sendUsersList(sender);
+        } else if (data.type === "lobbyChatMessage" && data.content) {
+          this.sendLobbyChatMessage(sender, data.content);
         } else if (data.type === "createRoom" && data.data) {
           const {
             title,
@@ -3002,6 +3012,8 @@ class Game extends GameBase {
         room.leavePlayer(player.id);
         this.notifyPlayerLeftRoom(room, player);
       }
+    } else {
+      this.sendSystemLobbyChatMessage(`${player.name}님이 게임을 나갔습니다.`);
     }
     const widgetManager = WidgetManager.instance;
     widgetManager.cleanupPlayerWidgets(player);
@@ -3184,6 +3196,42 @@ class Game extends GameBase {
         this.sendRoomInfoToPlayer(gamePlayer, room);
       }
     });
+  }
+  sendLobbyChatMessage(sender, content) {
+    var _a;
+    const widgetManager = WidgetManager.instance;
+    const chatMessage = {
+      type: "chatMessage",
+      senderId: sender.id,
+      senderName: sender.name,
+      content: content,
+      timestamp: Date.now()
+    };
+    for (const p of App.players) {
+      const gamePlayer = p;
+      if (!((_a = gamePlayer.tag) === null || _a === void 0 ? void 0 : _a.roomInfo)) {
+        widgetManager.sendMessageToWidget(gamePlayer, WidgetType.LOBBY, chatMessage);
+      }
+    }
+    sendAdminConsoleMessage(`[Lobby Chat] ${sender.name}: ${content}`);
+  }
+  sendSystemLobbyChatMessage(content) {
+    var _a;
+    const widgetManager = WidgetManager.instance;
+    const chatMessage = {
+      type: "chatMessage",
+      senderId: null,
+      senderName: null,
+      content: content,
+      timestamp: Date.now()
+    };
+    for (const p of App.players) {
+      const gamePlayer = p;
+      if (!((_a = gamePlayer.tag) === null || _a === void 0 ? void 0 : _a.roomInfo)) {
+        widgetManager.sendMessageToWidget(gamePlayer, WidgetType.LOBBY, chatMessage);
+      }
+    }
+    sendAdminConsoleMessage(`[Lobby System] ${content}`);
   }
 }
 Game.ROOM_COUNT = 0;

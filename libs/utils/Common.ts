@@ -2,7 +2,6 @@
 import { GamePlayer } from "../core/mafia/types/GamePlayer";
 import { adminList } from "../core/mafia/Game";
 
-
 export let log: (message: string) => void;
 
 export function isDevServer() {
@@ -31,14 +30,14 @@ export function isEmpty(obj: object): boolean {
 }
 
 export function sendAdminConsoleMessage(message) {
-	if(adminList.length === 0) return;
-	adminList.forEach((adminId)=>{
+	if (adminList.length === 0) return;
+	adminList.forEach((adminId) => {
 		const player = getPlayerById(adminId);
-		if(!player) return;
-		if(player.tag.widget.system){
-			player.tag.widget.system.sendMessage(message);
+		if (!player) return;
+		if (player.tag.widget.system) {
+			player.tag.widget.system.sendMessage({ message });
 		}
-	})
+	});
 }
 
 export function getPlayerId(player) {
@@ -56,7 +55,7 @@ export function actionToAllPlayers(action, ...args) {
 		if (!player) continue;
 		try {
 			action(player, ...args);
-		} catch (error) { }
+		} catch (error) {}
 	}
 }
 
