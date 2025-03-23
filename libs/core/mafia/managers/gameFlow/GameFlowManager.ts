@@ -1772,12 +1772,13 @@ export class GameFlowManager {
 		const lastMessageTime = this.dayChatCooldowns[player.id] || 0;
 
 		// 쿨다운 체크
-		if (lastMessageTime === 0 || currentTime - lastMessageTime < this.CHAT_COOLDOWN * 1000) {
+		const cooldownTime = this.CHAT_COOLDOWN * 1000;
+		if (lastMessageTime !== 0 && currentTime - lastMessageTime < cooldownTime) {
 			// 쿨다운 중이면 플레이어에게 알림
-			if (player.tag.widget.dayChat) {
+			if (player.tag.widget && player.tag.widget.dayChat) {
 				player.tag.widget.dayChat.sendMessage({
 					type: "cooldown",
-					remainingTime: Math.ceil(this.CHAT_COOLDOWN - (currentTime - lastMessageTime)),
+					remainingTime: Math.ceil((cooldownTime - (currentTime - lastMessageTime)) / 1000),
 				});
 			}
 			return;
@@ -1821,7 +1822,10 @@ export class GameFlowManager {
 			if (!player.isAlive) return;
 
 			const gamePlayer = getPlayerById(player.id);
-			if (!gamePlayer || !gamePlayer.tag.widget.dayChat) return;
+			if (!gamePlayer) return;
+			
+			// 위젯 존재 여부 확인
+			if (!gamePlayer.tag.widget || !gamePlayer.tag.widget.dayChat) return;
 
 			gamePlayer.tag.widget.dayChat.sendMessage({
 				type: "newMessage",
@@ -1838,7 +1842,7 @@ export class GameFlowManager {
 	 * 특정 플레이어에게 이전 채팅 메시지 기록을 전송
 	 */
 	public sendDayChatHistory(player: GamePlayer): void {
-		if (!player.tag.widget.dayChat) return;
+		if (!player.tag.widget || !player.tag.widget.dayChat) return;
 
 		player.tag.widget.dayChat.sendMessage({
 			type: "chatHistory",
@@ -1863,7 +1867,7 @@ export class GameFlowManager {
 
 				// 플레이어에게 쿨다운 종료 알림
 				const gamePlayer = this.room.getGamePlayer(playerId);
-				if (gamePlayer && gamePlayer.tag.widget.dayChat) {
+				if (gamePlayer && gamePlayer.tag.widget && gamePlayer.tag.widget.dayChat) {
 					gamePlayer.tag.widget.dayChat.sendMessage({
 						type: "cooldownEnd",
 					});

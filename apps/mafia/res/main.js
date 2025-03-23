@@ -721,6 +721,9 @@ class WidgetManager {
       case WidgetType.GAME_MODE_SELECT:
         player.tag.widget.gameModeSelect = widget.element;
         break;
+      case WidgetType.DAY_CHAT:
+        player.tag.widget.dayChat = widget.element;
+        break;
       default:
         break;
     }
@@ -765,6 +768,9 @@ class WidgetManager {
           break;
         case WidgetType.GAME_MODE_SELECT:
           player.tag.widget.gameModeSelect = null;
+          break;
+        case WidgetType.DAY_CHAT:
+          player.tag.widget.dayChat = null;
           break;
         default:
           break;
@@ -859,6 +865,7 @@ class WidgetManager {
       player.tag.widget.deadChat = null;
       player.tag.widget.roleCard = null;
       player.tag.widget.gameModeSelect = null;
+      player.tag.widget.dayChat = null;
     }
     sendAdminConsoleMessage(`위젯 정리 완료 (플레이어: ${player.name})`);
   }
@@ -1999,11 +2006,12 @@ class GameFlowManager {
     if (!mafiaPlayer || !mafiaPlayer.isAlive) return;
     const currentTime = Date.now();
     const lastMessageTime = this.dayChatCooldowns[player.id] || 0;
-    if (lastMessageTime === 0 || currentTime - lastMessageTime < this.CHAT_COOLDOWN * 1000) {
-      if (player.tag.widget.dayChat) {
+    const cooldownTime = this.CHAT_COOLDOWN * 1000;
+    if (lastMessageTime !== 0 && currentTime - lastMessageTime < cooldownTime) {
+      if (player.tag.widget && player.tag.widget.dayChat) {
         player.tag.widget.dayChat.sendMessage({
           type: "cooldown",
-          remainingTime: Math.ceil(this.CHAT_COOLDOWN - (currentTime - lastMessageTime))
+          remainingTime: Math.ceil((cooldownTime - (currentTime - lastMessageTime)) / 1000)
         });
       }
       return;
@@ -2027,7 +2035,8 @@ class GameFlowManager {
     this.room.actionToRoomPlayers(player => {
       if (!player.isAlive) return;
       const gamePlayer = getPlayerById(player.id);
-      if (!gamePlayer || !gamePlayer.tag.widget.dayChat) return;
+      if (!gamePlayer) return;
+      if (!gamePlayer.tag.widget || !gamePlayer.tag.widget.dayChat) return;
       gamePlayer.tag.widget.dayChat.sendMessage({
         type: "newMessage",
         senderId: chatMessage.sender,
@@ -2039,7 +2048,7 @@ class GameFlowManager {
     });
   }
   sendDayChatHistory(player) {
-    if (!player.tag.widget.dayChat) return;
+    if (!player.tag.widget || !player.tag.widget.dayChat) return;
     player.tag.widget.dayChat.sendMessage({
       type: "chatHistory",
       messages: this.dayChatMessages
@@ -2052,7 +2061,7 @@ class GameFlowManager {
       if (currentTime - cooldownTime >= this.CHAT_COOLDOWN) {
         delete this.dayChatCooldowns[playerId];
         const gamePlayer = this.room.getGamePlayer(playerId);
-        if (gamePlayer && gamePlayer.tag.widget.dayChat) {
+        if (gamePlayer && gamePlayer.tag.widget && gamePlayer.tag.widget.dayChat) {
           gamePlayer.tag.widget.dayChat.sendMessage({
             type: "cooldownEnd"
           });
@@ -2654,8 +2663,6 @@ class Game extends GameBase {
   constructor() {
     super();
     this.mafiaGameRoomManager = new GameRoomManager();
-    App.cameraEffect = 1;
-    App.cameraEffectParam1 = 2000;
     App.showName = false;
     App.sendUpdated();
     SpriteManager.getInstance();

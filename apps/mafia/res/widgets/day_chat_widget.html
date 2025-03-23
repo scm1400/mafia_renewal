@@ -485,7 +485,12 @@
                 case 'init':
                     initializeChat(data);
                     break;
-                    
+                case 'hideWidget':
+                    hideWidget();
+                    break;
+                case 'showWidget':
+                    revealWidget();
+                    break;
                 case 'newMessage':
                     addMessage(data);
                     break;

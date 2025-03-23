@@ -31,8 +31,8 @@ export class Game extends GameBase {
 	constructor() {
 		super();
 
-		ScriptApp.cameraEffect = 1; // 1 = 비네팅 효과
-		ScriptApp.cameraEffectParam1 = 2000;
+		// ScriptApp.cameraEffect = 1; // 1 = 비네팅 효과
+		// ScriptApp.cameraEffectParam1 = 2000;
 		ScriptApp.showName = false;
 		ScriptApp.sendUpdated();
 		SpriteManager.getInstance();

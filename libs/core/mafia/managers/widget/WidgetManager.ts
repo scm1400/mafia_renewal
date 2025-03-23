@@ -170,6 +170,9 @@ export class WidgetManager {
             case WidgetType.GAME_MODE_SELECT:
                 player.tag.widget.gameModeSelect = widget.element;
                 break;
+            case WidgetType.DAY_CHAT:
+                player.tag.widget.dayChat = widget.element;
+                break;
             default:
                 break;
         }
@@ -222,6 +225,9 @@ export class WidgetManager {
                     break;
                 case WidgetType.GAME_MODE_SELECT:
                     player.tag.widget.gameModeSelect = null;
+                    break;
+                case WidgetType.DAY_CHAT:
+                    player.tag.widget.dayChat = null;
                     break;
                 default:
                     break;
@@ -404,6 +410,7 @@ export class WidgetManager {
             player.tag.widget.deadChat = null; 
             player.tag.widget.roleCard = null;
             player.tag.widget.gameModeSelect = null;
+            player.tag.widget.dayChat = null;
         }
         
         sendAdminConsoleMessage(`위젯 정리 완료 (플레이어: ${player.name})`);
@@ -421,4 +428,4 @@ export class WidgetManager {
         
         return widgetMap[widgetType];
     }
-} 
+}
