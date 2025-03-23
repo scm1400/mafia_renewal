@@ -17,4 +17,5 @@ export enum WidgetType {
     DEAD_CHAT = "DEAD_CHAT",
     ROLE_CARD = "ROLE_CARD",
     GAME_MODE_SELECT = "GAME_MODE_SELECT",
+    DAY_CHAT = "DAY_CHAT",
 } 

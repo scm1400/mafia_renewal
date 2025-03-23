@@ -13,6 +13,7 @@ import { GameRoom } from "./managers/gameRoom/GameRoom";
 import { MafiaPlayer } from "./managers/gameFlow/GameFlowManager";
 import { WidgetManager } from "./managers/widget/WidgetManager";
 import { WidgetType } from "./managers/widget/WidgetType";
+import { SpriteManager, SpriteType } from "./managers/Sprite/SpriteManager";
 
 export const adminList = [];
 export class Game extends GameBase {
@@ -29,6 +30,13 @@ export class Game extends GameBase {
 
 	constructor() {
 		super();
+
+		ScriptApp.cameraEffect = 1; // 1 = 비네팅 효과
+		ScriptApp.cameraEffectParam1 = 2000;
+		ScriptApp.showName = false;
+		ScriptApp.sendUpdated();
+		SpriteManager.getInstance();
+
 		this.addOnStartCallback(this.onStart.bind(this));
 		this.addOnJoinPlayerCallback(this.onJoinPlayer.bind(this));
 		this.addOnLeavePlayerCallback(this.onLeavePlayer.bind(this));
@@ -57,17 +65,20 @@ export class Game extends GameBase {
 	}
 
 	private onJoinPlayer(player: GamePlayer) {
-		// console.log("플레이어 입장:", player.name);
-
 		// 플레이어 태그 초기화
 		player.tag = {
 			widget: {},
 			isReady: false,
 			profile: this.getDefaultProfile(player),
 		};
+
+		player.sprite = SpriteManager.getInstance().getSprite(SpriteType.CHARACTER_BASIC);
+		const lobbyLocation = ScriptMap.getLocationList("Lobby");
+
+		player.setCameraTarget(lobbyLocation[0].x + lobbyLocation[0].width / 2, lobbyLocation[0].y + lobbyLocation[0].height / 2, 0);
+
 		if (!player.isMobile) {
 			player.displayRatio = 1.25;
-			player.sendUpdated();
 		}
 
 		if (player.role >= 3000) {
@@ -127,9 +138,10 @@ export class Game extends GameBase {
 
 		// 모든 플레이어에게 유저 목록 업데이트 전송 (기존 코드 유지)
 		this.updateUsersInfo();
-		
+
 		// 새 플레이어 입장 시스템 메시지 전송
 		this.sendSystemLobbyChatMessage(`${player.name}님이 게임에 입장했습니다.`);
+		player.sendUpdated();
 	}
 
 	/**
@@ -151,10 +163,10 @@ export class Game extends GameBase {
 	 */
 	private showLobbyWidget(player: GamePlayer) {
 		const widgetManager = WidgetManager.instance;
-		
+
 		// 위젯 관리자를 통해 로비 위젯 표시
 		widgetManager.showWidget(player, WidgetType.LOBBY);
-		
+
 		// 약간의 딜레이 후 데이터 전송 (위젯이 준비될 시간을 줌)
 		ScriptApp.runLater(() => {
 			// 초기화 메시지에 플레이어 ID와 이름 포함
@@ -163,13 +175,13 @@ export class Game extends GameBase {
 				isMobile: player.isMobile,
 				isTablet: false, // 태블릿 구분 로직이 없으면 기본값
 				userId: player.id,
-				userName: player.name
+				userName: player.name,
 			});
-			
+
 			// 게임 모드 정보 전송
 			const gameModes = this.getGameModesForUI();
 			sendAdminConsoleMessage(`게임 모드 정보 전송 (플레이어: ${player.name}, 모드 수: ${gameModes.length})`);
-			
+
 			widgetManager.sendMessageToWidget(player, WidgetType.LOBBY, {
 				type: "gameModes",
 				modes: gameModes,
@@ -1058,7 +1070,7 @@ export class Game extends GameBase {
 	 */
 	private sendLobbyChatMessage(sender: GamePlayer, content: string) {
 		const widgetManager = WidgetManager.instance;
-		
+
 		// 메시지 객체 생성
 		const chatMessage = {
 			type: "chatMessage",
@@ -1067,7 +1079,7 @@ export class Game extends GameBase {
 			content: content,
 			timestamp: Date.now(),
 		};
-		
+
 		// 로비에 있는 모든 플레이어에게 메시지 전송
 		for (const p of ScriptApp.players) {
 			const gamePlayer = p as unknown as GamePlayer;
@@ -1076,7 +1088,7 @@ export class Game extends GameBase {
 				widgetManager.sendMessageToWidget(gamePlayer, WidgetType.LOBBY, chatMessage);
 			}
 		}
-		
+
 		// 관리자 콘솔에 로그 (디버깅용)
 		sendAdminConsoleMessage(`[Lobby Chat] ${sender.name}: ${content}`);
 	}
@@ -1086,7 +1098,7 @@ export class Game extends GameBase {
 	 */
 	private sendSystemLobbyChatMessage(content: string) {
 		const widgetManager = WidgetManager.instance;
-		
+
 		// 시스템 메시지 객체 생성 (senderId와 senderName은 null로 설정)
 		const chatMessage = {
 			type: "chatMessage",
@@ -1095,7 +1107,7 @@ export class Game extends GameBase {
 			content: content,
 			timestamp: Date.now(),
 		};
-		
+
 		// 로비에 있는 모든 플레이어에게 메시지 전송
 		for (const p of ScriptApp.players) {
 			const gamePlayer = p as unknown as GamePlayer;
@@ -1104,7 +1116,7 @@ export class Game extends GameBase {
 				widgetManager.sendMessageToWidget(gamePlayer, WidgetType.LOBBY, chatMessage);
 			}
 		}
-		
+
 		// 관리자 콘솔에 로그 (디버깅용)
 		sendAdminConsoleMessage(`[Lobby System] ${content}`);
 	}

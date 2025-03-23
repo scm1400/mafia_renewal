@@ -84,6 +84,7 @@ export class WidgetManager {
         this.createAndInitializeWidget(player, widgetMap, WidgetType.DEAD_CHAT, "widgets/dead_chat_widget.html", "middleright");
         this.createAndInitializeWidget(player, widgetMap, WidgetType.ROLE_CARD, "widgets/role_card.html", "middle");
         this.createAndInitializeWidget(player, widgetMap, WidgetType.GAME_MODE_SELECT, "widgets/game_mode_select.html", "middle");
+        this.createAndInitializeWidget(player, widgetMap, WidgetType.DAY_CHAT, "widgets/day_chat_widget.html", "middleright");
     }
 
     /**

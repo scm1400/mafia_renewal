@@ -220,7 +220,7 @@ export class GameRoom {
 			try {
 				callback(...args);
 			} catch (error) {
-				sendAdminConsoleMessage(`Error in event listener for ${event}:`+ error);
+				sendAdminConsoleMessage(`Error in event listener for ${event}:` + error);
 			}
 		});
 	}
@@ -267,6 +267,9 @@ export class GameRoom {
 		const x = this.roomLocation.x + Math.floor(Math.random() * this.roomLocation.width);
 		const y = this.roomLocation.y + Math.floor(Math.random() * this.roomLocation.height);
 		player.spawnAt(x, y);
+
+		//@ts-ignore
+		player.setCameraTarget(-1);
 		player.setCameraTarget(this.roomLocation.x + this.roomLocation.width / 2, this.roomLocation.y + this.roomLocation.height / 2, 0);
 
 		// 이벤트 발생
@@ -311,8 +314,13 @@ export class GameRoom {
 
 			// 플레이어 위치 이동
 			player.spawnAtLocation("Lobby");
+
+			const lobbyLocation = ScriptMap.getLocationList("Lobby");
+
 			//@ts-ignore
 			player.setCameraTarget(-1);
+			//@ts-ignore
+			player.setCameraTarget(lobbyLocation[0].x + lobbyLocation[0].width / 2, lobbyLocation[0].y + lobbyLocation[0].height / 2, 0);
 
 			// WidgetManager를 통해 플레이어 위젯 정리 (오브젝트 풀 패턴 사용)
 			const widgetManager = WidgetManager.instance;

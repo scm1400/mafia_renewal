@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>낮 플레이어 채팅</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+        }
+
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: rgba(0, 0, 0, 0.7);
+            color: #fff;
+            overflow: hidden;
+            height: 100vh;
+        }
+
+        .chat-container {
+            width: 100%;
+            max-width: 100%;
+            height: 100%;
+            max-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            padding: 15px;
+            position: relative;
+            border-radius: 10px;
+            background-color: rgba(24, 24, 24, 0.95);
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+        }
+
+        .chat-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .chat-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #ffc107;
+        }
+
+        .time-display {
+            font-size: 14px;
+            color: #ddd;
+            margin-top: 5px;
+            text-align: center;
+        }
+
+        .close-button {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background-color: #555;
+            color: #fff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.2s;
+        }
+
+        .close-button:hover {
+            background-color: #777;
+        }
+
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 10px 5px;
+            margin-bottom: 10px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .chat-messages::-webkit-scrollbar {
+            width: 5px;
+        }
+
+        .chat-messages::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.1);
+            border-radius: 10px;
+        }
+
+        .chat-messages::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+        }
+
+        .message {
+            margin-bottom: 8px;
+            padding: 8px 12px;
+            border-radius: 12px;
+            max-width: 85%;
+            word-break: break-word;
+            animation: fadeIn 0.3s ease-out;
+            position: relative;
+            line-height: 1.4;
+        }
+
+        .message-time {
+            font-size: 10px;
+            color: rgba(255, 255, 255, 0.5);
+            margin-top: 2px;
+            text-align: right;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .my-message {
+            align-self: flex-end;
+            background-color: #1e88e5;
+            color: white;
+            border-bottom-right-radius: 4px;
+        }
+
+        .other-message {
+            align-self: flex-start;
+            background-color: #424242;
+            color: white;
+            border-bottom-left-radius: 4px;
+        }
+
+        .sender-name {
+            font-weight: 600;
+            font-size: 12px;
+            margin-bottom: 3px;
+            color: #ffc107;
+        }
+
+        .chat-input-container {
+            display: flex;
+            background-color: rgba(255, 255, 255, 0.1);
+            border-radius: 30px;
+            padding: 8px 15px;
+            position: relative;
+        }
+
+        .chat-input {
+            flex: 1;
+            background-color: transparent;
+            border: none;
+            color: #fff;
+            font-size: 16px;
+            padding: 5px;
+            outline: none;
+        }
+
+        .chat-input::placeholder {
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        .send-button {
+            background-color: #1e88e5;
+            color: white;
+            border: none;
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            margin-left: 10px;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: all 0.2s;
+        }
+
+        .send-button:disabled {
+            background-color: #555;
+            cursor: not-allowed;
+            opacity: 0.7;
+        }
+
+        .send-button:hover:not(:disabled) {
+            background-color: #1976d2;
+            transform: scale(1.05);
+        }
+
+        .cooldown-indicator {
+            position: absolute;
+            top: -25px;
+            left: 0;
+            right: 0;
+            text-align: center;
+            background-color: rgba(0, 0, 0, 0.7);
+            padding: 3px 8px;
+            border-radius: 4px;
+            color: #ffc107;
+            font-size: 12px;
+            opacity: 0;
+            transition: opacity 0.2s;
+            pointer-events: none;
+        }
+
+        .cooldown-indicator.visible {
+            opacity: 1;
+        }
+
+        /* 모바일 최적화 */
+        @media (max-width: 480px) {
+            .chat-container {
+                width: 100%;
+                height: 100vh;
+                border-radius: 0;
+            }
+
+            .chat-messages {
+                padding: 5px;
+            }
+
+            .message {
+                max-width: 90%;
+                padding: 7px 10px;
+                font-size: 14px;
+            }
+
+            .chat-input-container {
+                padding: 6px 12px;
+            }
+
+            .send-button {
+                width: 30px;
+                height: 30px;
+            }
+        }
+
+        /* 터치 디바이스 최적화 */
+        @media (hover: none) {
+            .message {
+                padding: 10px 12px;
+            }
+
+            .chat-input {
+                font-size: 16px; /* 줌 방지 */
+            }
+
+            .send-button {
+                width: 40px;
+                height: 40px;
+            }
+        }
+
+        /* 시스템 메시지 */
+        .system-message {
+            width: 100%;
+            text-align: center;
+            margin: 5px 0;
+            font-size: 12px;
+            color: #bdbdbd;
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+    <div class="chat-container">
+        <div class="chat-header">
+            <div>
+                <div class="chat-title">낮의 대화</div>
+                <div class="time-display" id="timeDisplay">남은 시간: --:--</div>
+            </div>
+            <!-- <div class="close-button" id="closeButton">×</div> -->
+        </div>
+        <div class="chat-messages" id="chatMessages"></div>
+        <div class="chat-input-container">
+            <div class="cooldown-indicator" id="cooldownIndicator">쿨다운: <span id="cooldownTime">2</span>초</div>
+            <input type="text" class="chat-input" id="chatInput" placeholder="메시지 입력..." maxlength="200">
+            <button class="send-button" id="sendButton">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M22 2L11 13" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M22 2L15 22L11 13L2 9L22 2Z" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+            </button>
+        </div>
+    </div>
+
+    <script>
+        const chatMessages = document.getElementById('chatMessages');
+        const chatInput = document.getElementById('chatInput');
+        const sendButton = document.getElementById('sendButton');
+        const closeButton = document.getElementById('closeButton');
+        const timeDisplay = document.getElementById('timeDisplay');
+        const cooldownIndicator = document.getElementById('cooldownIndicator');
+        const cooldownTimeSpan = document.getElementById('cooldownTime');
+
+        let myPlayerId = '';
+        let myPlayerName = '';
+        let isCooldown = false;
+        let players = [];
+        let timeRemaining = 0;
+        let serverTimeOffset = 0;
+        let isMobile = false;
+        let isTablet = false;
+
+        // 초기화 함수
+        function initializeChat(data) {
+            isMobile = data.isMobile || false;
+            isTablet = data.isTablet || false;
+            players = data.players || [];
+            myPlayerId = data.myPlayerId || '';
+            myPlayerName = data.myPlayerName || '';
+            timeRemaining = data.timeLimit || 0;
+            
+            // 서버 시간과의 차이 계산
+            const clientTime = Date.now();
+            const serverTime = data.serverTime || clientTime;
+            serverTimeOffset = serverTime - clientTime;
+            
+            updateTimer();
+            
+            // 타이머 시작
+            setInterval(updateTimer, 1000);
+            
+            // 시스템 메시지 추가
+            addSystemMessage('채팅이 시작되었습니다. 마피아를 찾기 위해 토론하세요.');
+
+            revealWidget();
+        }
+
+        // 타이머 업데이트
+        function updateTimer() {
+            if (timeRemaining <= 0) {
+                timeDisplay.textContent = '시간 종료';
+                return;
+            }
+            
+            timeRemaining -= 1;
+            const minutes = Math.floor(timeRemaining / 60);
+            const seconds = timeRemaining % 60;
+            
+            timeDisplay.textContent = `남은 시간: ${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+        }
+
+        // 메시지 전송 처리
+        function sendMessage() {
+            if (isCooldown) {
+                showCooldown();
+                return;
+            }
+            
+            const message = chatInput.value.trim();
+            if (!message) return;
+            
+            // 위젯 컨테이너에 메시지 전송
+            const messageData = {
+                type: 'chatMessage',
+                message: message
+            };
+            
+            // 부모 위젯에 메시지 전송
+            window.parent.postMessage(messageData, '*');
+            
+            // 입력창 초기화
+            chatInput.value = '';
+            
+            // 쿨다운 시작
+            startCooldown(1); // 2초 쿨다운
+        }
+
+        // 쿨다운 시작
+        function startCooldown(seconds) {
+            isCooldown = true;
+            sendButton.disabled = true;
+            
+            showCooldown(seconds);
+            
+            // 쿨다운 타이머
+            let remaining = seconds;
+            
+            const timer = setInterval(() => {
+                remaining -= 1;
+                
+                if (remaining <= 0) {
+                    clearInterval(timer);
+                    isCooldown = false;
+                    sendButton.disabled = false;
+                    hideCooldown();
+                } else {
+                    showCooldown(remaining);
+                }
+            }, 1000);
+        }
+
+        // 쿨다운 표시
+        function showCooldown(time) {
+            cooldownTimeSpan.textContent = time || '2';
+            cooldownIndicator.classList.add('visible');
+        }
+
+        // 쿨다운 숨기기
+        function hideCooldown() {
+            cooldownIndicator.classList.remove('visible');
+        }
+
+        // 메시지 추가 함수
+        function addMessage(data) {
+            const { senderId, senderName, message, timestamp, isMine } = data;
+            
+            const messageEl = document.createElement('div');
+            messageEl.className = isMine ? 'message my-message' : 'message other-message';
+            
+            // 보낸 시간 포맷팅
+            const messageTime = new Date(timestamp);
+            const timeStr = `${messageTime.getHours().toString().padStart(2, '0')}:${messageTime.getMinutes().toString().padStart(2, '0')}`;
+            
+            if (!isMine) {
+                const nameEl = document.createElement('div');
+                nameEl.className = 'sender-name';
+                nameEl.textContent = senderName;
+                messageEl.appendChild(nameEl);
+            }
+            
+            const contentEl = document.createElement('div');
+            contentEl.textContent = message;
+            messageEl.appendChild(contentEl);
+            
+            const timeEl = document.createElement('div');
+            timeEl.className = 'message-time';
+            timeEl.textContent = timeStr;
+            messageEl.appendChild(timeEl);
+            
+            chatMessages.appendChild(messageEl);
+            scrollToBottom();
+        }
+        
+        // 시스템 메시지 추가
+        function addSystemMessage(message) {
+            const systemMessageEl = document.createElement('div');
+            systemMessageEl.className = 'system-message';
+            systemMessageEl.textContent = message;
+            chatMessages.appendChild(systemMessageEl);
+            scrollToBottom();
+        }
+        
+        // 채팅 이력 표시
+        function displayChatHistory(messages) {
+            messages.forEach(msg => {
+                addMessage({
+                    senderId: msg.sender,
+                    senderName: msg.senderName,
+                    message: msg.message,
+                    timestamp: msg.timestamp,
+                    isMine: msg.sender === myPlayerId
+                });
+            });
+        }
+
+        // 스크롤을 항상 아래로 유지
+        function scrollToBottom() {
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        // 이벤트 리스너 등록
+        sendButton.addEventListener('click', sendMessage);
+        
+        chatInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
+        });
+        
+
+        // 메시지 수신 리스너
+        window.addEventListener('message', (event) => {
+            const data = event.data;
+            
+            if (!data || !data.type) return;
+            
+            switch (data.type) {
+                case 'init':
+                    initializeChat(data);
+                    break;
+                    
+                case 'newMessage':
+                    addMessage(data);
+                    break;
+                    
+                case 'cooldown':
+                    startCooldown(data.remainingTime || 2);
+                    break;
+                    
+                case 'cooldownEnd':
+                    isCooldown = false;
+                    sendButton.disabled = false;
+                    hideCooldown();
+                    break;
+                    
+                case 'chatHistory':
+                    displayChatHistory(data.messages || []);
+                    break;
+            }
+        });
+
+        function hideWidget() {
+            window.parent.postMessage({ type: 'WidgetRearrange', anchor: 'bottom', width: '0', height: '0' }, '*');
+        }
+
+        function revealWidget() {
+            if (isMobile && !isTablet) {
+                window.parent.postMessage({ type: 'WidgetRearrange', anchor: 'bottom', width: '100%', height: '30%' }, '*');
+            } else {
+                window.parent.postMessage({ type: 'WidgetRearrange', anchor: 'bottom', width: '40%', height: '33%' }, '*');
+            }
+        }
+        // 부모 위젯에 로드 완료 메시지 전송
+        window.parent.postMessage({ type: 'widgetLoaded' }, '*');
+    </script>
+</body>
+</html>
