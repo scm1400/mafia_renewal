@@ -2472,13 +2472,6 @@ class GameRoomManager {
   getAllGameModes() {
     return Object.values(this.gameModes);
   }
-  joinRoom(roomId, player) {
-    const room = this.gameRooms[roomId];
-    if (!room) {
-      return false;
-    }
-    return room.joinPlayer(player);
-  }
   leaveRoom(roomId, playerId) {
     const room = this.gameRooms[roomId];
     if (!room) {
@@ -2493,11 +2486,22 @@ class GameRoomManager {
     room.on(WaitingRoomEvent.PLAYER_LEAVE, player => {
       this.emit("playerLeftRoom", room, player);
       if (room.getPlayersCount() === 0) {
-        this.removeRoom(room.getId());
+        sendAdminConsoleMessage(`[GameRoomManager] 방 ${room.getId()} (${room.getTitle()})에 플레이어가 없어 삭제합니다.`);
+        const removed = this.removeRoom(room.getId());
+        sendAdminConsoleMessage(`[GameRoomManager] 방 삭제 결과: ${removed ? "성공" : "실패"}`);
+        if (!removed) {
+          delete this.gameRooms[room.getId()];
+          sendAdminConsoleMessage(`[GameRoomManager] 방을 강제로 삭제했습니다: ${room.getId()}`);
+          this.emit("roomRemoved", room);
+        }
       }
     });
     room.on(WaitingRoomEvent.PLAYER_KICK, player => {
       this.emit("playerKicked", room, player);
+      if (room.getPlayersCount() === 0) {
+        sendAdminConsoleMessage(`[GameRoomManager] 강퇴 후 방 ${room.getId()}에 플레이어가 없어 삭제합니다.`);
+        this.removeRoom(room.getId());
+      }
     });
     room.on(WaitingRoomEvent.HOST_CHANGE, newHost => {
       this.emit("hostChanged", room, newHost);
@@ -2771,7 +2775,10 @@ class Game extends GameBase {
     }, 0.1);
     const lobbyWidget = widgetManager.getWidget(player, WidgetType.LOBBY);
     if (lobbyWidget && lobbyWidget.element) {
-      lobbyWidget.element.onMessage.Add((sender, data) => {
+      if (player.tag.lobbyWidgetMessageHandler) {
+        lobbyWidget.element.onMessage.Remove(player.tag.lobbyWidgetMessageHandler);
+      }
+      const messageHandler = (sender, data) => {
         if (data.type === "requestGameModes") {
           const gameModes = this.getGameModesForUI();
           sendAdminConsoleMessage(`게임 모드 정보 요청 처리 (플레이어: ${sender.name}, 모드 수: ${gameModes.length})`);
@@ -2832,7 +2839,9 @@ class Game extends GameBase {
             }
           }
         }
-      });
+      };
+      lobbyWidget.element.onMessage.Add(messageHandler);
+      player.tag.lobbyWidgetMessageHandler = messageHandler;
     }
   }
   showRoomWidget(player, room) {
@@ -2842,22 +2851,16 @@ class Game extends GameBase {
       this.sendRoomInfoToPlayer(player, room);
       this.sendGameModeDetailsToPlayer(player, room.gameMode);
       const gameFlow = room.flowManager;
-      if (gameFlow && gameFlow.isGameInProgress()) {
-        const deadPlayers = gameFlow.getDeadPlayers();
-        if (deadPlayers && deadPlayers.includes(player.id)) {
-          gameFlow.showPermanentDeadChatWidget(player);
-        }
-        const mafiaPlayer = room.getPlayer(player.id);
-        if (mafiaPlayer && mafiaPlayer.jobId === JobId.MEDIUM && mafiaPlayer.isAlive) {
-          gameFlow.showMediumChatWidget(player);
-        }
-      }
+      if (gameFlow && gameFlow.isGameInProgress()) {}
     }, 0.1);
     this.notifyPlayerJoinedRoom(room, player);
     const roomWidget = widgetManager.getWidget(player, WidgetType.ROOM);
     if (roomWidget && roomWidget.element) {
-      roomWidget.element.onMessage.Add((sender, data) => {
-        var _a, _b, _c, _d, _e, _f, _g, _h;
+      if (player.tag.roomWidgetMessageHandler) {
+        roomWidget.element.onMessage.Remove(player.tag.roomWidgetMessageHandler);
+      }
+      const messageHandler = (sender, data) => {
+        var _a, _b, _c, _d, _e, _f, _g;
         if (data.type === "requestRoomInfo") {
           const roomId = (_a = sender.tag.roomInfo) === null || _a === void 0 ? void 0 : _a.roomNum;
           if (roomId) {
@@ -2886,74 +2889,51 @@ class Game extends GameBase {
               this.notifyPlayerLeftRoom(room, sender);
             }
           }
-        } else if (data.type === "setReady") {
+        } else if (data.type === "toggleReady") {
           const roomId = (_d = sender.tag.roomInfo) === null || _d === void 0 ? void 0 : _d.roomNum;
           if (roomId) {
             const room = this.mafiaGameRoomManager.getRoom(roomId.toString());
             if (room) {
-              sender.tag.isReady = true;
-              this.notifyReadyStatusChanged(room, sender);
-            }
-          }
-        } else if (data.type === "cancelReady") {
-          const roomId = (_e = sender.tag.roomInfo) === null || _e === void 0 ? void 0 : _e.roomNum;
-          if (roomId) {
-            const room = this.mafiaGameRoomManager.getRoom(roomId.toString());
-            if (room) {
-              sender.tag.isReady = false;
+              const isReady = !sender.tag.isReady;
+              sender.tag.isReady = isReady;
               this.notifyReadyStatusChanged(room, sender);
             }
           }
         } else if (data.type === "startGame") {
+          const roomId = (_e = sender.tag.roomInfo) === null || _e === void 0 ? void 0 : _e.roomNum;
+          if (roomId) {
+            const room = this.mafiaGameRoomManager.getRoom(roomId.toString());
+            if (room && room.hostId === sender.id) {
+              if (this.canStartGame(room)) {}
+            }
+          }
+        } else if (data.type === "chatMessage" && data.content) {
           const roomId = (_f = sender.tag.roomInfo) === null || _f === void 0 ? void 0 : _f.roomNum;
-          if (roomId) {
-            const room = this.mafiaGameRoomManager.getRoom(roomId.toString());
-            if (room) {
-              const canStart = this.canStartGame(room);
-              if (canStart) {
-                room.state = GameState.IN_PROGRESS;
-                if (!room.hostId) {
-                  room.hostId = sender.id;
-                }
-                room.flowManager.startGame();
-                this.notifyGameStarting(room);
-                this.updateRoomInfo();
-              } else {
-                widgetManager.sendMessageToWidget(sender, WidgetType.ROOM, {
-                  type: "error",
-                  message: "모든 플레이어가 준비 상태여야 합니다."
-                });
-              }
-            }
-          }
-        } else if (data.type === "kickPlayer" && data.playerId) {
-          const roomId = (_g = sender.tag.roomInfo) === null || _g === void 0 ? void 0 : _g.roomNum;
-          if (roomId) {
-            const room = this.mafiaGameRoomManager.getRoom(roomId.toString());
-            if (room) {
-              const isHost = room.hostId === sender.id;
-              if (isHost) {
-                const targetPlayer = App.getPlayerByID(data.playerId);
-                if (targetPlayer) {
-                  room.leavePlayer(targetPlayer.id);
-                  widgetManager.hideWidget(targetPlayer, WidgetType.ROOM);
-                  this.showLobbyWidget(targetPlayer);
-                  this.notifyPlayerKicked(room, targetPlayer);
-                  this.updateRoomInfo();
-                }
-              }
-            }
-          }
-        } else if (data.type === "sendChatMessage" && data.content) {
-          const roomId = (_h = sender.tag.roomInfo) === null || _h === void 0 ? void 0 : _h.roomNum;
           if (roomId) {
             const room = this.mafiaGameRoomManager.getRoom(roomId.toString());
             if (room) {
               this.sendChatMessageToRoom(room, sender, data.content);
             }
           }
+        } else if (data.type === "kickPlayer" && data.playerId) {
+          const roomId = (_g = sender.tag.roomInfo) === null || _g === void 0 ? void 0 : _g.roomNum;
+          if (roomId) {
+            const room = this.mafiaGameRoomManager.getRoom(roomId.toString());
+            if (room && room.hostId === sender.id) {
+              const targetPlayer = App.getPlayerByID(data.playerId);
+              if (targetPlayer) {
+                room.leavePlayer(targetPlayer.id);
+                widgetManager.hideWidget(targetPlayer, WidgetType.ROOM);
+                this.showLobbyWidget(targetPlayer);
+                this.notifyPlayerKicked(room, targetPlayer);
+                this.updateRoomInfo();
+              }
+            }
+          }
         }
-      });
+      };
+      roomWidget.element.onMessage.Add(messageHandler);
+      player.tag.roomWidgetMessageHandler = messageHandler;
     }
   }
   sendRoomInfoToPlayer(player, room) {
@@ -3165,10 +3145,20 @@ class Game extends GameBase {
     sendAdminConsoleMessage(`[Game] Player ${player.name} (${player.id}) 퇴장`);
     if ((_a = player.tag) === null || _a === void 0 ? void 0 : _a.roomInfo) {
       const roomNum = player.tag.roomInfo.roomNum;
-      const room = this.mafiaGameRoomManager.getRoom(roomNum.toString());
+      const roomId = roomNum.toString();
+      const room = this.mafiaGameRoomManager.getRoom(roomId);
       if (room) {
         room.leavePlayer(player.id);
         this.notifyPlayerLeftRoom(room, player);
+        if (room.getPlayersCount() === 0) {
+          sendAdminConsoleMessage(`[Game] 방 ${roomId}에 플레이어가 없어 삭제 확인`);
+          const removed = this.mafiaGameRoomManager.removeRoom(roomId);
+          sendAdminConsoleMessage(`[Game] 방 삭제 결과: ${removed ? "성공" : "실패"}`);
+          if (!removed && this.mafiaGameRoomManager.getRoom(roomId)) {
+            sendAdminConsoleMessage(`[Game] 방을 강제로 삭제합니다: ${roomId}`);
+            delete this.mafiaGameRoomManager.gameRooms[roomId];
+          }
+        }
       }
     } else {
       this.sendSystemLobbyChatMessage(`${player.name}님이 게임을 나갔습니다.`);

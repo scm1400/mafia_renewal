@@ -132,19 +132,6 @@ export class GameRoomManager {
 	}
 
 	/**
-	 * 플레이어를 게임방에 입장시킴
-	 */
-	public joinRoom(roomId: string, player: GamePlayer): boolean {
-		const room = this.gameRooms[roomId];
-		
-		if (!room) {
-			return false;
-		}
-		
-		return room.joinPlayer(player);
-	}
-
-	/**
 	 * 플레이어를 게임방에서 퇴장시킴
 	 */
 	public leaveRoom(roomId: string, playerId: string): boolean {
@@ -172,13 +159,28 @@ export class GameRoomManager {
 			
 			// 방에 플레이어가 없으면 방 삭제
 			if (room.getPlayersCount() === 0) {
-				this.removeRoom(room.getId());
+				sendAdminConsoleMessage(`[GameRoomManager] 방 ${room.getId()} (${room.getTitle()})에 플레이어가 없어 삭제합니다.`);
+				const removed = this.removeRoom(room.getId());
+				sendAdminConsoleMessage(`[GameRoomManager] 방 삭제 결과: ${removed ? "성공" : "실패"}`);
+				
+				// 방이 삭제되지 않았으면 강제로 다시 시도
+				if (!removed) {
+					delete this.gameRooms[room.getId()];
+					sendAdminConsoleMessage(`[GameRoomManager] 방을 강제로 삭제했습니다: ${room.getId()}`);
+					this.emit("roomRemoved", room);
+				}
 			}
 		});
 		
 		// 플레이어 강퇴 이벤트
 		room.on(WaitingRoomEvent.PLAYER_KICK, (player: GamePlayer) => {
 			this.emit("playerKicked", room, player);
+			
+			// 강퇴 후에도 방에 플레이어가 없으면 방 삭제
+			if (room.getPlayersCount() === 0) {
+				sendAdminConsoleMessage(`[GameRoomManager] 강퇴 후 방 ${room.getId()}에 플레이어가 없어 삭제합니다.`);
+				this.removeRoom(room.getId());
+			}
 		});
 		
 		// 호스트 변경 이벤트

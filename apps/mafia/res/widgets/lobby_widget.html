@@ -871,7 +871,7 @@
         let isVisible = false;
         let _isMobile = false;
         let _isTablet = false;
-        let isCompact = false; // 축소 모드 상태 추적
+        let isCompact = true; // 축소 모드 상태 추적
         let lastRequestTime = { // 마지막 요청 시간을 추적하기 위한 객체
             rooms: 0,
             users: 0,
@@ -1380,104 +1380,119 @@
         }
 
         // 메시지 수신 처리
-        window.addEventListener('message', function (e) {
-            const data = e.data;
+        let messageListener = null;
+        
+        function setupMessageListener() {
+            // 기존 이벤트 리스너가 있다면 제거
+            if (messageListener) {
+                window.removeEventListener('message', messageListener);
+            }
+            
+            // 새 메시지 리스너 생성 및 등록
+            messageListener = function (e) {
+                const data = e.data;
 
-            if (data.type === 'init') {
-                _isMobile = data.isMobile;
-                _isTablet = data.isTablet;
+                if (data.type === 'init') {
+                    _isMobile = data.isMobile;
+                    _isTablet = data.isTablet;
 
-                if (data.isMobile && !data.isTablet) {
-                    document.body.classList.add('mobile');
-                    document.body.classList.remove('compact'); // 모바일에서 축소 모드 비활성화
-                    isCompact = false;
-                    adjustMobileUI();
-                } else {
-                    document.body.classList.remove('mobile');
-                    // 모바일이 아닐 때만 축소 모드 토글 버튼 표시
-                    compactToggle.style.display = 'flex';
-                }
-
-                // 현재 사용자 정보 저장
-                if (data.userId && data.userName) {
-                    currentUserId = data.userId;
-                    currentUserName = data.userName;
-                }
-
-                revealWidget();
-
-                // 위젯이 표시된 직후 필요한 정보 요청 (초기화시에는 쿨다운 없이 바로 요청)
-                console.log("로비 위젯 초기화: 게임 모드, 방, 유저 정보 요청");
-                lastRequestTime.gameModes = Date.now();
-                sendMessage({ type: 'requestGameModes' });
-
-                // 방과 유저 정보는 약간의 시간차를 두고 요청
-                setTimeout(() => {
-                    lastRequestTime.rooms = Date.now();
-                    sendMessage({ type: 'requestRooms' });
-                }, 200);
-
-                setTimeout(() => {
-                    lastRequestTime.users = Date.now();
-                    sendMessage({ type: 'requestUsers' });
-                }, 400);
-
-                // 주기적으로 방 목록과 유저 목록 갱신 (30초마다)
-                if (refreshInterval) {
-                    clearInterval(refreshInterval);
-                }
-
-                refreshInterval = setInterval(() => {
-                    if (isVisible) {
-                        requestRoomsWithDelay();
-                        requestUsersWithDelay();
+                    if (data.isMobile && !data.isTablet) {
+                        document.body.classList.add('mobile');
+                        document.body.classList.remove('compact'); // 모바일에서 축소 모드 비활성화
+                        isCompact = false;
+                        adjustMobileUI();
+                    } else {
+                        document.body.classList.remove('mobile');
+                        // 모바일이 아닐 때만 축소 모드 토글 버튼 표시
+                        compactToggle.style.display = 'flex';
                     }
-                }, 30000); // 30초마다 갱신
-            } else if (data.type === 'roomsList') {
-                updateRooms(data.rooms);
-            } else if (data.type === 'usersList') {
-                updateUsers(data.users);
-            } else if (data.type === 'gameModes') {
-                console.log("게임 모드 정보 수신:", data.modes);
-                updateGameModes(data.modes);
 
-                // 모달이 열려있는 상태라면 게임 모드 목록을 즉시 업데이트
-                if (createRoomModal && createRoomModal.style.display === 'flex') {
-                    console.log("모달이 열려있는 상태에서 게임 모드 정보가 도착했습니다. 목록을 업데이트합니다.");
-                    renderGameModes();
-                }
-            } else if (data.type === 'error') {
-                showError(data.message);
-            } else if (data.type === 'notification') {
-                showNotification(data.message);
-            } else if (data.type === 'hideWidget') {
-                hideWidget();
-                // 위젯이 숨겨질 때 인터벌 중지
-                if (refreshInterval) {
-                    clearInterval(refreshInterval);
-                    refreshInterval = null;
-                }
-            } else if (data.type === 'showWidget') {
-                revealWidget();
-                // 위젯이 다시 표시될 때 최신 정보로 갱신
-                requestGameModesWithDelay();
-                requestRoomsWithDelay();
-                requestUsersWithDelay();
+                    // 현재 사용자 정보 저장
+                    if (data.userId && data.userName) {
+                        currentUserId = data.userId;
+                        currentUserName = data.userName;
+                    }
 
-                // 주기적 갱신 재시작
-                if (!refreshInterval) {
+                    revealWidget();
+
+                    // 위젯이 표시된 직후 필요한 정보 요청 (초기화시에는 쿨다운 없이 바로 요청)
+                    console.log("로비 위젯 초기화: 게임 모드, 방, 유저 정보 요청");
+                    lastRequestTime.gameModes = Date.now();
+                    sendMessage({ type: 'requestGameModes' });
+
+                    // 방과 유저 정보는 약간의 시간차를 두고 요청
+                    setTimeout(() => {
+                        lastRequestTime.rooms = Date.now();
+                        sendMessage({ type: 'requestRooms' });
+                    }, 200);
+
+                    setTimeout(() => {
+                        lastRequestTime.users = Date.now();
+                        sendMessage({ type: 'requestUsers' });
+                    }, 400);
+
+                    // 주기적으로 방 목록과 유저 목록 갱신 (30초마다)
+                    if (refreshInterval) {
+                        clearInterval(refreshInterval);
+                    }
+
                     refreshInterval = setInterval(() => {
                         if (isVisible) {
                             requestRoomsWithDelay();
                             requestUsersWithDelay();
                         }
                     }, 30000); // 30초마다 갱신
+                } else if (data.type === 'roomsList') {
+                    updateRooms(data.rooms);
+                } else if (data.type === 'usersList') {
+                    updateUsers(data.users);
+                } else if (data.type === 'gameModes') {
+                    console.log("게임 모드 정보 수신:", data.modes);
+                    updateGameModes(data.modes);
+
+                    // 모달이 열려있는 상태라면 게임 모드 목록을 즉시 업데이트
+                    if (createRoomModal && createRoomModal.style.display === 'flex') {
+                        console.log("모달이 열려있는 상태에서 게임 모드 정보가 도착했습니다. 목록을 업데이트합니다.");
+                        renderGameModes();
+                    }
+                } else if (data.type === 'error') {
+                    showError(data.message);
+                } else if (data.type === 'notification') {
+                    showNotification(data.message);
+                } else if (data.type === 'hideWidget') {
+                    hideWidget();
+                    // 위젯이 숨겨질 때 인터벌 중지
+                    if (refreshInterval) {
+                        clearInterval(refreshInterval);
+                        refreshInterval = null;
+                    }
+                } else if (data.type === 'showWidget') {
+                    revealWidget();
+                    // 위젯이 다시 표시될 때 최신 정보로 갱신
+                    requestGameModesWithDelay();
+                    requestRoomsWithDelay();
+                    requestUsersWithDelay();
+
+                    // 주기적 갱신 재시작
+                    if (!refreshInterval) {
+                        refreshInterval = setInterval(() => {
+                            if (isVisible) {
+                                requestRoomsWithDelay();
+                                requestUsersWithDelay();
+                            }
+                        }, 30000); // 30초마다 갱신
+                    }
+                } else if (data.type === 'chatMessage') {
+                    // 채팅 메시지 수신 처리
+                    addChatMessage(data.senderId, data.senderName, data.content, data.timestamp);
                 }
-            } else if (data.type === 'chatMessage') {
-                // 채팅 메시지 수신 처리
-                addChatMessage(data.senderId, data.senderName, data.content, data.timestamp);
-            }
-        });
+            };
+            
+            window.addEventListener('message', messageListener);
+        }
+        
+        // 초기화 시 이벤트 리스너 설정
+        setupMessageListener();
 
         /**
          * 채팅 메시지를 전송합니다.

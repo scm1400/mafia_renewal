@@ -886,7 +886,7 @@
             if (!message) return;
 
             window.parent.postMessage({
-                type: 'sendChatMessage',
+                type: 'chatMessage',
                 content: message
             }, "*");
 
@@ -963,102 +963,117 @@
         }
 
         // 메시지 수신 처리
-        window.addEventListener('message', function (e) {
-            const data = e.data;
-            if (data.type === "setWidget") {
-                _isMobile = data.isMobile;
-                _isTablet = data.isTablet;
-                if (data.isMobile && !data.isTablet) {
-                    document.body.classList.add('mobile');
-                    adjustMobileUI();
-                } else {
-                    document.body.classList.remove('mobile');
-                }
-                hideWidget();
-            } else if (data.type === 'init') {
-                _languageCode = e.data.languageCode;
-                _localizeContainer = e.data.localizeContainer;
-                document.body.classList.remove("hidden");
-                revealWidget();
-            } else if (data.type === 'roomInfo') {
-                updateRoomInfo(data.roomData);
-
-                // 게임 상태에 따라 위젯 표시/숨김 처리
-                if (data.roomData.state === 'IN_PROGRESS') {
+        let messageListener = null;
+        
+        function setupMessageListener() {
+            // 기존 이벤트 리스너가 있다면 제거
+            if (messageListener) {
+                window.removeEventListener('message', messageListener);
+            }
+            
+            // 새 메시지 리스너 생성 및 등록
+            messageListener = function (e) {
+                const data = e.data;
+                if (data.type === "setWidget") {
+                    _isMobile = data.isMobile;
+                    _isTablet = data.isTablet;
+                    if (data.isMobile && !data.isTablet) {
+                        document.body.classList.add('mobile');
+                        adjustMobileUI();
+                    } else {
+                        document.body.classList.remove('mobile');
+                    }
                     hideWidget();
-                } else {
+                } else if (data.type === 'init') {
+                    _languageCode = e.data.languageCode;
+                    _localizeContainer = e.data.localizeContainer;
+                    document.body.classList.remove("hidden");
+                    revealWidget();
+                } else if (data.type === 'roomInfo') {
+                    updateRoomInfo(data.roomData);
+
+                    // 게임 상태에 따라 위젯 표시/숨김 처리
+                    if (data.roomData.state === 'IN_PROGRESS') {
+                        hideWidget();
+                    } else {
+                        revealWidget();
+                    }
+                } else if (data.type === 'gameModeDetails') {
+                    updateGameModeInfo(data.modeData);
+                } else if (data.type === 'playerJoined') {
+                    addChatMessage({
+                        type: 'system',
+                        content: `${data.playerName}님이 입장했습니다.`
+                    });
+
+                    // 방 정보 업데이트 요청
+                    window.parent.postMessage({ type: 'requestRoomInfo' }, "*");
+                } else if (data.type === 'playerLeft') {
+                    addChatMessage({
+                        type: 'system',
+                        content: `${data.playerName}님이 퇴장했습니다.`
+                    });
+
+                    // 방 정보 업데이트 요청
+                    window.parent.postMessage({ type: 'requestRoomInfo' }, "*");
+                } else if (data.type === 'playerKicked') {
+                    addChatMessage({
+                        type: 'system',
+                        content: `${data.playerName}님이 강퇴되었습니다.`
+                    });
+
+                    // 방 정보 업데이트 요청
+                    window.parent.postMessage({ type: 'requestRoomInfo' }, "*");
+                } else if (data.type === 'readyStatusChanged') {
+                    // 방 정보 업데이트 요청
+                    window.parent.postMessage({ type: 'requestRoomInfo' }, "*");
+                } else if (data.type === 'hostChanged') {
+                    addChatMessage({
+                        type: 'system',
+                        content: `${data.newHostName}님이 새로운 방장이 되었습니다.`
+                    });
+
+                    // 방 정보 업데이트 요청
+                    window.parent.postMessage({ type: 'requestRoomInfo' }, "*");
+                } else if (data.type === 'gameStarting') {
+                    addChatMessage({
+                        type: 'system',
+                        content: `게임이 곧 시작됩니다...`
+                    });
+
+                    // 게임 시작 시 위젯 숨김
+                    hideWidget();
+                } else if (data.type === 'gameEnded') {
+                    addChatMessage({
+                        type: 'system',
+                        content: `게임이 종료되었습니다.`
+                    });
+
+                    // 게임 종료 시 위젯 다시 표시
+                    revealWidget();
+                } else if (data.type === 'chatMessage') {
+                    addChatMessage({
+                        type: 'normal',
+                        senderId: data.senderId,
+                        senderName: data.senderName,
+                        content: data.content
+                    });
+                } else if (data.type === 'error') {
+                    alert(data.message);
+                } else if (data.type === 'hideWidget') {
+                    // WidgetManager에서 보내는 숨김 메시지 처리
+                    hideWidget();
+                } else if (data.type === 'showWidget') {
+                    // WidgetManager에서 보내는 표시 메시지 처리
                     revealWidget();
                 }
-            } else if (data.type === 'gameModeDetails') {
-                updateGameModeInfo(data.modeData);
-            } else if (data.type === 'playerJoined') {
-                addChatMessage({
-                    type: 'system',
-                    content: `${data.playerName}님이 입장했습니다.`
-                });
-
-                // 방 정보 업데이트 요청
-                window.parent.postMessage({ type: 'requestRoomInfo' }, "*");
-            } else if (data.type === 'playerLeft') {
-                addChatMessage({
-                    type: 'system',
-                    content: `${data.playerName}님이 퇴장했습니다.`
-                });
-
-                // 방 정보 업데이트 요청
-                window.parent.postMessage({ type: 'requestRoomInfo' }, "*");
-            } else if (data.type === 'playerKicked') {
-                addChatMessage({
-                    type: 'system',
-                    content: `${data.playerName}님이 강퇴되었습니다.`
-                });
-
-                // 방 정보 업데이트 요청
-                window.parent.postMessage({ type: 'requestRoomInfo' }, "*");
-            } else if (data.type === 'readyStatusChanged') {
-                // 방 정보 업데이트 요청
-                window.parent.postMessage({ type: 'requestRoomInfo' }, "*");
-            } else if (data.type === 'hostChanged') {
-                addChatMessage({
-                    type: 'system',
-                    content: `${data.newHostName}님이 새로운 방장이 되었습니다.`
-                });
-
-                // 방 정보 업데이트 요청
-                window.parent.postMessage({ type: 'requestRoomInfo' }, "*");
-            } else if (data.type === 'gameStarting') {
-                addChatMessage({
-                    type: 'system',
-                    content: `게임이 곧 시작됩니다...`
-                });
-
-                // 게임 시작 시 위젯 숨김
-                hideWidget();
-            } else if (data.type === 'gameEnded') {
-                addChatMessage({
-                    type: 'system',
-                    content: `게임이 종료되었습니다.`
-                });
-
-                // 게임 종료 시 위젯 다시 표시
-                revealWidget();
-            } else if (data.type === 'chatMessage') {
-                addChatMessage({
-                    type: 'normal',
-                    senderId: data.senderId,
-                    senderName: data.senderName,
-                    content: data.content
-                });
-            } else if (data.type === 'error') {
-                alert(data.message);
-            } else if (data.type === 'hideWidget') {
-                // WidgetManager에서 보내는 숨김 메시지 처리
-                hideWidget();
-            } else if (data.type === 'showWidget') {
-                // WidgetManager에서 보내는 표시 메시지 처리
-                revealWidget();
-            }
-        });
+            };
+            
+            window.addEventListener('message', messageListener);
+        }
+        
+        // 초기화 시 이벤트 리스너 설정
+        setupMessageListener();
 
         // 초기화
         initializeRoom();
