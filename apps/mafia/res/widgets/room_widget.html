@@ -1064,6 +1064,7 @@
                     // WidgetManager에서 보내는 숨김 메시지 처리
                     hideWidget();
                 } else if (data.type === 'showWidget') {
+                    chatMessages.innerHTML =`<div class="message system">채팅방에 입장했습니다.</div>`;
                     // WidgetManager에서 보내는 표시 메시지 처리
                     revealWidget();
                 }

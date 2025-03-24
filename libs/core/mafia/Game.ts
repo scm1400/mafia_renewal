@@ -594,30 +594,7 @@ export class Game extends GameBase {
 			this.sendRoomInfoToPlayer(gamePlayer, room);
 		});
 	}
-
-	/**
-	 * 게임 시작을 알립니다.
-	 */
-	private notifyGameStarting(room: GameRoom) {
-		const widgetManager = WidgetManager.instance;
-
-		// 방 상태 업데이트
-		room.state = GameState.IN_PROGRESS;
-
-		const players = room.getPlayers() as MafiaPlayer[];
-		players.forEach((p) => {
-			const gamePlayer = ScriptApp.getPlayerByID(p.id) as unknown as GamePlayer;
-
-			// 기존 로비 위젯 숨기기
-			widgetManager.hideWidget(gamePlayer, WidgetType.LOBBY);
-
-			// 게임 시작 메시지 전송
-			widgetManager.sendMessageToWidget(gamePlayer, WidgetType.ROOM, {
-				type: "gameStarting",
-			});
-		});
-	}
-
+	
 	/**
 	 * 플레이어가 강퇴됐음을 알립니다.
 	 */

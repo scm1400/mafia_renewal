@@ -3048,18 +3048,6 @@ class Game extends GameBase {
       this.sendRoomInfoToPlayer(gamePlayer, room);
     });
   }
-  notifyGameStarting(room) {
-    const widgetManager = WidgetManager.instance;
-    room.state = GameState.IN_PROGRESS;
-    const players = room.getPlayers();
-    players.forEach(p => {
-      const gamePlayer = App.getPlayerByID(p.id);
-      widgetManager.hideWidget(gamePlayer, WidgetType.LOBBY);
-      widgetManager.sendMessageToWidget(gamePlayer, WidgetType.ROOM, {
-        type: "gameStarting"
-      });
-    });
-  }
   notifyPlayerKicked(room, player) {
     var _a, _b;
     if ((_b = (_a = player.tag) === null || _a === void 0 ? void 0 : _a.widget) === null || _b === void 0 ? void 0 : _b.room) {
