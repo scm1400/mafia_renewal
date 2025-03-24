@@ -446,156 +446,156 @@
         #room-widget-container {
             display: flex;
             flex-direction: column;
-            height: 75%;
-            width: 50%;
+            height: 100%;
+            width: 100%;
             background-color: var(--bg-color);
         }
-        
+
         /* 모바일 UI 스타일 */
         body.mobile .room-header {
             padding: 10px 15px;
         }
-        
+
         body.mobile .room-title {
             font-size: 18px;
         }
-        
+
         body.mobile .room-info {
             font-size: 12px;
         }
-        
+
         body.mobile .main-content {
             flex-direction: column;
         }
-        
+
         body.mobile .players-container {
             padding: 10px;
             width: 100%;
         }
-        
+
         body.mobile .chat-sidebar {
             width: 100%;
             height: 250px;
             border-left: none;
             border-top: 1px solid #e0e0e0;
         }
-        
+
         body.mobile .section-title {
             font-size: 16px;
             margin-bottom: 10px;
         }
-        
+
         body.mobile .players-grid {
             grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
             gap: 10px;
         }
-        
+
         body.mobile .player-card {
             padding: 10px;
         }
-        
+
         body.mobile .player-avatar {
             width: 48px;
             height: 48px;
             font-size: 18px;
         }
-        
+
         body.mobile .player-name {
             font-size: 14px;
         }
-        
+
         body.mobile .player-level {
             font-size: 11px;
         }
-        
+
         body.mobile .player-status {
             font-size: 10px;
             padding: 2px 6px;
         }
-        
+
         body.mobile .chat-header {
             padding: 10px;
         }
-        
+
         body.mobile .chat-messages {
             padding: 10px;
             gap: 8px;
         }
-        
+
         body.mobile .message {
             padding: 6px 10px;
             font-size: 14px;
             max-width: 90%;
         }
-        
+
         body.mobile .sender-name {
             font-size: 11px;
         }
-        
+
         body.mobile .chat-input input {
             font-size: 16px;
             padding: 8px;
         }
-        
+
         body.mobile .action-buttons .button {
             padding: 10px;
             font-size: 14px;
         }
-        
+
         body.mobile .button {
             font-size: 12px;
             padding: 6px 12px;
         }
-        
+
         body.mobile .settings-section {
             padding: 10px;
         }
-        
+
         body.mobile .mode-name {
             font-size: 14px;
         }
-        
+
         body.mobile .mode-description {
             font-size: 12px;
         }
-        
+
         body.mobile .job-tag {
             font-size: 10px;
             padding: 3px 6px;
         }
-        
+
         /* 모바일 가로 모드에서의 조정 */
         @media (orientation: landscape) {
             body.mobile .main-content {
                 flex-direction: row;
             }
-            
+
             body.mobile .players-container {
                 width: 70%;
             }
-            
+
             body.mobile .chat-sidebar {
                 width: 30%;
                 height: auto;
                 border-top: none;
                 border-left: 1px solid #e0e0e0;
             }
-            
+
             body.mobile .players-grid {
                 grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
             }
         }
-        
+
         /* 모바일 세로 모드에서의 조정 */
         @media (orientation: portrait) {
             body.mobile .main-content {
                 flex-direction: column;
             }
-            
+
             body.mobile .players-container {
                 width: 100%;
             }
-            
+
             body.mobile .chat-sidebar {
                 width: 100%;
                 height: 250px;
@@ -923,18 +923,25 @@
                 const rtcAndNotchHeight = 160 + parseInt(getComputedStyle(document.documentElement,).getPropertyValue("--sat"));
                 window.parent.postMessage({
                     type: 'WidgetRearrange',
-                    anchor: 'middle',
-                    height: '100%',
+                    anchor: 'bottom',
+                    height: '40%',
                     width: '100%',
                     top: `-${parseInt(0)}px`
                 }, '*')
             } else {
                 window.parent.postMessage({
                     type: "WidgetRearrange",
-                    anchor: "middle",
-                    width: `100%`,
-                    height: `100%`,
-                }, "*")
+                    anchor: "middleright",
+                    width: `30%`,
+                    height: `75%`,
+                    left: `75px`,
+                }, "*");
+                // window.parent.postMessage({
+                //     type: "WidgetRearrange",
+                //     anchor: "middle",
+                //     width: `100%`,
+                //     height: `100%`,
+                // }, "*")
             }
         }
 
@@ -958,24 +965,24 @@
         // 메시지 수신 처리
         window.addEventListener('message', function (e) {
             const data = e.data;
-            if(data.type === "setWidget"){
+            if (data.type === "setWidget") {
                 _isMobile = data.isMobile;
                 _isTablet = data.isTablet;
-                if(data.isMobile && !data.isTablet){
+                if (data.isMobile && !data.isTablet) {
                     document.body.classList.add('mobile');
                     adjustMobileUI();
-                }else{
+                } else {
                     document.body.classList.remove('mobile');
                 }
                 hideWidget();
-            } else  if (data.type === 'init') {
+            } else if (data.type === 'init') {
                 _languageCode = e.data.languageCode;
                 _localizeContainer = e.data.localizeContainer;
                 document.body.classList.remove("hidden");
                 revealWidget();
             } else if (data.type === 'roomInfo') {
                 updateRoomInfo(data.roomData);
-                
+
                 // 게임 상태에 따라 위젯 표시/숨김 처리
                 if (data.roomData.state === 'IN_PROGRESS') {
                     hideWidget();
@@ -1024,7 +1031,7 @@
                     type: 'system',
                     content: `게임이 곧 시작됩니다...`
                 });
-                
+
                 // 게임 시작 시 위젯 숨김
                 hideWidget();
             } else if (data.type === 'gameEnded') {
@@ -1032,7 +1039,7 @@
                     type: 'system',
                     content: `게임이 종료되었습니다.`
                 });
-                
+
                 // 게임 종료 시 위젯 다시 표시
                 revealWidget();
             } else if (data.type === 'chatMessage') {
@@ -1055,12 +1062,12 @@
 
         // 초기화
         initializeRoom();
-        
+
         // 모바일 UI 조정 함수
         function adjustMobileUI() {
             // 화면 방향 감지 (가로 또는 세로)
             const isLandscape = window.innerWidth > window.innerHeight;
-            
+
             if (isLandscape) {
                 // 가로 모드일 때 추가 조정
                 document.querySelector('.main-content').style.flexDirection = 'row';
@@ -1078,7 +1085,7 @@
                 document.querySelector('.chat-sidebar').style.borderTop = '1px solid #e0e0e0';
                 document.querySelector('.chat-sidebar').style.borderLeft = 'none';
             }
-            
+
             // 모바일 키보드 대응
             chatInput.addEventListener('focus', () => {
                 if (_isMobile) {
@@ -1089,9 +1096,9 @@
                 }
             });
         }
-        
+
         // 화면 방향 변경 감지
-        window.addEventListener('resize', function() {
+        window.addEventListener('resize', function () {
             if (_isMobile) {
                 adjustMobileUI();
             }

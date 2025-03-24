@@ -73,9 +73,6 @@ export class Game extends GameBase {
 		};
 
 		player.sprite = SpriteManager.getInstance().getSprite(SpriteType.CHARACTER_BASIC);
-		const lobbyLocation = ScriptMap.getLocationList("Lobby");
-
-		player.setCameraTarget(lobbyLocation[0].x + lobbyLocation[0].width / 2, lobbyLocation[0].y + lobbyLocation[0].height / 2, 0);
 
 		if (!player.isMobile) {
 			player.displayRatio = 1.25;
@@ -132,6 +129,9 @@ export class Game extends GameBase {
 		} else {
 			// 로비 위젯 표시 - showLobbyWidget 메서드를 사용하도록 수정
 			ScriptApp.runLater(() => {
+				const lobbyLocation = ScriptMap.getLocationList("Lobby");
+				player.setCameraTarget(lobbyLocation[0].x + lobbyLocation[0].width / 2, lobbyLocation[0].y + lobbyLocation[0].height / 2, 0);
+				player.spawnAtLocation("Lobby");
 				this.showLobbyWidget(player);
 			}, 1);
 		}

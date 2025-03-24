@@ -269,7 +269,7 @@ export class GameRoom {
 		player.spawnAt(x, y);
 
 		//@ts-ignore
-		player.setCameraTarget(-1);
+		player.setCameraTarget(-1, -1, 0);
 		player.setCameraTarget(this.roomLocation.x + this.roomLocation.width / 2, this.roomLocation.y + this.roomLocation.height / 2, 0);
 
 		// 이벤트 발생
@@ -318,7 +318,7 @@ export class GameRoom {
 			const lobbyLocation = ScriptMap.getLocationList("Lobby");
 
 			//@ts-ignore
-			player.setCameraTarget(-1);
+			player.setCameraTarget(-1, -1, 0);
 			//@ts-ignore
 			player.setCameraTarget(lobbyLocation[0].x + lobbyLocation[0].width / 2, lobbyLocation[0].y + lobbyLocation[0].height / 2, 0);
 
@@ -549,9 +549,9 @@ export class GameRoom {
 			playersCount: this.getPlayersCount(),
 			host: this.hostId
 				? {
-						id: this.hostId,
-						name: hostPlayer ? hostPlayer.name : "알 수 없음",
-				  }
+					id: this.hostId,
+					name: hostPlayer ? hostPlayer.name : "알 수 없음",
+				}
 				: null,
 			state: this.state,
 			players: this.players.map((player) => ({

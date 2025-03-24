@@ -1,7 +1,7 @@
 /******/ (() => { // webpackBootstrap
 /******/ 	"use strict";
 
-;// CONCATENATED MODULE: ../../libs/utils/Localizer.ts
+;// ../../libs/utils/Localizer.ts
 const LOCALIZE_KEYS = {};
 const LOCALIZE_CONTAINER = {
   ko: null,
@@ -32,7 +32,7 @@ class Localizer_Localizer {
     return acc;
   }
 }
-;// CONCATENATED MODULE: ../../libs/utils/Common.ts
+;// ../../libs/utils/Common.ts
 
 
 let log;
@@ -124,7 +124,7 @@ function getLocationAreaCoordinates(locationName) {
   }
   return coordinates;
 }
-;// CONCATENATED MODULE: ../../libs/utils/CustomLabelFunctions.ts
+;// ../../libs/utils/CustomLabelFunctions.ts
 
 const LABEL_SPACING = 60;
 const labelCounts = {};
@@ -281,7 +281,7 @@ function showLabel(player, key, options = {}) {
   };
   player.showCustomLabel(htmlStr, 0xffffff, backgroundColor, topGap, labelPercentWidth, 0.64, labelDisplayTime, customLabelOption);
 }
-;// CONCATENATED MODULE: ../../libs/core/GameBase.ts
+;// ../../libs/core/GameBase.ts
 class GameBase {
   constructor() {
     this.onStartCallbacks = [];
@@ -355,7 +355,7 @@ class GameBase {
     this.onTriggerObjectCallbacks.push(callback);
   }
 }
-;// CONCATENATED MODULE: ../../libs/core/mafia/types/JobTypes.ts
+;// ../../libs/core/mafia/types/JobTypes.ts
 var JobId;
 (function (JobId) {
   JobId["MAFIA"] = "mafia";
@@ -613,7 +613,7 @@ function getJobsByGameMode(modeId) {
     return job ? job : null;
   }).filter(job => job !== null);
 }
-;// CONCATENATED MODULE: ../../libs/core/mafia/managers/widget/WidgetType.ts
+;// ../../libs/core/mafia/managers/widget/WidgetType.ts
 var WidgetType;
 (function (WidgetType) {
   WidgetType["LOBBY"] = "LOBBY";
@@ -628,7 +628,7 @@ var WidgetType;
   WidgetType["GAME_MODE_SELECT"] = "GAME_MODE_SELECT";
   WidgetType["DAY_CHAT"] = "DAY_CHAT";
 })(WidgetType || (WidgetType = {}));
-;// CONCATENATED MODULE: ../../libs/core/mafia/managers/widget/WidgetManager.ts
+;// ../../libs/core/mafia/managers/widget/WidgetManager.ts
 
 
 class WidgetManager {
@@ -875,7 +875,7 @@ class WidgetManager {
     return widgetMap[widgetType];
   }
 }
-;// CONCATENATED MODULE: ../../libs/core/mafia/managers/gameFlow/GameFlowManager.ts
+;// ../../libs/core/mafia/managers/gameFlow/GameFlowManager.ts
 
 
 
@@ -2070,7 +2070,7 @@ class GameFlowManager {
     }
   }
 }
-;// CONCATENATED MODULE: ../../libs/core/mafia/managers/gameRoom/GameRoom.ts
+;// ../../libs/core/mafia/managers/gameRoom/GameRoom.ts
 
 
 
@@ -2235,7 +2235,7 @@ class GameRoom {
     const x = this.roomLocation.x + Math.floor(Math.random() * this.roomLocation.width);
     const y = this.roomLocation.y + Math.floor(Math.random() * this.roomLocation.height);
     player.spawnAt(x, y);
-    player.setCameraTarget(-1);
+    player.setCameraTarget(-1, -1, 0);
     player.setCameraTarget(this.roomLocation.x + this.roomLocation.width / 2, this.roomLocation.y + this.roomLocation.height / 2, 0);
     this.emit(WaitingRoomEvent.PLAYER_JOIN, this, player);
     return true;
@@ -2261,7 +2261,7 @@ class GameRoom {
       player.tag.mafiaPlayer = null;
       player.spawnAtLocation("Lobby");
       const lobbyLocation = Map.getLocationList("Lobby");
-      player.setCameraTarget(-1);
+      player.setCameraTarget(-1, -1, 0);
       player.setCameraTarget(lobbyLocation[0].x + lobbyLocation[0].width / 2, lobbyLocation[0].y + lobbyLocation[0].height / 2, 0);
       const widgetManager = WidgetManager.instance;
       widgetManager.cleanupPlayerWidgets(player);
@@ -2408,7 +2408,7 @@ class GameRoom {
     };
   }
 }
-;// CONCATENATED MODULE: ../../libs/core/mafia/managers/gameRoom/GameRoomManager.ts
+;// ../../libs/core/mafia/managers/gameRoom/GameRoomManager.ts
 
 
 
@@ -2541,7 +2541,7 @@ class GameRoomManager {
     }
   }
 }
-;// CONCATENATED MODULE: ../../libs/core/mafia/gameMode/GameMode.ts
+;// ../../libs/core/mafia/gameMode/GameMode.ts
 class GameMode {
   constructor(config) {
     this.jobs = [];
@@ -2584,7 +2584,7 @@ class GameMode {
     };
   }
 }
-;// CONCATENATED MODULE: ../../libs/core/mafia/gameMode/defaultGameModes.ts
+;// ../../libs/core/mafia/gameMode/defaultGameModes.ts
 
 
 function createDefaultGameModes() {
@@ -2607,7 +2607,7 @@ function createDefaultGameModes() {
   });
   return modes;
 }
-;// CONCATENATED MODULE: ../../libs/core/mafia/managers/Sprite/SpriteManager.ts
+;// ../../libs/core/mafia/managers/Sprite/SpriteManager.ts
 var SpriteType;
 (function (SpriteType) {
   SpriteType["CHARACTER_BASIC"] = "character_basic";
@@ -2640,7 +2640,7 @@ class SpriteManager {
     };
   }
 }
-;// CONCATENATED MODULE: ../../libs/core/mafia/Game.ts
+;// ../../libs/core/mafia/Game.ts
 
 
 
@@ -2693,8 +2693,6 @@ class Game extends GameBase {
       profile: this.getDefaultProfile(player)
     };
     player.sprite = SpriteManager.getInstance().getSprite(SpriteType.CHARACTER_BASIC);
-    const lobbyLocation = Map.getLocationList("Lobby");
-    player.setCameraTarget(lobbyLocation[0].x + lobbyLocation[0].width / 2, lobbyLocation[0].y + lobbyLocation[0].height / 2, 0);
     if (!player.isMobile) {
       player.displayRatio = 1.25;
     }
@@ -2732,6 +2730,9 @@ class Game extends GameBase {
       }
     } else {
       App.runLater(() => {
+        const lobbyLocation = Map.getLocationList("Lobby");
+        player.setCameraTarget(lobbyLocation[0].x + lobbyLocation[0].width / 2, lobbyLocation[0].y + lobbyLocation[0].height / 2, 0);
+        player.spawnAtLocation("Lobby");
         this.showLobbyWidget(player);
       }, 1);
     }
@@ -3392,7 +3393,7 @@ class Game extends GameBase {
   }
 }
 Game.ROOM_COUNT = 0;
-;// CONCATENATED MODULE: ./main.ts
+;// ./main.ts
 
 App.onInit.Add(() => {
   Game.create();
