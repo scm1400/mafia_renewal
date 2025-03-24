@@ -51,6 +51,10 @@
             background: rgba(0,0,0,0.5);
         }
 
+        body.mobile {
+            justify-content: end;
+        }
+
         .header {
             display: flex;
             justify-content: space-between;
@@ -430,6 +434,11 @@
             border-color: var(--primary-color);
         }
 
+        .mobile .lobby-container {
+            height: 100%;
+            width: 100%;
+        }
+
         .lobby-container {
             display: flex;
             flex-direction: column;
@@ -464,7 +473,7 @@
         }
         
         body.compact .chat-container {
-            height: 150px;
+            height: 200px;
         }
         
         body.compact .header {
@@ -587,6 +596,7 @@
 
         body.mobile .main-content {
             flex-direction: column;
+            position: relative;
         }
 
         body.mobile .rooms-container {
@@ -600,8 +610,19 @@
             border-top: 1px solid #e0e0e0;
             max-height: 200px;
             padding: 15px 10px;
+            display: none; /* 기본적으로 숨김 */
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            background-color: white;
+            z-index: 10;
+            box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
         }
-
+        
+        body.mobile .user-sidebar.visible {
+            display: block;
+        }
+        
         body.mobile .room-card {
             padding: 10px;
         }
@@ -752,81 +773,157 @@
             height: 32px;
             border-radius: 50%;
         }
+
+        /* 유저 사이드바 토글 버튼 */
+        .user-sidebar-toggle {
+            display: none;
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            font-size: 18px;
+            cursor: pointer;
+            z-index: 11;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+        }
+        
+        body.mobile .user-sidebar-toggle {
+            display: flex;
+        }
+        
+        /* 배경 딤 효과 */
+        .sidebar-backdrop {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 9;
+        }
+        
+        body.mobile .sidebar-backdrop.visible {
+            display: block;
+        }
+
+        /* 모바일 최소화 버튼 스타일 */
+        .mobile-minimize-btn {
+            display: none;
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            font-size: 16px;
+            cursor: pointer;
+            z-index: 15;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+        }
+        
+        body.mobile .mobile-minimize-btn {
+            display: flex;
+        }
+        
+        /* 최소화된 상태의 아이콘 스타일 */
+        .minimized-icon {
+            display: none;
+            position: fixed;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            z-index: 1001;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.3);
+            animation: pulse 2s infinite;
+        }
+        
+        /* 맥박 효과 애니메이션 */
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+        
+        /* 최소화된 상태 스타일 */
+        body.minimized .lobby-container {
+            display: none !important;
+        }
+        
+        body.minimized .minimized-icon {
+            display: flex;
+        }
     </style>
 </head>
 
 <body>
-    <div id="widget-container" class="lobby-container">
-        <button id="compactToggle" class="compact-toggle">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-                <path fill-rule="evenodd" d="M6 8a.5.5 0 0 0 .5.5h5.793l-2.147 2.146a.5.5 0 0 0 .708.708l3-3a.5.5 0 0 0 0-.708l-3-3a.5.5 0 0 0-.708.708L12.293 7.5H6.5A.5.5 0 0 0 6 8zm-2.5 7a.5.5 0 0 1-.5-.5v-13a.5.5 0 0 1 1 0v13a.5.5 0 0 1-.5.5z"/>
-            </svg>
-        </button>
+    <div id="widget-container" class="lobby-container" style="display: none;">
+        <button id="compactToggle" class="compact-toggle">⇆</button>
+        <button id="mobileMinimizeBtn" class="mobile-minimize-btn">❌</button>
         <div class="header">
-            <h1>마피아 게임 로비</h1>
+            <h1>마피아 로비</h1>
             <div class="header-controls">
                 <div class="search-bar">
-                    <input type="text" id="searchInput" placeholder="방 또는 플레이어 검색...">
-                    <button id="searchBtn">🔍</button>
+                    <input type="text" id="searchInput" placeholder="방 검색...">
                 </div>
-                <button class="button primary" id="createRoomBtn">방 만들기</button>
+                <button id="createRoomBtn" class="button primary">방 만들기</button>
+                <button id="refreshBtn" class="button secondary">새로고침</button>
             </div>
         </div>
-
         <div class="main-content">
             <div class="rooms-container">
-                <div class="section-title">
-                    <span>대기중인 방</span>
-                    <button class="refresh-btn" id="refreshBtn">
-                        <span>새로고침</span> 🔄
-                    </button>
-                </div>
-
+                <div class="section-title">방 목록</div>
                 <div class="room-filters">
                     <button class="filter-btn active" data-filter="all">전체</button>
                     <button class="filter-btn" data-filter="waiting">대기중</button>
-                    <button class="filter-btn" data-filter="in-progress">게임중</button>
+                    <button class="filter-btn" data-filter="playing">게임중</button>
                 </div>
-
-                <div id="roomsList">
-                    <!-- 방 목록이 동적으로 추가됩니다 -->
-                    <div class="empty-state">
-                        <h3>현재 활성화된 방이 없습니다</h3>
-                        <p>'방 만들기' 버튼을 클릭하여 새 방을 생성하세요!</p>
-                    </div>
-                </div>
+                <div id="roomsList"></div>
             </div>
-
             <div class="user-sidebar">
-                <div class="section-title">접속중인 유저</div>
-                <div id="usersList" class="user-list">
-                    <!-- 유저 목록이 동적으로 추가됩니다 -->
-                </div>
+                <div class="section-title">접속 중인 유저</div>
+                <div id="usersList"></div>
             </div>
+            <button id="userSidebarToggle" class="user-sidebar-toggle">👥</button>
+            <div id="sidebarBackdrop" class="sidebar-backdrop"></div>
         </div>
-
-        <!-- 채팅 영역 추가 -->
         <div class="chat-container">
-            <div id="chatMessages" class="chat-messages">
-                <!-- 채팅 메시지가 동적으로 추가됩니다 -->
-                <div class="chat-message system">
-                    <span>로비 채팅에 오신 것을 환영합니다. 다른 플레이어와 대화를 나눠보세요!</span>
-                </div>
-            </div>
+            <div class="section-title">로비 채팅</div>
+            <div id="chatMessages" class="chat-messages"></div>
             <div class="chat-input-container">
-                <input type="text" id="chatInput" class="chat-input" placeholder="메시지를 입력하세요..." autocomplete="off">
+                <input type="text" id="chatInput" class="chat-input" placeholder="메시지 입력...">
                 <button id="chatSubmit" class="chat-submit">전송</button>
             </div>
         </div>
+    </div>
 
-        <!-- 방 생성 모달 -->
-        <div class="modal-overlay" id="createRoomModal">
-            <div class="create-room-modal">
-                <div class="modal-header">
-                    <h2 class="modal-title">새 방 만들기</h2>
-                    <button class="close-btn" id="closeModalBtn">&times;</button>
-                </div>
-
+    <!-- 방 생성 모달 -->
+    <div id="createRoomModal" class="create-room-modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>새 방 만들기</h2>
+                <button id="closeModalBtn" class="close-btn">&times;</button>
+            </div>
+            <div class="modal-body">
                 <div class="form-group">
                     <label class="form-label" for="roomTitle">방 제목</label>
                     <input type="text" id="roomTitle" class="form-input" placeholder="방 제목을 입력하세요">
@@ -859,6 +956,9 @@
         </div>
     </div>
 
+    <!-- 최소화된 상태에서 표시될 아이콘 -->
+    <button id="minimizedIcon" class="minimized-icon">🎮</button>
+
     <script>
         // 전역 변수 정의
         let rooms = [];
@@ -886,6 +986,12 @@
         let lastChatSentTime = 0; // 마지막 채팅 전송 시간
         let chatCooldown = 200; // 채팅 전송 간 최소 간격 (밀리초)
 
+        // 최소화 관련 변수와 DOM 요소
+        const mobileMinimizeBtn = document.getElementById('mobileMinimizeBtn');
+        const minimizedIcon = document.getElementById('minimizedIcon');
+        let isMinimized = false;
+
+        // DOM 요소 참조
         // DOM 요소 참조
         const roomsList = document.getElementById('roomsList');
         const usersList = document.getElementById('usersList');
@@ -905,6 +1011,12 @@
         const chatInput = document.getElementById('chatInput');
         const chatSubmit = document.getElementById('chatSubmit');
 
+        // 유저 사이드바 토글 관련 변수와 DOM 요소
+        const userSidebarToggle = document.getElementById('userSidebarToggle');
+        const userSidebar = document.querySelector('.user-sidebar');
+        const sidebarBackdrop = document.getElementById('sidebarBackdrop');
+        let isSidebarVisible = false;
+
         // 이벤트 리스너 설정
         createRoomBtn.addEventListener('click', showCreateRoomModal);
         closeModalBtn.addEventListener('click', hideCreateRoomModal);
@@ -918,6 +1030,10 @@
 
         // 축소 모드 토글 이벤트 리스너
         compactToggle.addEventListener('click', toggleCompactMode);
+        
+        // 모바일 최소화 버튼 이벤트 리스너
+        mobileMinimizeBtn.addEventListener('click', minimizeWidget);
+        minimizedIcon.addEventListener('click', maximizeWidget);
 
         // 채팅 이벤트 리스너
         chatSubmit.addEventListener('click', sendChatMessage);
@@ -940,6 +1056,10 @@
             });
         });
 
+        // 유저 사이드바 토글 이벤트 리스너
+        userSidebarToggle.addEventListener('click', toggleUserSidebar);
+        sidebarBackdrop.addEventListener('click', toggleUserSidebar);
+
         // 위젯 숨김 처리
         function hideWidget() {
             document.getElementById('widget-container').style.display = 'none';
@@ -960,22 +1080,42 @@
 
             if (_isMobile) {
                 const rtcAndNotchHeight = 160 + parseInt(getComputedStyle(document.documentElement,).getPropertyValue("--sat"));
-                window.parent.postMessage({
-                    type: 'WidgetRearrange',
-                    anchor: 'middle',
-                    height: '100%',
-                    width: '100%',
-                    top: `-${parseInt(0)}px`
-                }, '*');
+                
+                // 최소화된 상태인지 확인
+                if (isMinimized) {
+                    document.body.classList.add('minimized');
+                    window.parent.postMessage({
+                        type: "WidgetRearrange",
+                        anchor: "topright",
+                        width: `60px`,
+                        height: `60px`,
+                        right: `20px`,
+                        bottom: `20px`
+                    }, "*");
+                } else {
+                    window.parent.postMessage({
+                        type: 'WidgetRearrange',
+                        anchor: 'middle',
+                        height: '100%',
+                        width: '100%',
+                        top: `-${parseInt(0)}px`
+                    }, '*');
+                }
 
                 // 화면 비율에 맞게 위젯 조정
                 adjustMobileUI();
                 
                 // 모바일에서는 축소 토글 버튼 숨기기
                 compactToggle.style.display = 'none';
+                
+                // 모바일에서는 최소화 버튼 표시
+                mobileMinimizeBtn.style.display = 'flex';
             } else {
                 // 데스크톱에서는 축소 모드 토글 버튼 표시
                 compactToggle.style.display = 'flex';
+                
+                // 데스크톱에서는 최소화 버튼 숨김
+                mobileMinimizeBtn.style.display = 'none';
                 
                 if (isCompact) {
                     applyCompactMode();
@@ -992,30 +1132,24 @@
 
         // 모바일 UI 조정
         function adjustMobileUI() {
-            // 화면 방향 감지 (가로 또는 세로)
-            const isLandscape = window.innerWidth > window.innerHeight;
-
-            // CSS 미디어 쿼리가 동작하므로 일부 중복 스타일 제거
-            // 필요한 경우 추가적인 동적 조정만 수행
-
-            if (isLandscape) {
-                // 가로 모드에서 필요한 추가 조정
-                document.querySelector('.chat-messages').style.maxHeight = '60px';
-            } else {
-                // 세로 모드에서 필요한 추가 조정
-                document.querySelector('.chat-messages').style.maxHeight = '100px';
-            }
-
-            // 모바일 키보드 대응
-            chatInput.addEventListener('focus', () => {
-                if (_isMobile) {
-                    // 입력창에 포커스시 스크롤 조정
-                    setTimeout(() => {
-                        window.scrollTo(0, document.body.scrollHeight);
-                        chatMessagesContainer.scrollTop = chatMessagesContainer.scrollHeight;
-                    }, 300);
+            if (_isMobile) {
+                // 모바일에서 사이드바 초기 상태 설정 (숨김)
+                userSidebar.classList.remove('visible');
+                sidebarBackdrop.classList.remove('visible');
+                isSidebarVisible = false;
+                
+                // 화면 방향에 따른 추가 조정
+                const isLandscape = window.innerWidth > window.innerHeight;
+                
+                if (isLandscape) {
+                    // 가로 모드일 때는 사이드바를 다르게 처리할 수 있음
+                    document.body.classList.add('landscape');
+                    document.body.classList.remove('portrait');
+                } else {
+                    document.body.classList.add('portrait');
+                    document.body.classList.remove('landscape');
                 }
-            });
+            }
         }
 
         // 화면 방향 변경 감지
@@ -1223,7 +1357,7 @@
                 filteredRooms = [...rooms];
             } else if (currentFilter === 'waiting') {
                 filteredRooms = rooms.filter(room => room.state === 'WAITING');
-            } else if (currentFilter === 'in-progress') {
+            } else if (currentFilter === 'playing') {
                 filteredRooms = rooms.filter(room => room.state === 'IN_PROGRESS');
             }
 
@@ -1401,10 +1535,18 @@
                         document.body.classList.remove('compact'); // 모바일에서 축소 모드 비활성화
                         isCompact = false;
                         adjustMobileUI();
+                        
+                        // 모바일에서는 사이드바 초기 상태를 숨김으로 설정
+                        userSidebar.classList.remove('visible');
+                        sidebarBackdrop.classList.remove('visible');
+                        isSidebarVisible = false;
                     } else {
                         document.body.classList.remove('mobile');
                         // 모바일이 아닐 때만 축소 모드 토글 버튼 표시
                         compactToggle.style.display = 'flex';
+                        
+                        // 데스크톱에서는 사이드바가 기본적으로 표시됨
+                        userSidebarToggle.style.display = 'none';
                     }
 
                     // 현재 사용자 정보 저장
@@ -1568,33 +1710,33 @@
             }
         }
 
+        // 유저 사이드바 토글 함수
+        function toggleUserSidebar() {
+            if (_isMobile) { // 모바일인 경우에만 토글 적용
+                isSidebarVisible = !isSidebarVisible;
+                
+                if (isSidebarVisible) {
+                    userSidebar.classList.add('visible');
+                    sidebarBackdrop.classList.add('visible');
+                } else {
+                    userSidebar.classList.remove('visible');
+                    sidebarBackdrop.classList.remove('visible');
+                }
+            }
+        }
+
         // 축소 모드 토글 함수
         function toggleCompactMode() {
-            if (_isMobile) return; // 모바일에서는 축소 모드 사용 불가
-            
             isCompact = !isCompact;
             
             if (isCompact) {
+                document.body.classList.add('compact');
+                compactToggle.innerHTML = '⇆';
                 applyCompactMode();
-                compactToggle.innerHTML = `
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-                        <path fill-rule="evenodd" d="M10 8a.5.5 0 0 1-.5.5H3.707l2.147 2.146a.5.5 0 0 1-.708.708l-3-3a.5.5 0 0 1 0-.708l3-3a.5.5 0 1 1 .708.708L3.707 7.5h5.793a.5.5 0 0 1 .5.5z"/>
-                        <path fill-rule="evenodd" d="M12.5 1a.5.5 0 0 1 .5.5v13a.5.5 0 0 1-1 0v-13a.5.5 0 0 1 .5-.5z"/>
-                    </svg>
-                `;
             } else {
                 document.body.classList.remove('compact');
-                window.parent.postMessage({
-                    type: "WidgetRearrange",
-                    anchor: "middle",
-                    width: `100%`,
-                    height: `100%`,
-                }, "*");
-                compactToggle.innerHTML = `
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-                        <path fill-rule="evenodd" d="M6 8a.5.5 0 0 0 .5.5h5.793l-2.147 2.146a.5.5 0 0 0 .708.708l3-3a.5.5 0 0 0 0-.708l-3-3a.5.5 0 0 0-.708.708L12.293 7.5H6.5A.5.5 0 0 0 6 8zm-2.5 7a.5.5 0 0 1-.5-.5v-13a.5.5 0 0 1 1 0v13a.5.5 0 0 1-.5.5z"/>
-                    </svg>
-                `;
+                compactToggle.innerHTML = '⇆';
+                applyFullMode();
             }
         }
         
@@ -1609,6 +1751,54 @@
                 left: `75px`,
             }, "*");
             window.parent.focus();
+        }
+        
+        function applyFullMode() {
+            window.parent.postMessage({
+                type: "WidgetRearrange",
+                anchor: "middle",
+                width: `100%`,
+                height: `100%`,
+            }, "*");
+            window.parent.focus();
+        }
+
+        // 위젯 최소화 함수
+        function minimizeWidget() {
+            if (_isMobile) {
+                isMinimized = true;
+                document.body.classList.add('minimized');
+                
+                // 작은 크기로 위젯 리사이즈 (아이콘만 남기기 위해)
+                window.parent.postMessage({
+                    type: "WidgetRearrange",
+                    anchor: "topright",
+                    width: `60px`,
+                    height: `60px`,
+                    right: `20px`,
+                    bottom: `20px`
+                }, "*");
+            }
+        }
+        
+        // 위젯 복원 함수
+        function maximizeWidget() {
+            if (_isMobile) {
+                isMinimized = false;
+                document.body.classList.remove('minimized');
+                
+                // 전체 크기로 위젯 리사이즈
+                window.parent.postMessage({
+                    type: 'WidgetRearrange',
+                    anchor: 'middle',
+                    height: '100%',
+                    width: '100%'
+                }, '*');
+                
+                // 최신 데이터 요청
+                requestRoomsWithDelay();
+                requestUsersWithDelay();
+            }
         }
     </script>
 </body>
