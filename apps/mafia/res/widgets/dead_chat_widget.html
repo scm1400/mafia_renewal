@@ -440,9 +440,19 @@
             } else if (data.type === "showWidget") {
                 // WidgetManager에서 보내는 표시 메시지 처리
                 revealWidget();
+            } else if (data.type === "focusInput") {
+                const chatInput = document.getElementById('chat-input');
+                chatInput.focus();
             }
         });
 
+        // ESC 키 이벤트 리스너 추가
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                window.parent.focus();
+            }
+        });
+        
         // 메시지 전송 이벤트 리스너
         document.getElementById('chat-send-button').addEventListener('click', sendMessage);
         document.getElementById('chat-input').addEventListener('keypress', (e) => {

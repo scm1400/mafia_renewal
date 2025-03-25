@@ -687,6 +687,13 @@
             }
         });
 
+        // ESC 키 이벤트 리스너 추가
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                window.parent.focus();
+            }
+        });
+
         // 초기화 함수
         function initializeRoom() {
             // 방 정보 및 플레이어 정보 요청
@@ -964,13 +971,13 @@
 
         // 메시지 수신 처리
         let messageListener = null;
-        
+
         function setupMessageListener() {
             // 기존 이벤트 리스너가 있다면 제거
             if (messageListener) {
                 window.removeEventListener('message', messageListener);
             }
-            
+
             // 새 메시지 리스너 생성 및 등록
             messageListener = function (e) {
                 const data = e.data;
@@ -1064,15 +1071,17 @@
                     // WidgetManager에서 보내는 숨김 메시지 처리
                     hideWidget();
                 } else if (data.type === 'showWidget') {
-                    chatMessages.innerHTML =`<div class="message system">채팅방에 입장했습니다.</div>`;
+                    chatMessages.innerHTML = `<div class="message system">채팅방에 입장했습니다.</div>`;
                     // WidgetManager에서 보내는 표시 메시지 처리
                     revealWidget();
+                } else if (data.type === 'focusInput') {
+                    chatInput.focus();
                 }
             };
-            
+
             window.addEventListener('message', messageListener);
         }
-        
+
         // 초기화 시 이벤트 리스너 설정
         setupMessageListener();
 

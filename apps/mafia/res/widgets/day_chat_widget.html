@@ -508,9 +508,19 @@
                 case 'chatHistory':
                     displayChatHistory(data.messages || []);
                     break;
+                case 'focusInput':
+                    chatInput.focus();
+                    break;
             }
         });
 
+        // ESC 키 이벤트 리스너 추가
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                window.parent.focus();
+            }
+        });
+        
         function hideWidget() {
             window.parent.postMessage({ type: 'WidgetRearrange', anchor: 'bottom', width: '0', height: '0' }, '*');
         }

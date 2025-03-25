@@ -1627,14 +1627,25 @@
                 } else if (data.type === 'chatMessage') {
                     // 채팅 메시지 수신 처리
                     addChatMessage(data.senderId, data.senderName, data.content, data.timestamp);
+                } else if (data.type === 'focusInput') {
+                    chatInput.focus();
                 }
             };
             
             window.addEventListener('message', messageListener);
         }
+
+        
         
         // 초기화 시 이벤트 리스너 설정
         setupMessageListener();
+
+        // ESC 키 이벤트 리스너 추가
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                window.parent.focus();
+            }
+        });
 
         /**
          * 채팅 메시지를 전송합니다.

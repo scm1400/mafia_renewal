@@ -34,7 +34,25 @@ export class WidgetManager {
     /**
      * 생성자 (private으로 외부에서 직접 인스턴스화 방지)
      */
-    private constructor() {}
+    private constructor() {
+        ScriptApp.addOnKeyDown(13, (player) => {
+            if(player.tag.widget.lobby){
+                player.tag.widget.lobby.sendMessage({type:"focusInput"})
+            }
+            if(player.tag.widget.room){
+                player.tag.widget.room.sendMessage({type:"focusInput"})
+            }
+            if(player.tag.widget.finalDefense){
+                player.tag.widget.finalDefense.sendMessage({type:"focusInput"})
+            }
+            if(player.tag.widget.deadChat){
+                player.tag.widget.deadChat.sendMessage({type:"focusInput"})
+            }
+            if(player.tag.widget.dayChat){
+                player.tag.widget.dayChat.sendMessage({type:"focusInput"})
+            }
+        });
+    }
     
     /**
      * 싱글톤 인스턴스 접근자

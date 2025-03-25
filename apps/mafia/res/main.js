@@ -1,7 +1,7 @@
 /******/ (() => { // webpackBootstrap
 /******/ 	"use strict";
 
-;// ../../libs/utils/Localizer.ts
+;// CONCATENATED MODULE: ../../libs/utils/Localizer.ts
 const LOCALIZE_KEYS = {};
 const LOCALIZE_CONTAINER = {
   ko: null,
@@ -32,7 +32,7 @@ class Localizer_Localizer {
     return acc;
   }
 }
-;// ../../libs/utils/Common.ts
+;// CONCATENATED MODULE: ../../libs/utils/Common.ts
 
 
 let log;
@@ -124,7 +124,7 @@ function getLocationAreaCoordinates(locationName) {
   }
   return coordinates;
 }
-;// ../../libs/utils/CustomLabelFunctions.ts
+;// CONCATENATED MODULE: ../../libs/utils/CustomLabelFunctions.ts
 
 const LABEL_SPACING = 60;
 const labelCounts = {};
@@ -281,7 +281,7 @@ function showLabel(player, key, options = {}) {
   };
   player.showCustomLabel(htmlStr, 0xffffff, backgroundColor, topGap, labelPercentWidth, 0.64, labelDisplayTime, customLabelOption);
 }
-;// ../../libs/core/GameBase.ts
+;// CONCATENATED MODULE: ../../libs/core/GameBase.ts
 class GameBase {
   constructor() {
     this.onStartCallbacks = [];
@@ -355,7 +355,7 @@ class GameBase {
     this.onTriggerObjectCallbacks.push(callback);
   }
 }
-;// ../../libs/core/mafia/types/JobTypes.ts
+;// CONCATENATED MODULE: ../../libs/core/mafia/types/JobTypes.ts
 var JobId;
 (function (JobId) {
   JobId["MAFIA"] = "mafia";
@@ -613,7 +613,7 @@ function getJobsByGameMode(modeId) {
     return job ? job : null;
   }).filter(job => job !== null);
 }
-;// ../../libs/core/mafia/managers/widget/WidgetType.ts
+;// CONCATENATED MODULE: ../../libs/core/mafia/managers/widget/WidgetType.ts
 var WidgetType;
 (function (WidgetType) {
   WidgetType["LOBBY"] = "LOBBY";
@@ -628,12 +628,39 @@ var WidgetType;
   WidgetType["GAME_MODE_SELECT"] = "GAME_MODE_SELECT";
   WidgetType["DAY_CHAT"] = "DAY_CHAT";
 })(WidgetType || (WidgetType = {}));
-;// ../../libs/core/mafia/managers/widget/WidgetManager.ts
+;// CONCATENATED MODULE: ../../libs/core/mafia/managers/widget/WidgetManager.ts
 
 
 class WidgetManager {
   constructor() {
     this.playerWidgetMap = {};
+    App.addOnKeyDown(13, player => {
+      if (player.tag.widget.lobby) {
+        player.tag.widget.lobby.sendMessage({
+          type: "focusInput"
+        });
+      }
+      if (player.tag.widget.room) {
+        player.tag.widget.room.sendMessage({
+          type: "focusInput"
+        });
+      }
+      if (player.tag.widget.finalDefense) {
+        player.tag.widget.finalDefense.sendMessage({
+          type: "focusInput"
+        });
+      }
+      if (player.tag.widget.deadChat) {
+        player.tag.widget.deadChat.sendMessage({
+          type: "focusInput"
+        });
+      }
+      if (player.tag.widget.dayChat) {
+        player.tag.widget.dayChat.sendMessage({
+          type: "focusInput"
+        });
+      }
+    });
   }
   static get instance() {
     if (!this._instance) {
@@ -875,7 +902,7 @@ class WidgetManager {
     return widgetMap[widgetType];
   }
 }
-;// ../../libs/core/mafia/managers/gameFlow/GameFlowManager.ts
+;// CONCATENATED MODULE: ../../libs/core/mafia/managers/gameFlow/GameFlowManager.ts
 
 
 
@@ -2070,7 +2097,7 @@ class GameFlowManager {
     }
   }
 }
-;// ../../libs/core/mafia/managers/gameRoom/GameRoom.ts
+;// CONCATENATED MODULE: ../../libs/core/mafia/managers/gameRoom/GameRoom.ts
 
 
 
@@ -2408,7 +2435,7 @@ class GameRoom {
     };
   }
 }
-;// ../../libs/core/mafia/managers/gameRoom/GameRoomManager.ts
+;// CONCATENATED MODULE: ../../libs/core/mafia/managers/gameRoom/GameRoomManager.ts
 
 
 
@@ -2545,7 +2572,7 @@ class GameRoomManager {
     }
   }
 }
-;// ../../libs/core/mafia/gameMode/GameMode.ts
+;// CONCATENATED MODULE: ../../libs/core/mafia/gameMode/GameMode.ts
 class GameMode {
   constructor(config) {
     this.jobs = [];
@@ -2588,7 +2615,7 @@ class GameMode {
     };
   }
 }
-;// ../../libs/core/mafia/gameMode/defaultGameModes.ts
+;// CONCATENATED MODULE: ../../libs/core/mafia/gameMode/defaultGameModes.ts
 
 
 function createDefaultGameModes() {
@@ -2611,7 +2638,7 @@ function createDefaultGameModes() {
   });
   return modes;
 }
-;// ../../libs/core/mafia/managers/Sprite/SpriteManager.ts
+;// CONCATENATED MODULE: ../../libs/core/mafia/managers/Sprite/SpriteManager.ts
 var SpriteType;
 (function (SpriteType) {
   SpriteType["CHARACTER_BASIC"] = "character_basic";
@@ -2644,7 +2671,7 @@ class SpriteManager {
     };
   }
 }
-;// ../../libs/core/mafia/Game.ts
+;// CONCATENATED MODULE: ../../libs/core/mafia/Game.ts
 
 
 
@@ -3371,7 +3398,7 @@ class Game extends GameBase {
   }
 }
 Game.ROOM_COUNT = 0;
-;// ./main.ts
+;// CONCATENATED MODULE: ./main.ts
 
 App.onInit.Add(() => {
   Game.create();

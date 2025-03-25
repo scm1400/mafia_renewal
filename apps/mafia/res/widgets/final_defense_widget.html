@@ -446,6 +446,15 @@
             } else if (data.type === 'showWidget') {
                 // WidgetManager에서 보내는 표시 메시지 처리
                 revealWidget();
+            } else if (data.type === 'focusInput') {
+                defenseInput.focus();
+            }
+        });
+
+        // ESC 키 이벤트 리스너 추가
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                window.parent.focus();
             }
         });
     </script>
