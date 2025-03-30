@@ -532,7 +532,7 @@
         let players = [];
         let selectedPlayerId = null;
         let myPlayerId = null;
-        let myRole = null;
+        let myRoleId = null;
         let hasActed = false;
         let remainingTime = 30;
         let timerInterval;
@@ -699,7 +699,7 @@
             playersList.innerHTML = '';
 
             // 현재 역할에 대한 정보 가져오기
-            const roleAction = roleActions[myRole] || roleActions.citizen;
+            const roleAction = roleActions[myRoleId] || roleActions.citizen;
 
             // 대상 선택기가 필요 없는 경우 (시민 등)
             if (!roleAction.showTargetSelector) {
@@ -711,7 +711,7 @@
 
             players.forEach(player => {
                 if (!player.isAlive) return; // 죽은 플레이어는 표시하지 않음
-                if (player.id === myPlayerId && myRole !== "doctor") return; // 의사만 자기 자신을 선택할 수 있음
+                if (player.id === myPlayerId && myRoleId !== "doctor") return; // 의사만 자기 자신을 선택할 수 있음
 
                 const playerItem = document.createElement('div');
                 playerItem.className = `player-item ${selectedPlayerId === player.id ? 'selected' : ''}`;
@@ -743,7 +743,7 @@
         }
 
         function submitAction() {
-            const roleAction = roleActions[myRole] || roleActions.citizen;
+            const roleAction = roleActions[myRoleId] || roleActions.citizen;
 
             if (!roleAction.showTargetSelector) {
                 if (!roleAction.showChat) {
@@ -778,7 +778,7 @@
             document.getElementById('result-title').textContent = "행동 완료";
 
             let resultMessage = "";
-            switch (myRole) {
+            switch (myRoleId) {
                 case "mafia":
                     resultMessage = "살해 대상이 선택되었습니다. 낮이 될 때까지 기다려주세요.";
                     break;
@@ -947,7 +947,7 @@
         }
 
         function initializeRoleUI(role) {
-            myRole = role;
+            myRoleId = role;
             const roleAction = roleActions[role] || roleActions.citizen;
 
             document.getElementById('action-title').textContent = roleAction.title;
@@ -1035,12 +1035,12 @@
                 // 기존 상태 초기화
                 players = data.players;
                 myPlayerId = data.myPlayerId;
-                myRole = data.role;
+                myRoleId = data.role;
                 hasActed = false;
                 selectedPlayerId = null;
 
                 // UI 초기화
-                initializeRoleUI(myRole);
+                initializeRoleUI(myRoleId);
                 renderPlayers();
 
                 // 결과 컨테이너 초기화
@@ -1058,7 +1058,7 @@
                 // 액션 버튼과 플레이어 목록 재표시
                 document.getElementById('action-button').style.display = 'block';
                 document.getElementById('players-list').style.display = 'block';
-                document.getElementById('action-button').disabled = myRole !== 'citizen';
+                document.getElementById('action-button').disabled = myRoleId !== 'citizen';
 
                 // 타이머 초기화
                 if (data.timeLimit) {

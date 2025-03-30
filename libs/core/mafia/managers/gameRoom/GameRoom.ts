@@ -310,7 +310,6 @@ export class GameRoom {
 		// 플레이어 태그 정보 초기화 (태그가 있는 경우에만)
 		if (player.tag) {
 			player.tag.roomInfo = null;
-			player.tag.mafiaPlayer = null;
 
 			// 플레이어 위치 이동
 			player.spawnAtLocation("Lobby");

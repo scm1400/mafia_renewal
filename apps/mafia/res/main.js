@@ -1295,7 +1295,8 @@ class GameFlowManager {
               }
               widgetManager.clearMessageHandlers(gamePlayer, WidgetType.NIGHT_ACTION);
               widgetManager.registerMessageHandler(gamePlayer, WidgetType.NIGHT_ACTION, (player, data) => {
-                const mafiaPlayer = player.tag.mafiaPlayer;
+                var _a;
+                const mafiaPlayer = (_a = this.room) === null || _a === void 0 ? void 0 : _a.players.find(p => p.id === player.id);
                 if (!mafiaPlayer) return;
                 switch (data.type) {
                   case "kill":
@@ -1391,7 +1392,6 @@ class GameFlowManager {
               return;
             }
             widgetManager.hideWidget(gamePlayer, WidgetType.NIGHT_ACTION);
-            gamePlayer.tag.mafiaPlayer = player;
             if (player.isAlive) {
               widgetManager.clearMessageHandlers(gamePlayer, WidgetType.DAY_CHAT);
               widgetManager.showWidget(gamePlayer, WidgetType.DAY_CHAT);
@@ -1406,7 +1406,8 @@ class GameFlowManager {
                 isTablet: gamePlayer.isTablet
               });
               widgetManager.registerMessageHandler(gamePlayer, WidgetType.DAY_CHAT, (player, data) => {
-                const mafiaPlayer = player.tag.mafiaPlayer;
+                var _a;
+                const mafiaPlayer = (_a = this.room) === null || _a === void 0 ? void 0 : _a.players.find(p => p.id === player.id);
                 if (!mafiaPlayer || !mafiaPlayer.isAlive) return;
                 if (data.type === "chatMessage" && data.message) {
                   this.processDayChatMessage(player, data.message);
@@ -1483,7 +1484,7 @@ class GameFlowManager {
           });
           let maxVotes = 0;
           let defendantId = null;
-          let defendantName = "";
+          const defendantName = "";
           for (const [playerId, votes] of Object.entries(this.voteResults)) {
             if (votes > maxVotes) {
               maxVotes = votes;
@@ -1496,7 +1497,6 @@ class GameFlowManager {
             this.nextPhase();
             return;
           }
-          defendantName = defendant.name;
           this.room.actionToRoomPlayers(player => {
             if (player.isAlive && player.id !== defendant.id) {
               const gamePlayer = getPlayerById(player.id);
@@ -1505,6 +1505,7 @@ class GameFlowManager {
               }
             }
           });
+          this.phaseTimer = phaseDurations[MafiaPhase.APPROVAL_VOTING];
           this.phaseEndCallback = () => this.finalizeApprovalVoting();
         }
         break;
@@ -2173,9 +2174,10 @@ class GameFlowManager {
     });
   }
   processDayChatMessage(player, message) {
+    var _a;
     if (!this.room) return;
     if (this.currentPhase !== MafiaPhase.DAY) return;
-    const mafiaPlayer = player.tag.mafiaPlayer;
+    const mafiaPlayer = (_a = this.room) === null || _a === void 0 ? void 0 : _a.players.find(p => p.id === player.id);
     if (!mafiaPlayer || !mafiaPlayer.isAlive) return;
     const currentTime = Date.now();
     const lastMessageTime = this.dayChatCooldowns[player.id] || 0;
@@ -2586,7 +2588,6 @@ class GameRoom {
     this.readyPlayers.delete(playerId);
     if (player.tag) {
       player.tag.roomInfo = null;
-      player.tag.mafiaPlayer = null;
       player.spawnAtLocation("Lobby");
       const lobbyLocation = Map.getLocationList("Lobby");
       player.setCameraTarget(-1, -1, 0);

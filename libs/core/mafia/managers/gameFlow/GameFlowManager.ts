@@ -506,7 +506,7 @@ export class GameFlowManager {
 
 							// 밤 액션 위젯 메시지 처리 - 최초 한 번만 등록
 							widgetManager.registerMessageHandler(gamePlayer, WidgetType.NIGHT_ACTION, (player: GamePlayer, data) => {
-								const mafiaPlayer = player.tag.mafiaPlayer;
+								const mafiaPlayer = this.room?.players.find((p) => p.id === player.id);
 								if (!mafiaPlayer) return;
 
 								// 액션 타입에 따른 처리
@@ -624,9 +624,6 @@ export class GameFlowManager {
 						// 밤 액션 위젯 제거
 						widgetManager.hideWidget(gamePlayer, WidgetType.NIGHT_ACTION);
 
-						// 플레이어 정보 저장
-						gamePlayer.tag.mafiaPlayer = player;
-
 						// 낮 채팅 위젯 표시 (살아있는 플레이어만)
 						if (player.isAlive) {
 							// 이전 메시지 핸들러 제거를 위해 위젯 초기화
@@ -649,7 +646,7 @@ export class GameFlowManager {
 
 							// 낮 채팅 위젯 메시지 처리 - 등록
 							widgetManager.registerMessageHandler(gamePlayer, WidgetType.DAY_CHAT, (player: GamePlayer, data) => {
-								const mafiaPlayer = player.tag.mafiaPlayer;
+								const mafiaPlayer = this.room?.players.find((p) => p.id === player.id);
 								if (!mafiaPlayer || !mafiaPlayer.isAlive) return;
 
 								if (data.type === "chatMessage" && data.message) {
@@ -752,7 +749,7 @@ export class GameFlowManager {
 					// 투표 결과 확인
 					let maxVotes = 0;
 					let defendantId: string | null = null;
-					let defendantName = "";
+					const defendantName = "";
 
 					for (const [playerId, votes] of Object.entries(this.voteResults)) {
 						if (votes > maxVotes) {
@@ -770,7 +767,7 @@ export class GameFlowManager {
 						this.nextPhase();
 						return;
 					}
-					defendantName = defendant.name;
+					// defendantName = defendant.name;
 
 					// 찬반 투표 위젯 표시 - 피고인을 제외한 모든 살아있는 플레이어에게
 					this.room.actionToRoomPlayers((player) => {
@@ -782,6 +779,7 @@ export class GameFlowManager {
 						}
 					});
 
+					this.phaseTimer = phaseDurations[MafiaPhase.APPROVAL_VOTING];
 					this.phaseEndCallback = () => this.finalizeApprovalVoting();
 				}
 				break;
@@ -1843,7 +1841,7 @@ export class GameFlowManager {
 		if (!this.room) return;
 		if (this.currentPhase !== MafiaPhase.DAY) return;
 
-		const mafiaPlayer = player.tag.mafiaPlayer;
+		const mafiaPlayer = this.room?.players.find((p) => p.id === player.id);
 		if (!mafiaPlayer || !mafiaPlayer.isAlive) return;
 
 		const currentTime = Date.now(); // 현재 시간(초 단위)
