@@ -120,7 +120,13 @@ export class Game extends GameBase {
 						// 영매용 채팅 위젯 표시 (위젯 관리자 사용)
 						widgetManager.showWidget(player, WidgetType.DEAD_CHAT);
 						widgetManager.sendMessageToWidget(player, WidgetType.DEAD_CHAT, {
-							type: "initMediumChat",
+							type: "init",
+							myPlayerId: player.id,
+							myName: player.name,
+							myRole: "medium",
+							//TODO: 영매 채팅 위젯 초기화 데이터 전송
+							// isNight: room.flowManager.currentPhase === MafiaPhase.NIGHT,
+							// messages: this.chatMessages.filter((msg) => msg.target === "dead"),
 						});
 					}
 				}

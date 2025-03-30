@@ -1,7 +1,7 @@
 import { GamePlayer } from "../../types/GamePlayer";
 import { GameRoom } from "../gameRoom/GameRoom";
 import { getPlayerById } from "../../../../utils/Common";
-import { Job, JobTeam, JobAbilityType, getJobById, getJobsByGameMode, JobId } from "../../types/JobTypes";
+import { Job, JobTeam, JobAbilityType, getJobById, getJobsByGameMode, JobId, JOBS } from "../../types/JobTypes";
 import { showLabel } from "../../../../utils/CustomLabelFunctions";
 import { WidgetManager } from "../widget/WidgetManager";
 import { WidgetType } from "../widget/WidgetType";
@@ -344,7 +344,7 @@ export class GameFlowManager {
 			phase: this.currentPhase,
 			day: this.dayCount,
 			players: this.room?.players || [],
-			myRole: player.jobId,
+			myRole: getJobById(player.jobId),
 			myPlayerId: player.id,
 			timeRemaining: this.phaseTimer,
 			serverTime: Date.now(), // 서버 시간 전송
@@ -934,7 +934,11 @@ export class GameFlowManager {
 
 		// 영매 채팅 위젯 초기화 데이터 전송
 		widgetManager.sendMessageToWidget(player, WidgetType.DEAD_CHAT, {
-			type: "initMediumChat",
+			type: "init",
+			myPlayerId: player.id,
+			myName: player.name,
+			myRole: "medium",
+			isNight: this.currentPhase === MafiaPhase.NIGHT, // 현재 밤 여부 전송
 			messages: this.chatMessages.filter((msg) => msg.target === "dead"),
 		});
 
@@ -942,7 +946,7 @@ export class GameFlowManager {
 
 		// 영매 채팅 위젯 메시지 처리 - 최초 한 번만 등록
 		widgetManager.registerMessageHandler(player, WidgetType.DEAD_CHAT, (sender: GamePlayer, data) => {
-			if (data.type === "sendMessage" && data.message) {
+			if (data.type === "deadChatMessage" && data.message && this.currentPhase === MafiaPhase.NIGHT) {
 				this.broadcastPermanentDeadMessage(sender, data.message);
 			}
 		});
@@ -1240,7 +1244,21 @@ export class GameFlowManager {
 
 	setPhase(phase: MafiaPhase) {
 		this.currentPhase = phase;
-		this.phaseTimer = phaseDurations[this.currentPhase];
+		
+		// 영매에게 페이즈 변경 알림
+		if (this.room) {
+			this.room.actionToRoomPlayers((player) => {
+				if (player.jobId === JobId.MEDIUM && player.isAlive) {
+					const mediumPlayer = getPlayerById(player.id);
+					if (mediumPlayer && mediumPlayer.tag.widget.deadChat) {
+						mediumPlayer.tag.widget.deadChat.sendMessage({
+							type: "phaseChange",
+							isNight: phase === MafiaPhase.NIGHT
+						});
+					}
+				}
+			});
+		}
 	}
 
 	getCurrentPhase(): MafiaPhase {
@@ -1285,16 +1303,6 @@ export class GameFlowManager {
 			targetId,
 			jobId: player.jobId,
 		});
-
-		// 플레이어에게 능력 사용 확인 메시지 전송
-		const gamePlayer = this.room.getGamePlayer(playerId);
-		if (gamePlayer) {
-			gamePlayer.tag.widget.main.sendMessage({
-				type: "ability_used",
-				success: true,
-				message: `${job.name} 능력을 사용했습니다.`,
-			});
-		}
 	}
 
 	/**

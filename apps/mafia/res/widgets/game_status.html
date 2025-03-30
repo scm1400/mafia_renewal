@@ -201,48 +201,209 @@
             background-color: #ffebee;
         }
 
-        .mafia .role-name {
+        .mafia .role-title, .mafia .ability-title {
             color: #d32f2f;
         }
 
         .mafia .role-icon {
             background-color: #d32f2f;
+            color: white;
         }
 
         .police {
             background-color: #e3f2fd;
         }
 
-        .police .role-name {
+        .police .role-title, .police .ability-title {
             color: #1976d2;
         }
 
         .police .role-icon {
             background-color: #1976d2;
+            color: white;
         }
 
         .doctor {
             background-color: #e8f5e9;
         }
 
-        .doctor .role-name {
+        .doctor .role-title, .doctor .ability-title {
             color: #388e3c;
         }
 
         .doctor .role-icon {
             background-color: #388e3c;
+            color: white;
         }
 
         .citizen {
             background-color: #fffde7;
         }
 
-        .citizen .role-name {
+        .citizen .role-title, .citizen .ability-title {
             color: #fbc02d;
         }
 
         .citizen .role-icon {
             background-color: #fbc02d;
+            color: white;
+        }
+        
+        /* 추가 역할 스타일 */
+        .spy {
+            background-color: #f3e5f5;
+        }
+
+        .spy .role-title, .spy .ability-title {
+            color: #9c27b0;
+        }
+
+        .spy .role-icon {
+            background-color: #9c27b0;
+            color: white;
+        }
+        
+        .medium {
+            background-color: #e0f7fa;
+        }
+
+        .medium .role-title, .medium .ability-title {
+            color: #00acc1;
+        }
+
+        .medium .role-icon {
+            background-color: #00acc1;
+            color: white;
+        }
+        
+        .soldier {
+            background-color: #e8eaf6;
+        }
+
+        .soldier .role-title, .soldier .ability-title {
+            color: #3f51b5;
+        }
+
+        .soldier .role-icon {
+            background-color: #3f51b5;
+            color: white;
+        }
+        
+        .politician {
+            background-color: #efebe9;
+        }
+
+        .politician .role-title, .politician .ability-title {
+            color: #795548;
+        }
+
+        .politician .role-icon {
+            background-color: #795548;
+            color: white;
+        }
+        
+        .lover {
+            background-color: #fce4ec;
+        }
+
+        .lover .role-title, .lover .ability-title {
+            color: #e91e63;
+        }
+
+        .lover .role-icon {
+            background-color: #e91e63;
+            color: white;
+        }
+        
+        .journalist {
+            background-color: #fff3e0;
+        }
+
+        .journalist .role-title, .journalist .ability-title {
+            color: #ff9800;
+        }
+
+        .journalist .role-icon {
+            background-color: #ff9800;
+            color: white;
+        }
+        
+        .werewolf {
+            background-color: #fafafa;
+        }
+
+        .werewolf .role-title, .werewolf .ability-title {
+            color: #616161;
+        }
+
+        .werewolf .role-icon {
+            background-color: #616161;
+            color: white;
+        }
+        
+        .gangster {
+            background-color: #eceff1;
+        }
+
+        .gangster .role-title, .gangster .ability-title {
+            color: #607d8b;
+        }
+
+        .gangster .role-icon {
+            background-color: #607d8b;
+            color: white;
+        }
+        
+        .detective {
+            background-color: #f1f8e9;
+        }
+
+        .detective .role-title, .detective .ability-title {
+            color: #689f38;
+        }
+
+        .detective .role-icon {
+            background-color: #689f38;
+            color: white;
+        }
+        
+        .gravedigger {
+            background-color: #e0f2f1;
+        }
+
+        .gravedigger .role-title, .gravedigger .ability-title {
+            color: #00897b;
+        }
+
+        .gravedigger .role-icon {
+            background-color: #00897b;
+            color: white;
+        }
+        
+        .terrorist {
+            background-color: #f9fbe7;
+        }
+
+        .terrorist .role-title, .terrorist .ability-title {
+            color: #827717;
+        }
+
+        .terrorist .role-icon {
+            background-color: #827717;
+            color: white;
+        }
+        
+        .madam {
+            background-color: #fff1f1;
+        }
+
+        .madam .role-title, .madam .ability-title {
+            color: #d81b60;
+        }
+
+        .madam .role-icon {
+            background-color: #d81b60;
+            color: white;
         }
 
         /* 단계별 색상 */
@@ -305,7 +466,7 @@
             </div>
         </div>
 
-        <div class="my-role" id="my-role" onclick="showRoleDetail()">
+        <div class="my-role" id="my-role">
             <div class="role-icon" id="role-icon">?</div>
             <div class="role-info">
                 <div class="role-name" id="role-name">역할 미정</div>
@@ -430,25 +591,11 @@
                 return;
             }
             
-            // 역할 ID가 소문자인지 확인
-            const roleKey = typeof role === 'string' ? role.toLowerCase() : role;
-            console.log("역할 키:", roleKey);
-            const roleInfo = roleData[roleKey];
-            
-            if (!roleInfo) {
-                console.log("알 수 없는 역할:", role, "사용 가능한 역할:", Object.keys(roleData));
-                document.getElementById('role-name').textContent = "알 수 없는 역할";
-                document.getElementById('role-icon').textContent = "❓";
-                document.getElementById('role-desc').textContent = `역할 ID: ${role}`;
-                document.getElementById('my-role').className = "my-role";
-                return;
-            }
-            
             console.log("역할 정보:", roleInfo);
             document.getElementById('role-name').textContent = roleInfo.name;
             document.getElementById('role-icon').textContent = roleInfo.icon;
             document.getElementById('role-desc').textContent = roleInfo.description;
-            document.getElementById('my-role').className = `my-role ${roleInfo.className}`;
+            document.getElementById('my-role').className = `my-role ${roleInfo.id}`;
         }
 
         function updateTimer(seconds, serverTimestamp) {
@@ -486,15 +633,6 @@
                     document.getElementById('timer').style.display = 'none';
                 }
             }, 500); // 0.5초마다 업데이트
-        }
-
-        function showRoleDetail() {
-            if (!myRole) return;
-            
-            window.parent.postMessage({
-                type: "showRoleDetail",
-                role: myRole
-            }, "*");
         }
 
         let _isMobile = false;

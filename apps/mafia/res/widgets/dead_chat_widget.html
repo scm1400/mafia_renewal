@@ -246,6 +246,7 @@
         let _isMobile = false;
         let _isTablet = false;
         let isSpectatorMode = false;
+        let isNightPhase = false;
         
         function minimizeWidget() {
             isMinimized = !isMinimized;
@@ -327,7 +328,7 @@
         }
 
         function sendMessage() {
-            if (isSpectatorMode) return; // 영매는 메시지를 보낼 수 없음
+            if (isSpectatorMode && (!isNightPhase && myRole === 'medium')) return; // 영매는 밤에만 메시지를 보낼 수 있음
             
             const chatInput = document.getElementById('chat-input');
             const message = chatInput.value.trim();
@@ -354,15 +355,33 @@
             const spectatorContainer = document.getElementById('spectator-container');
             
             if (enable) {
-                chatInput.disabled = true;
-                sendButton.disabled = true;
-                chatInput.placeholder = "영매는 메시지를 보낼 수 없습니다...";
+                updateMediumChatAccess();
                 spectatorContainer.style.display = 'flex';
             } else {
                 chatInput.disabled = false;
                 sendButton.disabled = false;
                 chatInput.placeholder = "메시지 입력...";
                 spectatorContainer.style.display = 'none';
+            }
+        }
+
+        function updateMediumChatAccess() {
+            if (myRole !== 'medium') return;
+            
+            const chatInput = document.getElementById('chat-input');
+            const sendButton = document.getElementById('chat-send-button');
+            const spectatorContainer = document.getElementById('spectator-container');
+            
+            if (isNightPhase) {
+                chatInput.disabled = false;
+                sendButton.disabled = false;
+                chatInput.placeholder = "메시지 입력...";
+                spectatorContainer.innerText = "밤 시간에는 메시지를 보낼 수 있습니다";
+            } else {
+                chatInput.disabled = true;
+                sendButton.disabled = true;
+                chatInput.placeholder = "밤에만 메시지를 보낼 수 있습니다...";
+                spectatorContainer.innerText = "밤 시간에만 메시지를 보낼 수 있습니다";
             }
         }
 
@@ -393,6 +412,7 @@
                     myPlayerId = data.myPlayerId;
                     myName = data.myName;
                     myRole = data.myRole;
+                    isNightPhase = data.isNight || false;
                     
                     document.body.classList.remove("hidden");
                     revealWidget();
@@ -406,7 +426,7 @@
                     
                     // 시스템 환영 메시지 추가
                     if (myRole === 'medium') {
-                        addChatMessage(null, "영매로서 죽은 자들의 대화를 볼 수 있습니다.", false, true);
+                        addChatMessage(null, "영매로서 죽은 자들의 대화를 볼 수 있습니다. 밤에만 메시지를 보낼 수 있습니다.", false, true);
                     } else {
                         addChatMessage(null, "죽은 자들과의 대화가 시작되었습니다.", false, true);
                     }
@@ -431,6 +451,17 @@
             } else if (data.type === "systemMessage") {
                 // 시스템 메시지 수신
                 addChatMessage(null, data.message, false, true);
+            } else if (data.type === "phaseChange") {
+                isNightPhase = data.isNight;
+                if (myRole === 'medium') {
+                    updateMediumChatAccess();
+                    
+                    if (isNightPhase) {
+                        addChatMessage(null, "밤이 되었습니다. 메시지를 보낼 수 있습니다.", false, true);
+                    } else {
+                        addChatMessage(null, "낮이 되었습니다. 메시지를 보낼 수 없습니다.", false, true);
+                    }
+                }
             } else if (data.type === "hide") {
                 hideWidget();
             } else if (data.type === "reveal") {

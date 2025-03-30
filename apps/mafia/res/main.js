@@ -1097,7 +1097,7 @@ class GameFlowManager {
       phase: this.currentPhase,
       day: this.dayCount,
       players: ((_a = this.room) === null || _a === void 0 ? void 0 : _a.players) || [],
-      myRole: player.jobId,
+      myRole: getJobById(player.jobId),
       myPlayerId: player.id,
       timeRemaining: this.phaseTimer,
       serverTime: Date.now()
@@ -1503,12 +1503,16 @@ class GameFlowManager {
     const widgetManager = WidgetManager.instance;
     widgetManager.showWidget(player, WidgetType.DEAD_CHAT);
     widgetManager.sendMessageToWidget(player, WidgetType.DEAD_CHAT, {
-      type: "initMediumChat",
+      type: "init",
+      myPlayerId: player.id,
+      myName: player.name,
+      myRole: "medium",
+      isNight: this.currentPhase === MafiaPhase.NIGHT,
       messages: this.chatMessages.filter(msg => msg.target === "dead")
     });
     widgetManager.clearMessageHandlers(player, WidgetType.DEAD_CHAT);
     widgetManager.registerMessageHandler(player, WidgetType.DEAD_CHAT, (sender, data) => {
-      if (data.type === "sendMessage" && data.message) {
+      if (data.type === "deadChatMessage" && data.message && this.currentPhase === MafiaPhase.NIGHT) {
         this.broadcastPermanentDeadMessage(sender, data.message);
       }
     });
@@ -1698,7 +1702,19 @@ class GameFlowManager {
   }
   setPhase(phase) {
     this.currentPhase = phase;
-    this.phaseTimer = phaseDurations[this.currentPhase];
+    if (this.room) {
+      this.room.actionToRoomPlayers(player => {
+        if (player.jobId === JobId.MEDIUM && player.isAlive) {
+          const mediumPlayer = getPlayerById(player.id);
+          if (mediumPlayer && mediumPlayer.tag.widget.deadChat) {
+            mediumPlayer.tag.widget.deadChat.sendMessage({
+              type: "phaseChange",
+              isNight: phase === MafiaPhase.NIGHT
+            });
+          }
+        }
+      });
+    }
   }
   getCurrentPhase() {
     return this.currentPhase;
@@ -2744,7 +2760,10 @@ class Game extends GameBase {
           if (mafiaPlayer && mafiaPlayer.jobId === JobId.MEDIUM && mafiaPlayer.isAlive) {
             widgetManager.showWidget(player, WidgetType.DEAD_CHAT);
             widgetManager.sendMessageToWidget(player, WidgetType.DEAD_CHAT, {
-              type: "initMediumChat"
+              type: "init",
+              myPlayerId: player.id,
+              myName: player.name,
+              myRole: "medium"
             });
           }
         }
