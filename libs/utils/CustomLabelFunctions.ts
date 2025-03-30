@@ -114,7 +114,7 @@ export function showLabel(player: any, key: string, options: LabelOptions = {}) 
 	const {
 		labelWidth = "M",
 		topGapMobile = 10,
-		topGapPC = -2,
+		topGapPC = 90,
 		backgroundColor = 0x27262e,
 		borderRadius = "12px",
 		padding = "8px",
@@ -127,7 +127,7 @@ export function showLabel(player: any, key: string, options: LabelOptions = {}) 
 	const isMobile = player.isMobile && !player.isTablet;
 	const isTablet = player.isMobile && player.isTablet;
 
-	let baseTopGap = isMobile ? topGapMobile : topGapPC;
+	const baseTopGap = isMobile ? topGapMobile : topGapPC;
 	let topGap = baseTopGap;
 	
 	// 라벨 위치 계산 (fixedPosition이 false인 경우만)

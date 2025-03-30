@@ -101,7 +101,6 @@ export class WidgetManager {
         this.createAndInitializeWidget(player, widgetMap, WidgetType.APPROVAL_VOTE, "widgets/approval_vote_widget.html", "middle");
         this.createAndInitializeWidget(player, widgetMap, WidgetType.DEAD_CHAT, "widgets/dead_chat_widget.html", "middleright");
         this.createAndInitializeWidget(player, widgetMap, WidgetType.ROLE_CARD, "widgets/role_card.html", "middle");
-        this.createAndInitializeWidget(player, widgetMap, WidgetType.GAME_MODE_SELECT, "widgets/game_mode_select.html", "middle");
         this.createAndInitializeWidget(player, widgetMap, WidgetType.DAY_CHAT, "widgets/day_chat_widget.html", "middleright");
     }
 
@@ -185,9 +184,6 @@ export class WidgetManager {
             case WidgetType.ROLE_CARD:
                 player.tag.widget.roleCard = widget.element;
                 break;
-            case WidgetType.GAME_MODE_SELECT:
-                player.tag.widget.gameModeSelect = widget.element;
-                break;
             case WidgetType.DAY_CHAT:
                 player.tag.widget.dayChat = widget.element;
                 break;
@@ -240,9 +236,6 @@ export class WidgetManager {
                     break;
                 case WidgetType.ROLE_CARD:
                     player.tag.widget.roleCard = null;
-                    break;
-                case WidgetType.GAME_MODE_SELECT:
-                    player.tag.widget.gameModeSelect = null;
                     break;
                 case WidgetType.DAY_CHAT:
                     player.tag.widget.dayChat = null;

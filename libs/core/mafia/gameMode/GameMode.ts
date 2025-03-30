@@ -1,4 +1,4 @@
-import { Job, GameMode as GameModeInterface, JobId } from "../types/JobTypes";
+import { Job, GameModeConfig as GameModeInterface, JobId } from "../types/JobTypes";
 
 /**
  * 게임 모드 설정

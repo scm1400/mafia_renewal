@@ -1,8 +1,7 @@
 import { GameRoom, GameRoomConfig, WaitingRoomEvent } from "./GameRoom";
 import { GameMode } from "../../gameMode/GameMode";
 import { GamePlayer } from "../../types/GamePlayer";
-import { getJobsByGameMode } from "../../types/JobTypes";
-import { getPlayerById, sendAdminConsoleMessage } from "../../../../utils/Common";
+import { sendAdminConsoleMessage } from "../../../../utils/Common";
 import { Game } from "../../Game";
 
 /**
@@ -55,7 +54,7 @@ export class GameRoomManager {
 		const room = new GameRoom({
 			id: roomId,
 			...config
-		});
+		}, this.gameModes[config.gameModeId]);
 		
 		// 게임방 등록
 		this.gameRooms[roomId] = room;

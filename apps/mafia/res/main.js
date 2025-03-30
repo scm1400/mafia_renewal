@@ -207,7 +207,7 @@ function showLabel(player, key, options = {}) {
   const {
     labelWidth = "M",
     topGapMobile = 10,
-    topGapPC = -2,
+    topGapPC = 90,
     backgroundColor = 0x27262e,
     borderRadius = "12px",
     padding = "8px",
@@ -218,7 +218,7 @@ function showLabel(player, key, options = {}) {
   } = options;
   const isMobile = player.isMobile && !player.isTablet;
   const isTablet = player.isMobile && player.isTablet;
-  let baseTopGap = isMobile ? topGapMobile : topGapPC;
+  const baseTopGap = isMobile ? topGapMobile : topGapPC;
   let topGap = baseTopGap;
   if (!fixedPosition && player.id) {
     const labelKey = `${player.id}_${key}`;
@@ -602,11 +602,11 @@ const GAME_MODES = [{
 function getJobById(jobId) {
   return JOBS.find(job => job.id === jobId);
 }
-function getGameModeById(modeId) {
+function getGameModeConfigById(modeId) {
   return GAME_MODES.find(mode => mode.id === modeId);
 }
 function getJobsByGameMode(modeId) {
-  const gameMode = getGameModeById(modeId);
+  const gameMode = getGameModeConfigById(modeId);
   if (!gameMode) return [];
   return gameMode.jobIds.map(jobId => {
     const job = getJobById(jobId);
@@ -625,7 +625,6 @@ var WidgetType;
   WidgetType["APPROVAL_VOTE"] = "APPROVAL_VOTE";
   WidgetType["DEAD_CHAT"] = "DEAD_CHAT";
   WidgetType["ROLE_CARD"] = "ROLE_CARD";
-  WidgetType["GAME_MODE_SELECT"] = "GAME_MODE_SELECT";
   WidgetType["DAY_CHAT"] = "DAY_CHAT";
 })(WidgetType || (WidgetType = {}));
 ;// CONCATENATED MODULE: ../../libs/core/mafia/managers/widget/WidgetManager.ts
@@ -687,7 +686,6 @@ class WidgetManager {
     this.createAndInitializeWidget(player, widgetMap, WidgetType.APPROVAL_VOTE, "widgets/approval_vote_widget.html", "middle");
     this.createAndInitializeWidget(player, widgetMap, WidgetType.DEAD_CHAT, "widgets/dead_chat_widget.html", "middleright");
     this.createAndInitializeWidget(player, widgetMap, WidgetType.ROLE_CARD, "widgets/role_card.html", "middle");
-    this.createAndInitializeWidget(player, widgetMap, WidgetType.GAME_MODE_SELECT, "widgets/game_mode_select.html", "middle");
     this.createAndInitializeWidget(player, widgetMap, WidgetType.DAY_CHAT, "widgets/day_chat_widget.html", "middleright");
   }
   createAndInitializeWidget(player, widgetMap, widgetType, widgetPath, anchor) {
@@ -745,9 +743,6 @@ class WidgetManager {
       case WidgetType.ROLE_CARD:
         player.tag.widget.roleCard = widget.element;
         break;
-      case WidgetType.GAME_MODE_SELECT:
-        player.tag.widget.gameModeSelect = widget.element;
-        break;
       case WidgetType.DAY_CHAT:
         player.tag.widget.dayChat = widget.element;
         break;
@@ -792,9 +787,6 @@ class WidgetManager {
           break;
         case WidgetType.ROLE_CARD:
           player.tag.widget.roleCard = null;
-          break;
-        case WidgetType.GAME_MODE_SELECT:
-          player.tag.widget.gameModeSelect = null;
           break;
         case WidgetType.DAY_CHAT:
           player.tag.widget.dayChat = null;
@@ -991,9 +983,6 @@ class GameFlowManager {
   setGameRoom(room) {
     this.room = room;
   }
-  setGameMode(mode) {
-    this.gameMode = mode;
-  }
   startGame() {
     if (!this.room) {
       this.sayToRoom("게임 룸이 설정되지 않았습니다.");
@@ -1032,6 +1021,7 @@ class GameFlowManager {
       this.setPhase(MafiaPhase.NIGHT);
     }
     this.showRoomLabel("게임이 시작되었습니다!");
+    const widgetManager = WidgetManager.instance;
     this.room.players.forEach(player => {
       const gamePlayer = this.room.getGamePlayer(player.id);
       if (gamePlayer) {
@@ -1071,7 +1061,7 @@ class GameFlowManager {
     }
   }
   getAvailableJobs() {
-    const jobs = getJobsByGameMode(this.gameMode);
+    const jobs = getJobsByGameMode(this.room.gameMode.id);
     return [...jobs].sort(() => Math.random() - 0.5);
   }
   showRoleCard(player, jobId) {
@@ -2125,7 +2115,7 @@ const GAMEROOM_LOCATIONS = {
   8: Map.getLocation("GameRoom_8") ? Map.getLocationList("GameRoom_8")[0] : null
 };
 class GameRoom {
-  constructor(config) {
+  constructor(config, gameMode) {
     this.hostId = null;
     this.players = [];
     this.readyPlayers = new Set();
@@ -2134,7 +2124,7 @@ class GameRoom {
     this.callbacks = {};
     this.id = config.id;
     this.title = config.title;
-    this.gameMode = config.gameMode;
+    this.gameMode = gameMode;
     this.maxPlayers = config.maxPlayers;
     this.password = config.password;
     this.createdAt = Date.now();
@@ -2381,6 +2371,7 @@ class GameRoom {
         if (gamePlayer) {
           const widgetManager = WidgetManager.instance;
           widgetManager.hideWidget(gamePlayer, WidgetType.LOBBY);
+          widgetManager.hideWidget(gamePlayer, WidgetType.LOBBY);
         }
       });
       this.flowManager.startGame();
@@ -2465,7 +2456,7 @@ class GameRoomManager {
     }
     const room = new GameRoom(Object.assign({
       id: roomId
-    }, config));
+    }, config), this.gameModes[config.gameModeId]);
     this.gameRooms[roomId] = room;
     this.setupRoomEventListeners(room);
     this.emit("roomCreated", room);
@@ -2683,7 +2674,6 @@ class SpriteManager {
 
 
 
-
 const adminList = [];
 class Game extends GameBase {
   static create() {
@@ -2823,14 +2813,13 @@ class Game extends GameBase {
           const {
             title,
             maxPlayers,
-            gameMode
+            gameModeId
           } = data.data;
-          const gameModeObj = this.mafiaGameRoomManager.getGameMode(gameMode);
-          if (gameModeObj) {
+          if (getGameModeConfigById(gameModeId)) {
             const room = this.mafiaGameRoomManager.createRoom({
               title,
               maxPlayers,
-              gameMode: gameModeObj
+              gameModeId: gameModeId
             });
             if (room) {
               room.joinPlayer(sender);
@@ -2887,7 +2876,7 @@ class Game extends GameBase {
         roomWidget.element.onMessage.Remove(player.tag.roomWidgetMessageHandler);
       }
       const messageHandler = (sender, data) => {
-        var _a, _b, _c, _d, _e, _f, _g;
+        var _a, _b, _c, _d, _e, _f, _g, _h;
         if (data.type === "requestRoomInfo") {
           const roomId = (_a = sender.tag.roomInfo) === null || _a === void 0 ? void 0 : _a.roomNum;
           if (roomId) {
@@ -2916,45 +2905,69 @@ class Game extends GameBase {
               this.notifyPlayerLeftRoom(room, sender);
             }
           }
-        } else if (data.type === "toggleReady") {
+        } else if (data.type === "setReady") {
           const roomId = (_d = sender.tag.roomInfo) === null || _d === void 0 ? void 0 : _d.roomNum;
           if (roomId) {
             const room = this.mafiaGameRoomManager.getRoom(roomId.toString());
             if (room) {
-              const isReady = !sender.tag.isReady;
-              sender.tag.isReady = isReady;
+              sender.tag.isReady = true;
+              this.notifyReadyStatusChanged(room, sender);
+            }
+          }
+        } else if (data.type === "cancelReady") {
+          const roomId = (_e = sender.tag.roomInfo) === null || _e === void 0 ? void 0 : _e.roomNum;
+          if (roomId) {
+            const room = this.mafiaGameRoomManager.getRoom(roomId.toString());
+            if (room) {
+              sender.tag.isReady = false;
               this.notifyReadyStatusChanged(room, sender);
             }
           }
         } else if (data.type === "startGame") {
-          const roomId = (_e = sender.tag.roomInfo) === null || _e === void 0 ? void 0 : _e.roomNum;
-          if (roomId) {
-            const room = this.mafiaGameRoomManager.getRoom(roomId.toString());
-            if (room && room.hostId === sender.id) {
-              if (this.canStartGame(room)) {}
-            }
-          }
-        } else if (data.type === "chatMessage" && data.content) {
           const roomId = (_f = sender.tag.roomInfo) === null || _f === void 0 ? void 0 : _f.roomNum;
           if (roomId) {
             const room = this.mafiaGameRoomManager.getRoom(roomId.toString());
             if (room) {
-              this.sendChatMessageToRoom(room, sender, data.content);
+              const canStart = this.canStartGame(room);
+              if (canStart) {
+                room.state = GameState.IN_PROGRESS;
+                if (!room.hostId) {
+                  room.hostId = sender.id;
+                }
+                room.flowManager.startGame();
+                this.updateRoomInfo();
+              } else {
+                widgetManager.sendMessageToWidget(sender, WidgetType.ROOM, {
+                  type: "error",
+                  message: "모든 플레이어가 준비 상태여야 합니다."
+                });
+              }
             }
           }
         } else if (data.type === "kickPlayer" && data.playerId) {
           const roomId = (_g = sender.tag.roomInfo) === null || _g === void 0 ? void 0 : _g.roomNum;
           if (roomId) {
             const room = this.mafiaGameRoomManager.getRoom(roomId.toString());
-            if (room && room.hostId === sender.id) {
-              const targetPlayer = App.getPlayerByID(data.playerId);
-              if (targetPlayer) {
-                room.leavePlayer(targetPlayer.id);
-                widgetManager.hideWidget(targetPlayer, WidgetType.ROOM);
-                this.showLobbyWidget(targetPlayer);
-                this.notifyPlayerKicked(room, targetPlayer);
-                this.updateRoomInfo();
+            if (room) {
+              const isHost = room.hostId === sender.id;
+              if (isHost) {
+                const targetPlayer = App.getPlayerByID(data.playerId);
+                if (targetPlayer) {
+                  room.leavePlayer(targetPlayer.id);
+                  widgetManager.hideWidget(targetPlayer, WidgetType.ROOM);
+                  this.showLobbyWidget(targetPlayer);
+                  this.notifyPlayerKicked(room, targetPlayer);
+                  this.updateRoomInfo();
+                }
               }
+            }
+          }
+        } else if (data.type === "chatMessage" && data.content) {
+          const roomId = (_h = sender.tag.roomInfo) === null || _h === void 0 ? void 0 : _h.roomNum;
+          if (roomId) {
+            const room = this.mafiaGameRoomManager.getRoom(roomId.toString());
+            if (room) {
+              this.sendChatMessageToRoom(room, sender, data.content);
             }
           }
         }
@@ -3115,45 +3128,6 @@ class Game extends GameBase {
       }
     }
     return true;
-  }
-  showGameModeSelect(player) {
-    const widgetManager = WidgetManager.instance;
-    widgetManager.hideWidget(player, WidgetType.GAME_MODE_SELECT);
-    widgetManager.showWidget(player, WidgetType.GAME_MODE_SELECT);
-    player.tag.widget.gameModeSelect.sendMessage({
-      type: "init_game_modes",
-      modes: GAME_MODES,
-      jobs: JOBS
-    });
-    player.tag.widget.gameModeSelect.onMessage.Add((player, data) => {
-      if (data.type === "cancel_mode_select") {
-        const widgetManager = WidgetManager.instance;
-        widgetManager.hideWidget(player, WidgetType.GAME_MODE_SELECT);
-      } else if (data.type === "select_game_mode") {
-        const modeId = data.modeId;
-        const room = this.mafiaGameRoomManager.getRoom("1");
-        room.flowManager.setGameMode(modeId);
-        room.flowManager.startGame();
-        const widgetManager = WidgetManager.instance;
-        widgetManager.hideWidget(player, WidgetType.GAME_MODE_SELECT);
-        this.updateRoomInfo();
-      }
-    });
-  }
-  showRoleCard(player, role) {
-    const widgetManager = WidgetManager.instance;
-    widgetManager.hideWidget(player, WidgetType.ROLE_CARD);
-    widgetManager.showWidget(player, WidgetType.ROLE_CARD);
-    player.tag.widget.roleCard.sendMessage({
-      type: "setRole",
-      role: role
-    });
-    player.tag.widget.roleCard.onMessage.Add((player, data) => {
-      if (data.type === "close") {
-        const widgetManager = WidgetManager.instance;
-        widgetManager.hideWidget(player, WidgetType.ROLE_CARD);
-      }
-    });
   }
   onLeavePlayer(player) {
     var _a;

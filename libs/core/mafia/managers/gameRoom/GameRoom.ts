@@ -2,7 +2,7 @@ import { LocationInfo } from "zep-script";
 import { GameFlowManager, GameState, MafiaPlayer } from "../gameFlow/GameFlowManager";
 import { GamePlayer } from "../../types/GamePlayer";
 import { getPlayerById, sendAdminConsoleMessage } from "../../../../utils/Common";
-import { Job, GameMode as GameModeInterface, JobId } from "../../types/JobTypes";
+import { GAME_MODES, getGameModeConfigById, JobId } from "../../types/JobTypes";
 import { GameMode } from "../../gameMode/GameMode";
 import { WidgetManager } from "../widget/WidgetManager";
 import { WidgetType } from "../widget/WidgetType";
@@ -48,7 +48,7 @@ const GAMEROOM_LOCATIONS: { [key: number]: LocationInfo } = {
 export type GameRoomConfig = {
 	id: string;
 	title: string;
-	gameMode: GameMode;
+	gameModeId: string;
 	maxPlayers: number;
 	password?: string;
 };
@@ -67,10 +67,10 @@ export class GameRoom {
 	public flowManager: GameFlowManager;
 	public roomLocation: LocationInfo | null = null;
 
-	constructor(config: GameRoomConfig) {
+	constructor(config: GameRoomConfig, gameMode: GameMode) {
 		this.id = config.id;
 		this.title = config.title;
-		this.gameMode = config.gameMode;
+		this.gameMode = gameMode;
 		this.maxPlayers = config.maxPlayers;
 		this.password = config.password;
 		this.createdAt = Date.now();
@@ -480,6 +480,7 @@ export class GameRoom {
 				if (gamePlayer) {
 					// 로비 위젯 숨기기
 					const widgetManager = WidgetManager.instance;
+					widgetManager.hideWidget(gamePlayer, WidgetType.LOBBY);
 					widgetManager.hideWidget(gamePlayer, WidgetType.LOBBY);
 				}
 			});

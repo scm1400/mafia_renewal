@@ -1,5 +1,5 @@
 import { GameMode, GameModeConfig } from "./GameMode";
-import { GAME_MODES, getGameModeById, getJobsByGameMode } from "../types/JobTypes";
+import { GAME_MODES, getGameModeConfigById, getJobsByGameMode } from "../types/JobTypes";
 
 /**
  * 기존 게임 모드 정보를 사용하여 GameMode 클래스 생성

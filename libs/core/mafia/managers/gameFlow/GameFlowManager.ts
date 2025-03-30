@@ -3,7 +3,6 @@ import { GameRoom } from "../gameRoom/GameRoom";
 import { getPlayerById } from "../../../../utils/Common";
 import { Job, JobTeam, JobAbilityType, getJobById, getJobsByGameMode, JobId } from "../../types/JobTypes";
 import { showLabel } from "../../../../utils/CustomLabelFunctions";
-import { LocationInfo } from "zep-script";
 import { WidgetManager } from "../widget/WidgetManager";
 import { WidgetType } from "../widget/WidgetType";
 
@@ -148,14 +147,6 @@ export class GameFlowManager {
 	}
 
 	/**
-	 * 게임 모드 설정
-	 * @param mode 게임 모드 ID
-	 */
-	setGameMode(mode: string) {
-		this.gameMode = mode;
-	}
-
-	/**
 	 * 게임 시작
 	 * - 최소 4명의 플레이어가 있어야 합니다.
 	 * - 플레이어 역할을 무작위로 배정합니다.
@@ -227,6 +218,7 @@ export class GameFlowManager {
 		// 게임 시작 메시지 표시
 		this.showRoomLabel("게임이 시작되었습니다!");
 
+		const widgetManager = WidgetManager.instance;
 		// 각 플레이어에게 역할 카드 표시
 		this.room.players.forEach((player) => {
 			const gamePlayer = this.room.getGamePlayer(player.id);
@@ -291,7 +283,7 @@ export class GameFlowManager {
 	// 게임 모드에 따라 사용 가능한 직업 목록 가져오기
 	private getAvailableJobs(): Job[] {
 		// JobTypes.ts에서 getJobsByGameMode 함수 사용
-		const jobs = getJobsByGameMode(this.gameMode);
+		const jobs = getJobsByGameMode(this.room.gameMode.id);
 
 		// 직업 섞기
 		return [...jobs].sort(() => Math.random() - 0.5);

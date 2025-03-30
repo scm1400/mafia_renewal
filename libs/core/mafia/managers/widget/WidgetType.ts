@@ -16,6 +16,5 @@ export enum WidgetType {
     // 추가 기능 위젯
     DEAD_CHAT = "DEAD_CHAT",
     ROLE_CARD = "ROLE_CARD",
-    GAME_MODE_SELECT = "GAME_MODE_SELECT",
     DAY_CHAT = "DAY_CHAT",
 } 

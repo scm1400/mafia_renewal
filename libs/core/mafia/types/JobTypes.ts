@@ -62,7 +62,7 @@ export interface Job {
 }
 
 // 게임 모드 인터페이스
-export interface GameMode {
+export interface GameModeConfig {
   id: string;           // 모드 고유 ID
   name: string;         // 모드 이름
   description: string;  // 모드 설명
@@ -270,7 +270,7 @@ export const JOBS: Job[] = [
 ];
 
 // 게임 모드 데이터
-export const GAME_MODES: GameMode[] = [
+export const GAME_MODES: GameModeConfig[] = [
   {
     id: "classic",
     name: "클래식 모드",
@@ -303,13 +303,13 @@ export function getJobById(jobId: JobId): Job | undefined {
 }
 
 // 게임 모드 ID로 게임 모드 정보 가져오기
-export function getGameModeById(modeId: string): GameMode | undefined {
+export function getGameModeConfigById(modeId: string): GameModeConfig | undefined {
   return GAME_MODES.find(mode => mode.id === modeId);
 }
 
 // 게임 모드에 따른 직업 목록 가져오기
 export function getJobsByGameMode(modeId: string): Job[] {
-  const gameMode = getGameModeById(modeId);
+  const gameMode = getGameModeConfigById(modeId);
   if (!gameMode) return [];
   
   return gameMode.jobIds.map(jobId => {
