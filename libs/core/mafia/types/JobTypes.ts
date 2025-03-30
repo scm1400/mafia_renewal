@@ -115,7 +115,7 @@ export const JOBS: Job[] = [
     team: JobTeam.MAFIA,
     description: "마피아 팀의 정보원입니다.",
     abilityType: JobAbilityType.CONTACT,
-    abilityDescription: "접선 전 밤마다 플레이어 한 명을 골라, 마피아인지 확인 할 수 있다.",
+    abilityDescription: "[첩보] 밤마다 플레이어 한 명을 선택하여 직업을 알아낼 수 있다. 마피아와 접선할 경우, 한 번 더 능력을 사용할 수 있다.",
     icon: "🕵️",
     nightAbility: true,
     dayAbility: false,

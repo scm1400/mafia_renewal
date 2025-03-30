@@ -437,7 +437,7 @@ const JOBS = [{
   team: JobTeam.MAFIA,
   description: "마피아 팀의 정보원입니다.",
   abilityType: JobAbilityType.CONTACT,
-  abilityDescription: "접선 전 밤마다 플레이어 한 명을 골라, 마피아인지 확인 할 수 있다.",
+  abilityDescription: "[첩보] 밤마다 플레이어 한 명을 선택하여 직업을 알아낼 수 있다. 마피아와 접선할 경우, 한 번 더 능력을 사용할 수 있다.",
   icon: "🕵️",
   nightAbility: true,
   dayAbility: false,
@@ -1212,7 +1212,9 @@ class GameFlowManager {
                     }
                     break;
                   case "contact":
-                    if (mafiaPlayer.jobId === JobId.SPY || mafiaPlayer.jobId === JobId.MADAM) {
+                    if (mafiaPlayer.jobId === JobId.SPY) {
+                      this.spyAction(data.targetId, player);
+                    } else if (mafiaPlayer.jobId === JobId.MADAM) {
                       this.processAbility(mafiaPlayer.id, data.targetId);
                     }
                     break;
@@ -2095,6 +2097,39 @@ class GameFlowManager {
           });
         }
       }
+    }
+  }
+  spyAction(targetPlayerId, spyPlayer) {
+    if (this.currentPhase !== MafiaPhase.NIGHT) {
+      return;
+    }
+    this.nightActions.push({
+      playerId: spyPlayer.id,
+      targetId: targetPlayerId,
+      jobId: JobId.SPY
+    });
+    const targetPlayer = this.room.players.find(p => p.id === targetPlayerId);
+    if (!targetPlayer) return;
+    const targetJob = getJobById(targetPlayer.jobId);
+    if (!targetJob) return;
+    if (targetPlayer.jobId === JobId.MAFIA) {
+      const spy = this.room.players.find(p => p.id === spyPlayer.id);
+      if (spy) {
+        if (spy.abilityUses === undefined) {
+          spy.abilityUses = 1;
+        } else {
+          spy.abilityUses++;
+        }
+      }
+    }
+    if (spyPlayer.tag.widget.nightAction) {
+      spyPlayer.tag.widget.nightAction.sendMessage({
+        type: "spyResult",
+        targetName: targetPlayer.name,
+        targetJob: targetJob.name,
+        isMafia: targetJob.team === JobTeam.MAFIA,
+        canUseAgain: targetPlayer.jobId === JobId.MAFIA
+      });
     }
   }
 }

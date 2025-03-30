@@ -507,9 +507,12 @@
 
         <button class="action-button" id="action-button" disabled>선택 완료</button>
 
-        <div class="result-container" id="result-container">
-            <div class="result-title" id="result-title">결과</div>
+        <div id="result-container" class="result-container" style="display: none;">
+            <div class="result-title" id="result-title">능력 사용 결과</div>
             <div class="result-content" id="result-content"></div>
+            <button id="action-again-btn" style="display: none; margin-top: 20px; padding: 10px 20px; background-color: #4a6cc3; color: white; border: none; border-radius: 5px; cursor: pointer;">
+                능력 다시 사용하기
+            </button>
         </div>
 
         <!-- 채팅 컨테이너 -->
@@ -1085,6 +1088,8 @@
             } else if (data.type === 'showWidget') {
                 // WidgetManager에서 보내는 표시 메시지 처리
                 revealWidget();
+            } else if (data.type === 'spyResult') {
+                showSpyResult(data.targetName, data.targetJob, data.isMafia, data.canUseAgain);
             }
         });
 
@@ -1103,6 +1108,41 @@
 
         window.addEventListener('resize', checkMobile);
         checkMobile();
+
+        // 스파이 결과 표시 함수
+        function showSpyResult(targetName, targetJob, isMafia, canUseAgain) {
+            // 결과창 표시
+            document.getElementById('action-container').style.display = 'none';
+            document.getElementById('result-container').style.display = 'block';
+            
+            // 결과 타이틀 설정
+            document.getElementById('result-title').textContent = "스파이 정보 수집 결과";
+            
+            // 결과 메시지 구성
+            let resultMessage = `<strong>${targetName}</strong>님의 직업은 <strong>${targetJob}</strong>입니다.`;
+            
+            if (isMafia) {
+                resultMessage += '<br><span style="color: #ff4d4d;">마피아 팀</span>입니다.';
+            } else {
+                resultMessage += '<br><span style="color: #4da6ff;">시민 팀</span>입니다.';
+            }
+            
+            if (canUseAgain) {
+                resultMessage += '<br><br><span style="color: #ffcc00;">마피아와 접선에 성공했습니다! 능력을 한 번 더 사용할 수 있습니다.</span>';
+                
+                // 능력 재사용 버튼 표시
+                document.getElementById('action-again-btn').style.display = 'block';
+                document.getElementById('action-again-btn').onclick = function() {
+                    document.getElementById('result-container').style.display = 'none';
+                    document.getElementById('action-container').style.display = 'block';
+                };
+            } else {
+                document.getElementById('action-again-btn').style.display = 'none';
+            }
+            
+            // 결과 표시
+            document.getElementById('result-content').innerHTML = resultMessage;
+        }
     </script>
 </body>
 

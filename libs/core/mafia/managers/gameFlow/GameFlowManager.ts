@@ -506,7 +506,9 @@ export class GameFlowManager {
 										}
 										break;
 									case "contact":
-										if (mafiaPlayer.jobId === JobId.SPY || mafiaPlayer.jobId === JobId.MADAM) {
+										if (mafiaPlayer.jobId === JobId.SPY) {
+											this.spyAction(data.targetId, player);
+										} else if (mafiaPlayer.jobId === JobId.MADAM) {
 											this.processAbility(mafiaPlayer.id, data.targetId);
 										}
 										break;
@@ -1878,6 +1880,57 @@ export class GameFlowManager {
 					});
 				}
 			}
+		}
+	}
+
+	/**
+	 * 밤 단계에서 스파이가 조사할 대상을 선택합니다.
+	 * @param targetPlayerId 조사할 플레이어의 ID
+	 * @param spyPlayer 스파이 플레이어
+	 */
+	spyAction(targetPlayerId: string, spyPlayer: GamePlayer): void {
+		if (this.currentPhase !== MafiaPhase.NIGHT) {
+			return;
+		}
+
+		// 능력 사용 기록
+		this.nightActions.push({
+			playerId: spyPlayer.id,
+			targetId: targetPlayerId,
+			jobId: JobId.SPY,
+		});
+
+		// 대상 플레이어 찾기
+		const targetPlayer = this.room.players.find((p) => p.id === targetPlayerId);
+		if (!targetPlayer) return;
+
+		// 직업 조사 결과
+		const targetJob = getJobById(targetPlayer.jobId);
+		if (!targetJob) return;
+
+		// 마피아와 접선한 경우, 능력 회복
+		if (targetPlayer.jobId === JobId.MAFIA) {
+			// 스파이 플레이어 찾기
+			const spy = this.room.players.find((p) => p.id === spyPlayer.id);
+			if (spy) {
+				// 능력 사용 횟수 추가
+				if (spy.abilityUses === undefined) {
+					spy.abilityUses = 1;
+				} else {
+					spy.abilityUses++;
+				}
+			}
+		}
+
+		// 스파이 플레이어에게 결과 전송
+		if (spyPlayer.tag.widget.nightAction) {
+			spyPlayer.tag.widget.nightAction.sendMessage({
+				type: "spyResult",
+				targetName: targetPlayer.name,
+				targetJob: targetJob.name,
+				isMafia: targetJob.team === JobTeam.MAFIA,
+				canUseAgain: targetPlayer.jobId === JobId.MAFIA
+			});
 		}
 	}
 }
