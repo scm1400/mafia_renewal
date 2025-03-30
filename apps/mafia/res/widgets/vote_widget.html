@@ -345,13 +345,6 @@
                 targetId: selectedPlayerId
             }, "*");
             
-            // 마담인 경우 유혹 능력 발동
-            if (myRole === "madam") {
-                window.parent.postMessage({
-                    type: "seduce",
-                    targetId: selectedPlayerId
-                }, "*");
-            }
             
             // 투표 결과 UI 업데이트
             if (!voteResults[selectedPlayerId]) {

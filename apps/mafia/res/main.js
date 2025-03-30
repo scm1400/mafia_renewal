@@ -613,6 +613,93 @@ function getJobsByGameMode(modeId) {
     return job ? job : null;
   }).filter(job => job !== null);
 }
+var JobCategory;
+(function (JobCategory) {
+  JobCategory["BASIC_CITIZEN"] = "BASIC_CITIZEN";
+  JobCategory["SPECIAL_CITIZEN"] = "SPECIAL_CITIZEN";
+  JobCategory["POLICE"] = "POLICE";
+  JobCategory["DOCTOR"] = "DOCTOR";
+  JobCategory["BASIC_MAFIA"] = "BASIC_MAFIA";
+  JobCategory["SUPPORT_MAFIA"] = "SUPPORT_MAFIA";
+})(JobCategory || (JobCategory = {}));
+function categorizeJobs(jobs) {
+  const categories = {
+    [JobCategory.BASIC_CITIZEN]: [],
+    [JobCategory.SPECIAL_CITIZEN]: [],
+    [JobCategory.POLICE]: [],
+    [JobCategory.DOCTOR]: [],
+    [JobCategory.BASIC_MAFIA]: [],
+    [JobCategory.SUPPORT_MAFIA]: []
+  };
+  jobs.forEach(job => {
+    if (job.id === JobId.POLICE) {
+      categories[JobCategory.POLICE].push(job);
+    } else if (job.id === JobId.DOCTOR) {
+      categories[JobCategory.DOCTOR].push(job);
+    } else if (job.id === JobId.CITIZEN) {
+      categories[JobCategory.BASIC_CITIZEN].push(job);
+    } else if (job.id === JobId.MAFIA) {
+      categories[JobCategory.BASIC_MAFIA].push(job);
+    } else if (job.team === JobTeam.CITIZEN) {
+      categories[JobCategory.SPECIAL_CITIZEN].push(job);
+    } else if (job.team === JobTeam.MAFIA) {
+      categories[JobCategory.SUPPORT_MAFIA].push(job);
+    }
+  });
+  return categories;
+}
+function getSpecialCitizenCount(playerCount) {
+  if (playerCount <= 4) return 1;
+  if (playerCount <= 6) return 2;
+  if (playerCount <= 9) return 3;
+  return 4;
+}
+function getSupportMafiaCount(playerCount) {
+  return playerCount >= 6 ? 1 : 0;
+}
+function distributeJobsByPlayerCount(modeId, playerCount) {
+  const allJobs = getJobsByGameMode(modeId);
+  const categorizedJobs = categorizeJobs(allJobs);
+  const selectedJobs = [];
+  if (categorizedJobs[JobCategory.POLICE].length > 0) {
+    selectedJobs.push(categorizedJobs[JobCategory.POLICE][0]);
+  }
+  if (categorizedJobs[JobCategory.DOCTOR].length > 0) {
+    selectedJobs.push(categorizedJobs[JobCategory.DOCTOR][0]);
+  }
+  if (categorizedJobs[JobCategory.BASIC_MAFIA].length > 0) {
+    selectedJobs.push(categorizedJobs[JobCategory.BASIC_MAFIA][0]);
+  }
+  const specialCitizenCount = getSpecialCitizenCount(playerCount);
+  const availableSpecialCitizens = [...categorizedJobs[JobCategory.SPECIAL_CITIZEN]];
+  for (let i = 0; i < specialCitizenCount && availableSpecialCitizens.length > 0; i++) {
+    const randomIndex = Math.floor(Math.random() * availableSpecialCitizens.length);
+    selectedJobs.push(availableSpecialCitizens[randomIndex]);
+    availableSpecialCitizens.splice(randomIndex, 1);
+  }
+  const supportMafiaCount = getSupportMafiaCount(playerCount);
+  const availableSupportMafia = [...categorizedJobs[JobCategory.SUPPORT_MAFIA]];
+  for (let i = 0; i < supportMafiaCount && availableSupportMafia.length > 0; i++) {
+    const randomIndex = Math.floor(Math.random() * availableSupportMafia.length);
+    selectedJobs.push(availableSupportMafia[randomIndex]);
+    availableSupportMafia.splice(randomIndex, 1);
+  }
+  const remainingSlots = playerCount - selectedJobs.length;
+  for (let i = 0; i < remainingSlots; i++) {
+    if (categorizedJobs[JobCategory.BASIC_CITIZEN].length > 0) {
+      selectedJobs.push(categorizedJobs[JobCategory.BASIC_CITIZEN][0]);
+    }
+  }
+  return shuffleArray(selectedJobs);
+}
+function shuffleArray(array) {
+  const newArray = [...array];
+  for (let i = newArray.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
+  }
+  return newArray;
+}
 ;// CONCATENATED MODULE: ../../libs/core/mafia/managers/widget/WidgetType.ts
 var WidgetType;
 (function (WidgetType) {
@@ -922,10 +1009,9 @@ const phaseDurations = {
   [MafiaPhase.APPROVAL_VOTING]: 30
 };
 class GameFlowManager {
-  constructor(roomNumber) {
+  constructor() {
     this.state = GameState.WAITING;
     this.dayCount = 0;
-    this.gameMode = "classic";
     this.room = null;
     this.phaseEndCallback = null;
     this.nightActions = [];
@@ -946,7 +1032,6 @@ class GameFlowManager {
     this.dayChatMessages = [];
     this.dayChatCooldowns = {};
     this.CHAT_COOLDOWN = 0.3;
-    this.roomNumber = roomNumber;
     this.currentPhase = MafiaPhase.DAY;
     this.phaseCycle = [MafiaPhase.NIGHT, MafiaPhase.DAY, MafiaPhase.VOTING, MafiaPhase.FINAL_DEFENSE, MafiaPhase.APPROVAL_VOTING];
     this.phaseTimer = phaseDurations[this.currentPhase];
@@ -1176,6 +1261,11 @@ class GameFlowManager {
         {
           this.sayToRoom(`밤 단계 - 마피아가 희생자를 선택합니다.`);
           this.nightActions = [];
+          if (this.mafiaChatPlayers.length >= 2) {
+            App.runLater(() => {
+              this.activateMafiaChat();
+            }, 0);
+          }
           this.room.actionToRoomPlayers(player => {
             var _a;
             const gamePlayer = getPlayerById(player.id);
@@ -1195,6 +1285,14 @@ class GameFlowManager {
                 timeLimit: phaseDurations[MafiaPhase.NIGHT],
                 serverTime: Date.now()
               });
+              if (this.mafiaChatPlayers.length >= 2 && this.mafiaChatPlayers.includes(player.id)) {
+                App.runLater(() => {
+                  if (gamePlayer && gamePlayer.tag.widget.nightAction) {
+                    this.initMafiaChat(gamePlayer);
+                    this.mafiaChatWidgetShown[player.id] = true;
+                  }
+                }, 1);
+              }
               widgetManager.clearMessageHandlers(gamePlayer, WidgetType.NIGHT_ACTION);
               widgetManager.registerMessageHandler(gamePlayer, WidgetType.NIGHT_ACTION, (player, data) => {
                 const mafiaPlayer = player.tag.mafiaPlayer;
@@ -1407,7 +1505,6 @@ class GameFlowManager {
               }
             }
           });
-          this.phaseTimer = phaseDurations[MafiaPhase.APPROVAL_VOTING];
           this.phaseEndCallback = () => this.finalizeApprovalVoting();
         }
         break;
@@ -1434,12 +1531,12 @@ class GameFlowManager {
       if (data.type === "vote" && data.targetId) {
         const mafiaPlayer = sender.tag.mafiaPlayer;
         if (mafiaPlayer && mafiaPlayer.isAlive) {
-          this.processVote(mafiaPlayer.id, data.targetId);
-        }
-      } else if (data.type === "seduce" && data.targetId) {
-        const mafiaPlayer = sender.tag.mafiaPlayer;
-        if (mafiaPlayer && mafiaPlayer.isAlive && mafiaPlayer.jobId === JobId.MADAM) {
-          this.madamAction(data.targetId, sender);
+          if (mafiaPlayer.jobId === JobId.MADAM) {
+            this.processVote(mafiaPlayer.id, data.targetId);
+            this.madamAction(data.targetId, sender);
+          } else {
+            this.processVote(mafiaPlayer.id, data.targetId);
+          }
         }
       }
     });
@@ -1683,7 +1780,6 @@ class GameFlowManager {
     });
     App.runLater(() => {
       if (this.room) {
-        this.room.endGame();
         this.room.actionToRoomPlayers(player => {
           const gamePlayer = getPlayerById(player.id);
           if (!gamePlayer) return;
@@ -1702,6 +1798,7 @@ class GameFlowManager {
             });
           }
         });
+        this.room.endGame();
       }
     }, 5);
   }
@@ -2172,7 +2269,9 @@ class GameFlowManager {
         if (!this.mafiaChatPlayers.includes(targetPlayer.id)) {
           this.mafiaChatPlayers.push(targetPlayer.id);
         }
-        this.activateMafiaChat();
+        if (this.mafiaChatPlayers.length >= 2) {
+          this.activateMafiaChat();
+        }
       }
     }
     if (spyPlayer.tag.widget.nightAction) {
@@ -2188,6 +2287,7 @@ class GameFlowManager {
   }
   activateMafiaChat() {
     if (!this.room) return;
+    if (this.mafiaChatPlayers.length < 2) return;
     this.mafiaChatPlayers.forEach(playerId => {
       const player = this.room.getPlayer(playerId);
       if (player && player.isAlive) {
@@ -2196,7 +2296,15 @@ class GameFlowManager {
           this.initMafiaChat(gamePlayer);
           this.mafiaChatWidgetShown[playerId] = true;
           const isSpy = player.jobId === JobId.SPY;
-          const systemMessage = isSpy ? "마피아와 접선에 성공했습니다! 마피아와 대화할 수 있습니다." : "스파이가 접선했습니다! 스파이와 대화할 수 있습니다.";
+          const isMadam = player.jobId === JobId.MADAM;
+          let systemMessage = "";
+          if (isSpy) {
+            systemMessage = "마피아와 접선에 성공했습니다! 마피아와 대화할 수 있습니다.";
+          } else if (isMadam) {
+            systemMessage = "마피아를 유혹했습니다! 마피아와 대화할 수 있습니다.";
+          } else {
+            systemMessage = "마피아팀 채팅이 활성화되었습니다.";
+          }
           this.chatMessages.push({
             target: "mafia",
             sender: "system",
@@ -2275,7 +2383,9 @@ class GameFlowManager {
         if (!this.mafiaChatPlayers.includes(targetPlayer.id)) {
           this.mafiaChatPlayers.push(targetPlayer.id);
         }
-        this.activateMafiaChat();
+        if (this.mafiaChatPlayers.length >= 2) {
+          this.activateMafiaChat();
+        }
       }
     }
     if (madamPlayer.tag.widget.vote) {
@@ -2330,7 +2440,7 @@ class GameRoom {
     this.password = config.password;
     this.createdAt = Date.now();
     this.roomLocation = GAMEROOM_LOCATIONS[parseInt(this.id)];
-    this.flowManager = new GameFlowManager(parseInt(this.id));
+    this.flowManager = new GameFlowManager();
     this.flowManager.setGameRoom(this);
   }
   getGamePlayer(playerId) {
@@ -2558,6 +2668,8 @@ class GameRoom {
   endGame() {
     this.state = GameState.WAITING;
     this.readyPlayers.clear();
+    this.flowManager = new GameFlowManager();
+    this.flowManager.setGameRoom(this);
     this.emit(WaitingRoomEvent.GAME_END);
   }
   reset() {
@@ -2571,7 +2683,7 @@ class GameRoom {
     this.readyPlayers.clear();
     this.hostId = null;
     this.state = GameState.WAITING;
-    this.flowManager = new GameFlowManager(parseInt(this.id));
+    this.flowManager = new GameFlowManager();
     this.flowManager.setGameRoom(this);
   }
   toJSON() {

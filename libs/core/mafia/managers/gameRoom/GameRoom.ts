@@ -456,6 +456,8 @@ export class GameRoom {
 	public endGame(): void {
 		this.state = GameState.WAITING;
 		this.readyPlayers.clear();
+		this.flowManager = new GameFlowManager();
+		this.flowManager.setGameRoom(this);
 
 		// 게임 종료 이벤트 발생
 		this.emit(WaitingRoomEvent.GAME_END);
@@ -482,7 +484,7 @@ export class GameRoom {
 		this.state = GameState.WAITING;
 
 		// 게임 플로우 매니저 초기화
-		this.flowManager = new GameFlowManager(parseInt(this.id));
+		this.flowManager = new GameFlowManager();
 		this.flowManager.setGameRoom(this);
 	}
 

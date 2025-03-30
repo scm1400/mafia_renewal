@@ -237,7 +237,7 @@
         .doctor .action-button:hover {
             background-color: #2e7d32;
         }
-        
+
         .spy .action-title {
             color: #7b1fa2;
         }
@@ -510,7 +510,8 @@
         <div id="result-container" class="result-container" style="display: none;">
             <div class="result-title" id="result-title">능력 사용 결과</div>
             <div class="result-content" id="result-content"></div>
-            <button id="action-again-btn" style="display: none; margin-top: 20px; padding: 10px 20px; background-color: #4a6cc3; color: white; border: none; border-radius: 5px; cursor: pointer;">
+            <button id="action-again-btn"
+                style="display: none; margin-top: 20px; padding: 10px 20px; background-color: #4a6cc3; color: white; border: none; border-radius: 5px; cursor: pointer;">
                 능력 다시 사용하기
             </button>
         </div>
@@ -546,7 +547,7 @@
                 actionType: "kill",
                 containerClass: "mafia",
                 showTargetSelector: true,
-                showChat: true,
+                showChat: false,
                 chatTarget: "mafia"
             },
             "police": {
@@ -593,8 +594,7 @@
                 actionType: "listen",
                 containerClass: "medium",
                 showTargetSelector: false,
-                showChat: true,
-                chatTarget: "dead"
+                showChat: false,
             },
             "soldier": {
                 title: "군인",
@@ -688,16 +688,6 @@
                 showChat: false,
                 chatTarget: "mafia"
             },
-            "dead": {
-                title: "사망",
-                subtitle: "당신은 사망했습니다. 다른 죽은 플레이어들과 대화할 수 있습니다.",
-                buttonText: "확인",
-                actionType: "none",
-                containerClass: "dead",
-                showTargetSelector: false,
-                showChat: true,
-                chatTarget: "dead"
-            }
         };
 
         function closeWidget() {
@@ -726,7 +716,7 @@
                 const playerItem = document.createElement('div');
                 playerItem.className = `player-item ${selectedPlayerId === player.id ? 'selected' : ''}`;
                 playerItem.dataset.id = player.id;
-                
+
                 playerItem.addEventListener('click', () => selectPlayer(player.id));
 
                 playerItem.innerHTML = `
@@ -747,14 +737,14 @@
 
         function selectPlayer(playerId) {
             if (hasActed) return;
-            
+
             selectedPlayerId = playerId;
             renderPlayers();
         }
 
         function submitAction() {
             const roleAction = roleActions[myRole] || roleActions.citizen;
-            
+
             if (!roleAction.showTargetSelector) {
                 if (!roleAction.showChat) {
                     closeWidget();
@@ -766,29 +756,29 @@
                 }
                 return;
             }
-            
+
             if (!selectedPlayerId && roleAction.showTargetSelector) return;
-            
+
             hasActed = true;
             document.getElementById('action-button').disabled = true;
-            
+
             // 서버에 액션 결과 전송
             window.parent.postMessage({
                 type: roleAction.actionType,
                 targetId: selectedPlayerId
             }, "*");
-            
+
             // 액션 완료 메시지 표시
             document.getElementById('players-list').style.display = 'none';
             document.getElementById('action-button').style.display = 'none';
-            
+
             const resultContainer = document.getElementById('result-container');
             resultContainer.style.display = 'block';
-            
+
             document.getElementById('result-title').textContent = "행동 완료";
-            
+
             let resultMessage = "";
-            switch(myRole) {
+            switch (myRole) {
                 case "mafia":
                     resultMessage = "살해 대상이 선택되었습니다. 낮이 될 때까지 기다려주세요.";
                     break;
@@ -819,14 +809,14 @@
                 default:
                     resultMessage = "행동이 완료되었습니다. 낮이 될 때까지 기다려주세요.";
             }
-            
+
             document.getElementById('result-content').textContent = resultMessage;
-            
+
             // 채팅 기능이 있는 직업은 채팅 UI 표시
             if (roleAction.showChat) {
                 initializeChat(roleAction.chatTarget);
             }
-            
+
             // 타이머는 계속 실행되도록 유지
             // clearInterval(timerInterval);
         }
@@ -834,37 +824,35 @@
         function initializeChat(target) {
             chatEnabled = true;
             chatTarget = target;
-            
+
             // 채팅 컨테이너 표시
             document.getElementById('chat-container').style.display = 'flex';
-            
+
             // 채팅 초기 메시지 표시
             const chatMessages = document.getElementById('chat-messages');
-            
+
             let welcomeMessage = "";
             if (target === "lover") {
                 welcomeMessage = "다른 연인들과의 채팅이 시작되었습니다. 대화는 낮이 될 때까지 계속됩니다.";
-            } else if (target === "dead") {
-                welcomeMessage = "죽은 자들과의 채팅이 시작되었습니다. 그들의 메시지를 들을 수 있습니다.";
             } else if (target === "mafia") {
                 welcomeMessage = "마피아 채팅이 활성화되었습니다. 마피아 팀원들과 소통할 수 있습니다.";
             }
-            
+
             const systemMessage = document.createElement('div');
             systemMessage.className = 'chat-message';
             systemMessage.innerHTML = `<div class="content"><i>${welcomeMessage}</i></div>`;
             chatMessages.appendChild(systemMessage);
-            
+
             // 서버에 채팅 초기화 알림
             window.parent.postMessage({
                 type: "initChat",
                 chatTarget: target
             }, "*");
-            
+
             // 채팅 입력 이벤트 처리
             const chatInput = document.getElementById('chat-input');
             const chatSendButton = document.getElementById('chat-send-button');
-            
+
             const sendMessage = () => {
                 const message = chatInput.value.trim();
                 if (message) {
@@ -874,43 +862,35 @@
                         chatTarget: target,
                         message: message
                     }, "*");
-                    
-                    // 자신의 메시지 표시 (영매인 경우 메시지를 보낼 수 없음)
-                    if (target !== "dead" || myRole !== "medium") {
-                        addChatMessage('나', message, true);
-                    }
-                    
+
+                    addChatMessage('나', message, true);
+
+
                     // 입력 필드 초기화
                     chatInput.value = '';
                 }
             };
-            
+
             chatSendButton.addEventListener('click', sendMessage);
             chatInput.addEventListener('keypress', (e) => {
                 if (e.key === 'Enter') {
                     sendMessage();
                 }
             });
-            
-            // 영매는 메시지를 보낼 수 없음 (듣기만 가능)
-            if (target === "dead" && myRole === "medium") {
-                chatInput.disabled = true;
-                chatSendButton.disabled = true;
-                chatInput.placeholder = "영매는 죽은 자들의 대화를 들을 수만 있습니다...";
-            }
+
         }
 
         function addChatMessage(sender, content, isMyMessage = false) {
             const chatMessages = document.getElementById('chat-messages');
-            
+
             const messageDiv = document.createElement('div');
             messageDiv.className = `chat-message ${isMyMessage ? 'my-message' : 'other-message'}`;
-            
+
             messageDiv.innerHTML = `
                 <div class="sender">${sender}</div>
                 <div class="content">${content}</div>
             `;
-            
+
             chatMessages.appendChild(messageDiv);
             chatMessages.scrollTop = chatMessages.scrollHeight;
         }
@@ -918,30 +898,30 @@
         function showInvestigationResult(isMafia) {
             const resultContainer = document.getElementById('result-container');
             resultContainer.style.display = 'block';
-            
+
             document.getElementById('result-title').textContent = "조사 결과";
-            
+
             const targetPlayer = players.find(p => p.id === selectedPlayerId);
             const targetName = targetPlayer ? targetPlayer.name : "선택한 플레이어";
-            
-            const resultMessage = isMafia 
-                ? `${targetName}님은 마피아입니다!` 
+
+            const resultMessage = isMafia
+                ? `${targetName}님은 마피아입니다!`
                 : `${targetName}님은 마피아가 아닙니다.`;
-            
+
             document.getElementById('result-content').textContent = resultMessage;
         }
 
         function showAbilityBlocked(message) {
             // 액션 컨테이너 숨기기
             document.getElementById('action-container').style.display = 'none';
-            
+
             // 결과 컨테이너 표시
             const resultContainer = document.getElementById('result-container');
             resultContainer.style.display = 'block';
-            
+
             // 결과 타이틀 설정
             document.getElementById('result-title').textContent = "능력 사용 불가";
-            
+
             // 결과 메시지 설정
             document.getElementById('result-content').textContent = message || "당신은 능력을 사용할 수 없습니다.";
         }
@@ -949,7 +929,7 @@
         function updateTimer() {
             remainingTime--;
             document.getElementById('timer').textContent = `남은 시간: ${remainingTime}초`;
-            
+
             if (remainingTime <= 0) {
                 clearInterval(timerInterval);
                 if (!hasActed) {
@@ -961,7 +941,7 @@
         function startTimer(seconds) {
             remainingTime = seconds;
             document.getElementById('timer').textContent = `남은 시간: ${remainingTime}초`;
-            
+
             clearInterval(timerInterval);
             timerInterval = setInterval(updateTimer, 1000);
         }
@@ -969,21 +949,21 @@
         function initializeRoleUI(role) {
             myRole = role;
             const roleAction = roleActions[role] || roleActions.citizen;
-            
+
             document.getElementById('action-title').textContent = roleAction.title;
             document.getElementById('action-subtitle').textContent = roleAction.subtitle;
             document.getElementById('action-button').textContent = roleAction.buttonText;
-            
+
             const container = document.getElementById('action-container');
             container.className = `action-container ${roleAction.containerClass}`;
-            
+
             // 대상 선택이 필요 없는 역할인 경우 타이머 숨기기
             if (!roleAction.showTargetSelector) {
                 document.getElementById('timer').style.display = 'none';
             } else {
                 document.getElementById('timer').style.display = 'block';
             }
-            
+
             // 채팅 기능이 있지만 확인 버튼 클릭 전에는 숨김
             document.getElementById('chat-container').style.display = 'none';
         }
@@ -1032,15 +1012,15 @@
             }, "*")
         }
 
-        window.addEventListener('message', function(e) {
+        window.addEventListener('message', function (e) {
             const data = e.data;
-            
-            if(data.type === "setWidget"){
+
+            if (data.type === "setWidget") {
                 _isMobile = data.isMobile;
                 _isTablet = data.isTablet;
-                if(data.isMobile && !data.isTablet){
+                if (data.isMobile && !data.isTablet) {
                     document.body.classList.add('mobile');
-                }else{
+                } else {
                     document.body.classList.remove('mobile');
                 }
                 hideWidget();
@@ -1051,40 +1031,40 @@
                 } catch (error) {
                     alert("An error occurred:", error);
                 }
-                
+
                 // 기존 상태 초기화
                 players = data.players;
                 myPlayerId = data.myPlayerId;
                 myRole = data.role;
                 hasActed = false;
                 selectedPlayerId = null;
-                
+
                 // UI 초기화
                 initializeRoleUI(myRole);
                 renderPlayers();
-                
+
                 // 결과 컨테이너 초기화
                 const resultContainer = document.getElementById('result-container');
                 if (resultContainer) {
                     resultContainer.style.display = 'none';
                 }
-                
+
                 // 채팅 컨테이너 초기화
                 const chatContainer = document.getElementById('chat-container');
                 if (chatContainer) {
                     chatContainer.style.display = 'none';
                 }
-                
+
                 // 액션 버튼과 플레이어 목록 재표시
                 document.getElementById('action-button').style.display = 'block';
                 document.getElementById('players-list').style.display = 'block';
                 document.getElementById('action-button').disabled = myRole !== 'citizen';
-                
+
                 // 타이머 초기화
                 if (data.timeLimit) {
                     startTimer(data.timeLimit);
                 }
-                
+
                 // 액션 버튼 이벤트 리스너 설정
                 const actionButton = document.getElementById('action-button');
                 // 이전 이벤트 리스너 제거
@@ -1133,40 +1113,44 @@
 
         // 스파이 결과 표시 함수
         function showSpyResult(targetName, targetJob, isMafia, canUseAgain, enableMafiaChat) {
+            document.getElementById('players-list').style.display = 'none';
+            document.getElementById('action-button').style.display = 'none';
+
             // 결과창 표시
-            document.getElementById('action-container').style.display = 'none';
             document.getElementById('result-container').style.display = 'block';
-            
+
             // 결과 타이틀 설정
             document.getElementById('result-title').textContent = "스파이 정보 수집 결과";
-            
+
             // 결과 메시지 구성
             let resultMessage = `<strong>${targetName}</strong>님의 직업은 <strong>${targetJob}</strong>입니다.`;
-            
+
             if (isMafia) {
                 resultMessage += '<br><span style="color: #ff4d4d;">마피아 팀</span>입니다.';
             } else {
                 resultMessage += '<br><span style="color: #4da6ff;">시민 팀</span>입니다.';
             }
-            
+
             if (canUseAgain) {
                 resultMessage += '<br><br><span style="color: #ffcc00;">마피아와 접선에 성공했습니다! 능력을 한 번 더 사용할 수 있습니다.</span>';
-                
+
                 // 능력 재사용 버튼 표시
                 document.getElementById('action-again-btn').style.display = 'block';
-                document.getElementById('action-again-btn').onclick = function() {
+                document.getElementById('action-again-btn').onclick = function () {
+                    document.getElementById('players-list').style.display = 'block';
+                    document.getElementById('action-button').style.display = 'block';
+
                     document.getElementById('result-container').style.display = 'none';
-                    document.getElementById('action-container').style.display = 'block';
                 };
-                
+
                 // 마피아 채팅 활성화
                 if (enableMafiaChat) {
                     resultMessage += '<br><span style="color: #ffcc00;">마피아와 채팅할 수 있습니다!</span>';
-                    
+
                     // 마피아 채팅 초기화 (나중에 채팅 UI가 자동으로 표시됨)
                     const roleAction = roleActions["spy"];
                     roleAction.showChat = true;
-                    
+
                     // 서버에 채팅 초기화 메시지 전송
                     window.parent.postMessage({
                         type: "initChat",
@@ -1176,11 +1160,11 @@
             } else {
                 document.getElementById('action-again-btn').style.display = 'none';
             }
-            
+
             // 결과 표시
             document.getElementById('result-content').innerHTML = resultMessage;
         }
     </script>
 </body>
 
-</html> 
+</html>
