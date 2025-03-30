@@ -22,9 +22,9 @@ export enum JobId {
 
 // 직업 소속 팀 타입
 export enum JobTeam {
-  MAFIA = "마피아팀",
-  CITIZEN = "시민팀",
-  NEUTRAL = "중립"
+  MAFIA = "MAFIA",
+  CITIZEN = "CITIZEN",
+  NEUTRAL = "NEUTRAL"
 }
 
 // 직업 능력 타입

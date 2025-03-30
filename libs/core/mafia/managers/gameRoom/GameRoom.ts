@@ -451,55 +451,6 @@ export class GameRoom {
 	}
 
 	/**
-	 * 게임 시작
-	 */
-	public startGame(hostId: string): boolean {
-		// 호스트인지 확인
-		if (!this.hostId || this.hostId !== hostId) {
-			return false;
-		}
-
-		// 최소 인원 확인 (마피아 게임은 일반적으로 최소 4명)
-		if (this.players.length < 4) {
-			return false;
-		}
-
-		// 모든 플레이어가 준비 상태인지 확인
-		if (!this.areAllPlayersReady()) {
-			return false;
-		}
-
-		// 게임 상태 변경
-		this.state = GameState.IN_PROGRESS;
-
-		// 게임 시작 처리
-		try {
-			// 플레이어들의 룸 위젯 정보 업데이트
-			this.actionToRoomPlayers((player) => {
-				const gamePlayer = getPlayerById(player.id);
-				if (gamePlayer) {
-					// 로비 위젯 숨기기
-					const widgetManager = WidgetManager.instance;
-					widgetManager.hideWidget(gamePlayer, WidgetType.LOBBY);
-					widgetManager.hideWidget(gamePlayer, WidgetType.LOBBY);
-				}
-			});
-
-			// 게임 시작
-			this.flowManager.startGame();
-		} catch (error) {
-			sendAdminConsoleMessage("Error starting game:" + error);
-			this.state = GameState.WAITING;
-			return false;
-		}
-
-		// 게임 시작 이벤트 발생
-		this.emit(WaitingRoomEvent.GAME_START);
-
-		return true;
-	}
-
-	/**
 	 * 게임 종료
 	 */
 	public endGame(): void {

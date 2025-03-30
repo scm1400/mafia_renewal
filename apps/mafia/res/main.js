@@ -1743,14 +1743,6 @@ class GameFlowManager {
       targetId,
       jobId: player.jobId
     });
-    const gamePlayer = this.room.getGamePlayer(playerId);
-    if (gamePlayer) {
-      gamePlayer.tag.widget.main.sendMessage({
-        type: "ability_used",
-        success: true,
-        message: `${job.name} 능력을 사용했습니다.`
-      });
-    }
   }
   broadcastDefense(defense) {
     if (!this.room) return;

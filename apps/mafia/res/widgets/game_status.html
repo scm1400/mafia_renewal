@@ -591,11 +591,10 @@
                 return;
             }
             
-            console.log("역할 정보:", roleInfo);
-            document.getElementById('role-name').textContent = roleInfo.name;
-            document.getElementById('role-icon').textContent = roleInfo.icon;
-            document.getElementById('role-desc').textContent = roleInfo.description;
-            document.getElementById('my-role').className = `my-role ${roleInfo.id}`;
+            document.getElementById('role-name').textContent = role.name;
+            document.getElementById('role-icon').textContent = role.icon;
+            document.getElementById('role-desc').textContent = role.description;
+            document.getElementById('my-role').className = `my-role ${role.id}`;
         }
 
         function updateTimer(seconds, serverTimestamp) {
