@@ -81,8 +81,10 @@ export class GameFlowManager {
 	// 채팅 관련 프로퍼티
 	private loverPlayers: string[] = []; // 연인 플레이어 ID 목록
 	private deadPlayers: string[] = []; // 죽은 플레이어 ID 목록
+	private mafiaChatPlayers: string[] = []; // 마피아 채팅 가능한 플레이어 ID 목록 (마피아, 스파이)
 	private chatMessages: { target: string; sender: string; senderName: string; message: string }[] = [];
 	private deadChatWidgetShown: { [playerId: string]: boolean } = {}; // 죽은 플레이어별 채팅 위젯 표시 여부
+	private mafiaChatWidgetShown: { [playerId: string]: boolean } = {}; // 마피아 채팅 위젯 표시 여부
 
 	// 낮 단계 채팅 관련 변수 추가
 	private dayChatMessages: { sender: string; senderName: string; message: string; timestamp: number }[] = [];
@@ -200,9 +202,13 @@ export class GameFlowManager {
 
 		// 특수 직업 연인 배정의 경우 따로 처리
 		this.loverPlayers = playersShuffled.filter((p) => p.jobId === JobId.LOVER).map((p) => p.id);
-
+        
+		// 마피아 플레이어 목록 초기화
+		this.mafiaChatPlayers = playersShuffled.filter((p) => p.jobId === JobId.MAFIA).map((p) => p.id);
+		
 		// 채팅 메시지 초기화
 		this.chatMessages = [];
+		this.mafiaChatWidgetShown = {};
 
 		// 게임 상태 초기화
 		this.state = GameState.IN_PROGRESS;
@@ -523,6 +529,8 @@ export class GameFlowManager {
 											this.broadcastLoverMessage(player, data.message);
 										} else if (data.chatTarget === "dead") {
 											this.broadcastPermanentDeadMessage(player, data.message);
+										} else if (data.chatTarget === "mafia" && (mafiaPlayer.jobId === JobId.MAFIA || mafiaPlayer.jobId === JobId.SPY)) {
+											this.broadcastMafiaMessage(player, data.message);
 										}
 										break;
 									case "initChat":
@@ -531,6 +539,8 @@ export class GameFlowManager {
 											this.initLoverChat(player);
 										} else if (data.chatTarget === "dead") {
 											this.initMediumChat(player);
+										} else if (data.chatTarget === "mafia" && (mafiaPlayer.jobId === JobId.MAFIA || mafiaPlayer.jobId === JobId.SPY)) {
+											this.initMafiaChat(player);
 										}
 										break;
 								}
@@ -544,6 +554,28 @@ export class GameFlowManager {
 								if (gamePlayer && gamePlayer.tag.widget.nightAction) {
 									// 연인 채팅 초기화
 									this.initLoverChat(gamePlayer);
+								}
+							}, 1); // 위젯이 로드된 후 약간의 지연시간을 줌
+						}
+						
+						// 마피아 플레이어인 경우 마피아 채팅 초기화
+						if (player.jobId === JobId.MAFIA && this.mafiaChatPlayers.includes(player.id)) {
+							ScriptApp.runLater(() => {
+								const gamePlayer = getPlayerById(player.id) as GamePlayer;
+								if (gamePlayer && gamePlayer.tag.widget.nightAction) {
+									// 마피아 채팅 초기화
+									this.initMafiaChat(gamePlayer);
+								}
+							}, 1); // 위젯이 로드된 후 약간의 지연시간을 줌
+						}
+						
+						// 스파이가 마피아와 접선에 성공한 경우 마피아 채팅 초기화
+						if (player.jobId === JobId.SPY && this.mafiaChatPlayers.includes(player.id)) {
+							ScriptApp.runLater(() => {
+								const gamePlayer = getPlayerById(player.id) as GamePlayer;
+								if (gamePlayer && gamePlayer.tag.widget.nightAction) {
+									// 마피아 채팅 초기화
+									this.initMafiaChat(gamePlayer);
 								}
 							}, 1); // 위젯이 로드된 후 약간의 지연시간을 줌
 						}
@@ -1245,8 +1277,10 @@ export class GameFlowManager {
 		this.approvalPlayerVotes = {};
 		this.loverPlayers = [];
 		this.deadPlayers = [];
+		this.mafiaChatPlayers = [];
 		this.chatMessages = [];
 		this.deadChatWidgetShown = {};
+		this.mafiaChatWidgetShown = {};
 	}
 
 	setPhase(phase: MafiaPhase) {
@@ -1908,7 +1942,7 @@ export class GameFlowManager {
 		const targetJob = getJobById(targetPlayer.jobId);
 		if (!targetJob) return;
 
-		// 마피아와 접선한 경우, 능력 회복
+		// 마피아와 접선한 경우, 능력 회복 및 마피아 채팅 활성화
 		if (targetPlayer.jobId === JobId.MAFIA) {
 			// 스파이 플레이어 찾기
 			const spy = this.room.players.find((p) => p.id === spyPlayer.id);
@@ -1919,6 +1953,19 @@ export class GameFlowManager {
 				} else {
 					spy.abilityUses++;
 				}
+
+				// 마피아 채팅 플레이어 목록에 추가 (중복 방지)
+				if (!this.mafiaChatPlayers.includes(spy.id)) {
+					this.mafiaChatPlayers.push(spy.id);
+				}
+
+				// 마피아 플레이어도 목록에 추가 (중복 방지)
+				if (!this.mafiaChatPlayers.includes(targetPlayer.id)) {
+					this.mafiaChatPlayers.push(targetPlayer.id);
+				}
+
+				// 마피아 채팅 활성화
+				this.activateMafiaChat();
 			}
 		}
 
@@ -1929,8 +1976,111 @@ export class GameFlowManager {
 				targetName: targetPlayer.name,
 				targetJob: targetJob.name,
 				isMafia: targetJob.team === JobTeam.MAFIA,
-				canUseAgain: targetPlayer.jobId === JobId.MAFIA
+				canUseAgain: targetPlayer.jobId === JobId.MAFIA,
+				enableMafiaChat: targetPlayer.jobId === JobId.MAFIA
 			});
 		}
+	}
+
+	/**
+	 * 마피아 채팅 활성화 - 마피아 플레이어와 스파이 간 채팅을 활성화
+	 */
+	private activateMafiaChat(): void {
+		if (!this.room) return;
+
+		// 마피아 채팅에 참여할 수 있는 모든 플레이어에게 채팅 위젯 표시
+		this.mafiaChatPlayers.forEach(playerId => {
+			const player = this.room.getPlayer(playerId);
+			if (player && player.isAlive) {
+				const gamePlayer = getPlayerById(playerId);
+				if (gamePlayer && !this.mafiaChatWidgetShown[playerId]) {
+					// 마피아 채팅 초기화
+					this.initMafiaChat(gamePlayer);
+					this.mafiaChatWidgetShown[playerId] = true;
+
+					// 시스템 메시지 전송 (스파이인 경우와 마피아인 경우 메시지 다르게)
+					const isSpy = player.jobId === JobId.SPY;
+					const systemMessage = isSpy
+						? "마피아와 접선에 성공했습니다! 마피아와 대화할 수 있습니다."
+						: "스파이가 접선했습니다! 스파이와 대화할 수 있습니다.";
+
+					// 채팅 메시지 추가 (시스템 메시지)
+					this.chatMessages.push({
+						target: "mafia",
+						sender: "system",
+						senderName: "시스템",
+						message: systemMessage
+					});
+
+					// 마피아 채팅 메시지 전송
+					if (gamePlayer.tag.widget.nightAction) {
+						gamePlayer.tag.widget.nightAction.sendMessage({
+							type: "chatMessage",
+							chatTarget: "mafia",
+							sender: "시스템",
+							message: systemMessage
+						});
+					}
+				}
+			}
+		});
+	}
+
+	/**
+	 * 마피아 채팅 초기화
+	 */
+	private initMafiaChat(player: GamePlayer) {
+		if (!player.tag.widget || !player.tag.widget.nightAction) return;
+
+		// 채팅 UI 초기화 메시지 전송
+		player.tag.widget.nightAction.sendMessage({
+			type: "initChat",
+			chatTarget: "mafia",
+		});
+
+		// 이미 저장된 채팅 메시지 전송
+		this.chatMessages
+			.filter((msg) => msg.target === "mafia")
+			.forEach((msg) => {
+				player.tag.widget.nightAction.sendMessage({
+					type: "chatMessage",
+					chatTarget: "mafia",
+					sender: msg.senderName,
+					message: msg.message,
+				});
+			});
+	}
+
+	/**
+	 * 마피아 메시지 브로드캐스트
+	 */
+	private broadcastMafiaMessage(sender: GamePlayer, message: string) {
+		// 메시지 저장
+		this.chatMessages.push({
+			target: "mafia",
+			sender: sender.id,
+			senderName: sender.name,
+			message: message,
+		});
+
+		// 마피아 채팅 가능한 플레이어들에게 메시지 전송
+		this.mafiaChatPlayers.forEach((mafiaId) => {
+			if (mafiaId === sender.id) return; // 자신에게는 전송하지 않음
+
+			// 플레이어 정보 얻기
+			const player = this.room?.players.find((p) => p.id === mafiaId);
+			// 살아있는 플레이어만 메시지 수신
+			if (!player || !player.isAlive) return;
+
+			const mafiaPlayer = getPlayerById(mafiaId) as GamePlayer;
+			if (mafiaPlayer && mafiaPlayer.tag.widget.nightAction) {
+				mafiaPlayer.tag.widget.nightAction.sendMessage({
+					type: "chatMessage",
+					chatTarget: "mafia",
+					sender: sender.name,
+					message: message,
+				});
+			}
+		});
 	}
 }

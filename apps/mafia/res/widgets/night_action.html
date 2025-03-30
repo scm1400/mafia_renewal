@@ -546,7 +546,8 @@
                 actionType: "kill",
                 containerClass: "mafia",
                 showTargetSelector: true,
-                showChat: false
+                showChat: true,
+                chatTarget: "mafia"
             },
             "police": {
                 title: "경찰 행동",
@@ -582,7 +583,8 @@
                 actionType: "contact",
                 containerClass: "spy",
                 showTargetSelector: true,
-                showChat: false
+                showChat: false,
+                chatTarget: "mafia"
             },
             "medium": {
                 title: "영매 능력",
@@ -843,6 +845,8 @@
                 welcomeMessage = "다른 연인들과의 채팅이 시작되었습니다. 대화는 낮이 될 때까지 계속됩니다.";
             } else if (target === "dead") {
                 welcomeMessage = "죽은 자들과의 채팅이 시작되었습니다. 그들의 메시지를 들을 수 있습니다.";
+            } else if (target === "mafia") {
+                welcomeMessage = "마피아 채팅이 활성화되었습니다. 마피아 팀원들과 소통할 수 있습니다.";
             }
             
             const systemMessage = document.createElement('div');
@@ -1089,7 +1093,7 @@
                 // WidgetManager에서 보내는 표시 메시지 처리
                 revealWidget();
             } else if (data.type === 'spyResult') {
-                showSpyResult(data.targetName, data.targetJob, data.isMafia, data.canUseAgain);
+                showSpyResult(data.targetName, data.targetJob, data.isMafia, data.canUseAgain, data.enableMafiaChat);
             }
         });
 
@@ -1110,7 +1114,7 @@
         checkMobile();
 
         // 스파이 결과 표시 함수
-        function showSpyResult(targetName, targetJob, isMafia, canUseAgain) {
+        function showSpyResult(targetName, targetJob, isMafia, canUseAgain, enableMafiaChat) {
             // 결과창 표시
             document.getElementById('action-container').style.display = 'none';
             document.getElementById('result-container').style.display = 'block';
@@ -1136,6 +1140,21 @@
                     document.getElementById('result-container').style.display = 'none';
                     document.getElementById('action-container').style.display = 'block';
                 };
+                
+                // 마피아 채팅 활성화
+                if (enableMafiaChat) {
+                    resultMessage += '<br><span style="color: #ffcc00;">마피아와 채팅할 수 있습니다!</span>';
+                    
+                    // 마피아 채팅 초기화 (나중에 채팅 UI가 자동으로 표시됨)
+                    const roleAction = roleActions["spy"];
+                    roleAction.showChat = true;
+                    
+                    // 서버에 채팅 초기화 메시지 전송
+                    window.parent.postMessage({
+                        type: "initChat",
+                        chatTarget: "mafia"
+                    }, "*");
+                }
             } else {
                 document.getElementById('action-again-btn').style.display = 'none';
             }
