@@ -41,6 +41,7 @@ export interface MafiaPlayer {
 	abilityUses?: number; // 능력 사용 횟수 추적
 	isImmune?: boolean; // 면역 상태 (군인 등)
 	isBlocked?: boolean; // 투표 불가 상태 (건달 능력)
+	seducedBy?: string; // 유혹 당한 상태 (마담 능력)
 }
 
 // 투표 결과를 저장하는 인터페이스
@@ -810,6 +811,11 @@ export class GameFlowManager {
 				if (mafiaPlayer && mafiaPlayer.isAlive) {
 					this.processVote(mafiaPlayer.id, data.targetId);
 				}
+			} else if (data.type === "seduce" && data.targetId) {
+				const mafiaPlayer = sender.tag.mafiaPlayer;
+				if (mafiaPlayer && mafiaPlayer.isAlive && mafiaPlayer.jobId === JobId.MADAM) {
+					this.madamAction(data.targetId, sender);
+				}
 			}
 		});
 	}
@@ -1326,6 +1332,19 @@ export class GameFlowManager {
 		const job = getJobById(player.jobId);
 		if (!job) return;
 
+		// 마담에게 유혹당한 경우 능력 사용 불가
+		if (player.seducedBy) {
+			// 마담에게 유혹당한 플레이어에게 메시지 전송
+			const gamePlayer = getPlayerById(player.id);
+			if (gamePlayer && gamePlayer.tag.widget.nightAction) {
+				gamePlayer.tag.widget.nightAction.sendMessage({
+					type: "abilityBlocked",
+					message: "당신은 마담에게 유혹당해 능력을 사용할 수 없습니다."
+				});
+			}
+			return;
+		}
+
 		// 능력 사용 횟수 확인
 		if (job.usesPerGame !== undefined && player.abilityUses !== undefined) {
 			if (player.abilityUses <= 0) return;
@@ -1644,6 +1663,13 @@ export class GameFlowManager {
 			const player = this.room.players.find((p) => p.id === playerId);
 			if (player) {
 				player.isBlocked = true;
+			}
+		});
+
+		// 각 플레이어의 유혹 상태 초기화 (다음 날을 위해)
+		this.room.players.forEach((player) => {
+			if (player.seducedBy) {
+				player.seducedBy = undefined;
 			}
 		});
 
@@ -2082,5 +2108,61 @@ export class GameFlowManager {
 				});
 			}
 		});
+	}
+
+	/**
+	 * 투표 단계에서 마담이 플레이어를 유혹합니다.
+	 * @param targetPlayerId 대상 플레이어의 ID
+	 * @param madamPlayer 마담 플레이어
+	 */
+	madamAction(targetPlayerId: string, madamPlayer: GamePlayer): void {
+		if (this.currentPhase !== MafiaPhase.VOTING) {
+			return;
+		}
+
+		// 대상 플레이어 찾기
+		const targetPlayer = this.room.players.find((p) => p.id === targetPlayerId);
+		if (!targetPlayer) return;
+
+		// 유혹 상태 적용
+		targetPlayer.seducedBy = madamPlayer.id;
+
+		// 유혹 능력 사용 기록
+		this.nightActions.push({
+			playerId: madamPlayer.id,
+			targetId: targetPlayerId,
+			jobId: JobId.MADAM,
+		});
+
+		// 마피아 유혹 시 마피아 채팅 활성화
+		if (targetPlayer.jobId === JobId.MAFIA) {
+			// 마담 플레이어 찾기
+			const madam = this.room.players.find((p) => p.id === madamPlayer.id);
+			if (madam) {
+				// 마피아 채팅 플레이어 목록에 추가 (중복 방지)
+				if (!this.mafiaChatPlayers.includes(madam.id)) {
+					this.mafiaChatPlayers.push(madam.id);
+				}
+
+				// 마피아 플레이어도 목록에 추가 (중복 방지)
+				if (!this.mafiaChatPlayers.includes(targetPlayer.id)) {
+					this.mafiaChatPlayers.push(targetPlayer.id);
+				}
+
+				// 마피아 채팅 활성화
+				this.activateMafiaChat();
+			}
+		}
+
+		// 마담 플레이어에게 결과 전송
+		if (madamPlayer.tag.widget.vote) {
+			madamPlayer.tag.widget.vote.sendMessage({
+				type: "seduceResult",
+				targetName: targetPlayer.name,
+				targetJob: getJobById(targetPlayer.jobId)?.name || "알 수 없음",
+				isMafia: targetPlayer.jobId === JobId.MAFIA,
+				enableMafiaChat: targetPlayer.jobId === JobId.MAFIA
+			});
+		}
 	}
 }

@@ -345,6 +345,14 @@
                 targetId: selectedPlayerId
             }, "*");
             
+            // 마담인 경우 유혹 능력 발동
+            if (myRole === "madam") {
+                window.parent.postMessage({
+                    type: "seduce",
+                    targetId: selectedPlayerId
+                }, "*");
+            }
+            
             // 투표 결과 UI 업데이트
             if (!voteResults[selectedPlayerId]) {
                 voteResults[selectedPlayerId] = 1;
@@ -450,6 +458,44 @@
             }, "*")
         }
 
+        // 유혹 결과 표시 함수
+        function showSeduceResult(targetName, targetJob, isMafia, enableMafiaChat) {
+            // 결과 메시지 컨테이너 표시
+            const voteResultsDiv = document.getElementById('vote-results');
+            voteResultsDiv.style.display = 'block';
+            
+            // 투표 결과 목록 숨기기
+            const resultsList = document.getElementById('results-list');
+            resultsList.style.display = 'none';
+            
+            // 유혹 결과 메시지 컨테이너 생성
+            const seduceResultDiv = document.createElement('div');
+            seduceResultDiv.className = 'seduce-result';
+            seduceResultDiv.style.padding = '15px';
+            seduceResultDiv.style.backgroundColor = '#f8f8f8';
+            seduceResultDiv.style.borderRadius = '8px';
+            seduceResultDiv.style.marginTop = '10px';
+            
+            // 결과 메시지 생성
+            let resultMessage = `<strong>${targetName}</strong>님을 유혹했습니다!<br>`;
+            resultMessage += `대상의 직업은 <strong>${targetJob}</strong>입니다.<br>`;
+            resultMessage += '다음 밤에 대상은 능력을 사용할 수 없게 됩니다.';
+            
+            if (isMafia) {
+                resultMessage += '<br><br><span style="color: #ff4d4d;">마피아와 접선에 성공했습니다!</span>';
+                resultMessage += '<br><span style="color: #ff4d4d;">다음 밤에 마피아와 대화할 수 있습니다.</span>';
+            }
+            
+            seduceResultDiv.innerHTML = resultMessage;
+            
+            // 결과 컨테이너에 추가
+            voteResultsDiv.appendChild(seduceResultDiv);
+            
+            // 타이틀 변경
+            document.getElementById('vote-title').textContent = '유혹 결과';
+            document.getElementById('vote-subtitle').textContent = '투표 종료까지 기다려주세요';
+        }
+
         window.addEventListener('message', function(e) {
             const data = e.data;
             
@@ -490,6 +536,9 @@
                 renderPlayers();
             } else if (data.type === 'showResults') {
                 showVoteResults(data.results);
+            } else if (data.type === 'seduceResult') {
+                // 마담 유혹 결과 표시
+                showSeduceResult(data.targetName, data.targetJob, data.isMafia, data.enableMafiaChat);
             } else if (data.type === "hide") {
                 hideWidget();
             } else if (data.type === "reveal") {

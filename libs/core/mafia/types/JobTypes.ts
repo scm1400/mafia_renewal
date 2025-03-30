@@ -249,10 +249,10 @@ export const JOBS: Job[] = [
     team: JobTeam.MAFIA,
     description: "마피아와 접촉하여 대화할 수 있습니다.",
     abilityType: JobAbilityType.CONTACT,
-    abilityDescription: "마피아를 유혹할 경우, 서로의 존재를 알아차리고 밤에 대화할 수 있게 된다.",
+    abilityDescription: "[유혹] VOTE 시간에 투표한 플레이어를 유혹하여 직업의 고유 능력을 사용하지 못하도록 한다. 마피아를 유혹할 경우 접선한다.",
     icon: "💋",
-    nightAbility: true,
-    dayAbility: false,
+    nightAbility: false,
+    dayAbility: true,
     targetType: "player"
   },
   {
