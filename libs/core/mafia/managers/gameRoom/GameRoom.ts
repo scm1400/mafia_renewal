@@ -77,7 +77,7 @@ export class GameRoom {
 		this.roomLocation = GAMEROOM_LOCATIONS[parseInt(this.id)];
 
 		// 기존 코드와 호환되도록 수정
-		this.flowManager = new GameFlowManager(parseInt(this.id));
+		this.flowManager = new GameFlowManager();
 		this.flowManager.setGameRoom(this);
 	}
 
