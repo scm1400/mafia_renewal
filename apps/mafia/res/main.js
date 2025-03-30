@@ -377,9 +377,9 @@ var JobId;
 })(JobId || (JobId = {}));
 var JobTeam;
 (function (JobTeam) {
-  JobTeam["MAFIA"] = "\uB9C8\uD53C\uC544\uD300";
-  JobTeam["CITIZEN"] = "\uC2DC\uBBFC\uD300";
-  JobTeam["NEUTRAL"] = "\uC911\uB9BD";
+  JobTeam["MAFIA"] = "MAFIA";
+  JobTeam["CITIZEN"] = "CITIZEN";
+  JobTeam["NEUTRAL"] = "NEUTRAL";
 })(JobTeam || (JobTeam = {}));
 var JobAbilityType;
 (function (JobAbilityType) {
@@ -984,6 +984,7 @@ class GameFlowManager {
     this.room = room;
   }
   startGame() {
+    const widgetManager = WidgetManager.instance;
     if (!this.room) {
       this.sayToRoom("게임 룸이 설정되지 않았습니다.");
       return;
@@ -1021,10 +1022,10 @@ class GameFlowManager {
       this.setPhase(MafiaPhase.NIGHT);
     }
     this.showRoomLabel("게임이 시작되었습니다!");
-    const widgetManager = WidgetManager.instance;
     this.room.players.forEach(player => {
       const gamePlayer = this.room.getGamePlayer(player.id);
       if (gamePlayer) {
+        widgetManager.hideAllWidgets(gamePlayer);
         this.showRoleCard(gamePlayer, player.jobId);
       }
     });
@@ -1490,7 +1491,7 @@ class GameFlowManager {
     });
     widgetManager.clearMessageHandlers(player, WidgetType.DEAD_CHAT);
     widgetManager.registerMessageHandler(player, WidgetType.DEAD_CHAT, (sender, data) => {
-      if (data.type === "sendMessage" && data.message) {
+      if (data.type === "deadChatMessage" && data.message) {
         this.broadcastPermanentDeadMessage(sender, data.message);
       }
     });
@@ -1662,6 +1663,8 @@ class GameFlowManager {
           widgetManager.hideWidget(gamePlayer, WidgetType.FINAL_DEFENSE);
           widgetManager.hideWidget(gamePlayer, WidgetType.APPROVAL_VOTE);
           widgetManager.hideWidget(gamePlayer, WidgetType.DEAD_CHAT);
+          widgetManager.hideWidget(gamePlayer, WidgetType.ROLE_CARD);
+          widgetManager.hideWidget(gamePlayer, WidgetType.DAY_CHAT);
           if (gamePlayer.tag.widget.room) {
             gamePlayer.tag.widget.room.sendMessage({
               type: "gameEnded"
@@ -2100,7 +2103,6 @@ class GameFlowManager {
 
 
 
-
 var WaitingRoomEvent;
 (function (WaitingRoomEvent) {
   WaitingRoomEvent["PLAYER_JOIN"] = "playerJoin";
@@ -2360,35 +2362,6 @@ class GameRoom {
       this.readyPlayers.add(playerId);
     }
     this.emit(WaitingRoomEvent.READY_STATUS_CHANGE, player, !isCurrentlyReady);
-    return true;
-  }
-  startGame(hostId) {
-    if (!this.hostId || this.hostId !== hostId) {
-      return false;
-    }
-    if (this.players.length < 4) {
-      return false;
-    }
-    if (!this.areAllPlayersReady()) {
-      return false;
-    }
-    this.state = GameState.IN_PROGRESS;
-    try {
-      this.actionToRoomPlayers(player => {
-        const gamePlayer = getPlayerById(player.id);
-        if (gamePlayer) {
-          const widgetManager = WidgetManager.instance;
-          widgetManager.hideWidget(gamePlayer, WidgetType.LOBBY);
-          widgetManager.hideWidget(gamePlayer, WidgetType.LOBBY);
-        }
-      });
-      this.flowManager.startGame();
-    } catch (error) {
-      sendAdminConsoleMessage("Error starting game:" + error);
-      this.state = GameState.WAITING;
-      return false;
-    }
-    this.emit(WaitingRoomEvent.GAME_START);
     return true;
   }
   endGame() {

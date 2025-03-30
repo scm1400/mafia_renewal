@@ -155,6 +155,8 @@ export class GameFlowManager {
 	 *   → 4명보다 많은 경우: 밤부터 시작
 	 */
 	startGame() {
+		const widgetManager = WidgetManager.instance;
+
 		if (!this.room) {
 			this.sayToRoom("게임 룸이 설정되지 않았습니다.");
 			return;
@@ -218,11 +220,11 @@ export class GameFlowManager {
 		// 게임 시작 메시지 표시
 		this.showRoomLabel("게임이 시작되었습니다!");
 
-		const widgetManager = WidgetManager.instance;
 		// 각 플레이어에게 역할 카드 표시
 		this.room.players.forEach((player) => {
 			const gamePlayer = this.room.getGamePlayer(player.id);
 			if (gamePlayer) {
+				widgetManager.hideAllWidgets(gamePlayer);
 				this.showRoleCard(gamePlayer, player.jobId);
 			}
 		});
@@ -911,7 +913,7 @@ export class GameFlowManager {
 
 		// 사망자 채팅 위젯 메시지 처리 - 최초 한 번만 등록
 		widgetManager.registerMessageHandler(player, WidgetType.DEAD_CHAT, (sender: GamePlayer, data) => {
-			if (data.type === "sendMessage" && data.message) {
+			if (data.type === "deadChatMessage" && data.message) {
 				this.broadcastPermanentDeadMessage(sender, data.message);
 			}
 		});
@@ -1194,6 +1196,9 @@ export class GameFlowManager {
 					widgetManager.hideWidget(gamePlayer, WidgetType.FINAL_DEFENSE);
 					widgetManager.hideWidget(gamePlayer, WidgetType.APPROVAL_VOTE);
 					widgetManager.hideWidget(gamePlayer, WidgetType.DEAD_CHAT);
+					widgetManager.hideWidget(gamePlayer, WidgetType.ROLE_CARD);
+					widgetManager.hideWidget(gamePlayer, WidgetType.DAY_CHAT);
+
 
 					// 방 위젯이 있으면 게임 종료 메시지 전송
 					if (gamePlayer.tag.widget.room) {
