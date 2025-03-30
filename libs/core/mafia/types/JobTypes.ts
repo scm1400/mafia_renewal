@@ -316,4 +316,122 @@ export function getJobsByGameMode(modeId: string): Job[] {
     const job = getJobById(jobId);
     return job ? job : null;
   }).filter(job => job !== null) as Job[];
+}
+
+// 직업 유형 분류 (시민 특수직업, 마피아 보조직업 등)
+export enum JobCategory {
+  BASIC_CITIZEN = "BASIC_CITIZEN", // 일반 시민
+  SPECIAL_CITIZEN = "SPECIAL_CITIZEN", // 경찰, 의사를 제외한 시민팀 특수 직업
+  POLICE = "POLICE", // 경찰
+  DOCTOR = "DOCTOR", // 의사
+  BASIC_MAFIA = "BASIC_MAFIA", // 일반 마피아
+  SUPPORT_MAFIA = "SUPPORT_MAFIA", // 마피아 보조직업
+}
+
+// 직업을 카테고리별로 분류
+export function categorizeJobs(jobs: Job[]): Record<JobCategory, Job[]> {
+  const categories: Record<JobCategory, Job[]> = {
+    [JobCategory.BASIC_CITIZEN]: [],
+    [JobCategory.SPECIAL_CITIZEN]: [],
+    [JobCategory.POLICE]: [],
+    [JobCategory.DOCTOR]: [],
+    [JobCategory.BASIC_MAFIA]: [],
+    [JobCategory.SUPPORT_MAFIA]: [],
+  };
+  
+  jobs.forEach(job => {
+    if (job.id === JobId.POLICE) {
+      categories[JobCategory.POLICE].push(job);
+    } else if (job.id === JobId.DOCTOR) {
+      categories[JobCategory.DOCTOR].push(job);
+    } else if (job.id === JobId.CITIZEN) {
+      categories[JobCategory.BASIC_CITIZEN].push(job);
+    } else if (job.id === JobId.MAFIA) {
+      categories[JobCategory.BASIC_MAFIA].push(job);
+    } else if (job.team === JobTeam.CITIZEN) {
+      categories[JobCategory.SPECIAL_CITIZEN].push(job);
+    } else if (job.team === JobTeam.MAFIA) {
+      categories[JobCategory.SUPPORT_MAFIA].push(job);
+    }
+  });
+  
+  return categories;
+}
+
+// 플레이어 수에 따라 필요한 시민 특수직업 수 계산
+export function getSpecialCitizenCount(playerCount: number): number {
+  if (playerCount <= 4) return 1;
+  if (playerCount <= 6) return 2;
+  if (playerCount <= 9) return 3;
+  return 4; // 10~12명
+}
+
+// 플레이어 수에 따라 필요한 마피아 보조직업 수 계산
+export function getSupportMafiaCount(playerCount: number): number {
+  return playerCount >= 6 ? 1 : 0;
+}
+
+// 플레이어 수에 따라 역할 배분 (규칙에 맞게)
+export function distributeJobsByPlayerCount(modeId: string, playerCount: number): Job[] {
+  const allJobs = getJobsByGameMode(modeId);
+  const categorizedJobs = categorizeJobs(allJobs);
+  
+  // 결과 배열 (선택된 직업들)
+  const selectedJobs: Job[] = [];
+  
+  // 1. 항상 경찰 추가
+  if (categorizedJobs[JobCategory.POLICE].length > 0) {
+    selectedJobs.push(categorizedJobs[JobCategory.POLICE][0]);
+  }
+  
+  // 2. 항상 의사 추가
+  if (categorizedJobs[JobCategory.DOCTOR].length > 0) {
+    selectedJobs.push(categorizedJobs[JobCategory.DOCTOR][0]);
+  }
+  
+  // 3. 기본 마피아 추가
+  if (categorizedJobs[JobCategory.BASIC_MAFIA].length > 0) {
+    selectedJobs.push(categorizedJobs[JobCategory.BASIC_MAFIA][0]);
+  }
+  
+  // 4. 시민 특수직업 추가
+  const specialCitizenCount = getSpecialCitizenCount(playerCount);
+  const availableSpecialCitizens = [...categorizedJobs[JobCategory.SPECIAL_CITIZEN]];
+  for (let i = 0; i < specialCitizenCount && availableSpecialCitizens.length > 0; i++) {
+    // 무작위로 선택
+    const randomIndex = Math.floor(Math.random() * availableSpecialCitizens.length);
+    selectedJobs.push(availableSpecialCitizens[randomIndex]);
+    availableSpecialCitizens.splice(randomIndex, 1);
+  }
+  
+  // 5. 마피아 보조직업 추가
+  const supportMafiaCount = getSupportMafiaCount(playerCount);
+  const availableSupportMafia = [...categorizedJobs[JobCategory.SUPPORT_MAFIA]];
+  for (let i = 0; i < supportMafiaCount && availableSupportMafia.length > 0; i++) {
+    // 무작위로 선택
+    const randomIndex = Math.floor(Math.random() * availableSupportMafia.length);
+    selectedJobs.push(availableSupportMafia[randomIndex]);
+    availableSupportMafia.splice(randomIndex, 1);
+  }
+  
+  // 6. 남은 자리는 일반 시민으로 채우기
+  const remainingSlots = playerCount - selectedJobs.length;
+  for (let i = 0; i < remainingSlots; i++) {
+    if (categorizedJobs[JobCategory.BASIC_CITIZEN].length > 0) {
+      selectedJobs.push(categorizedJobs[JobCategory.BASIC_CITIZEN][0]);
+    }
+  }
+  
+  // 7. 직업 배열 섞기 (랜덤하게 배분하기 위해)
+  return shuffleArray(selectedJobs);
+}
+
+// 배열을 랜덤하게 섞는 함수
+function shuffleArray<T>(array: T[]): T[] {
+  const newArray = [...array];
+  for (let i = newArray.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
+  }
+  return newArray;
 } 

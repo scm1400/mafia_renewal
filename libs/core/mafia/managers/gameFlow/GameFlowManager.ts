@@ -62,8 +62,6 @@ export class GameFlowManager {
 	private dayCount: number = 0;
 	private phaseCycle: MafiaPhase[];
 	public phaseTimer: number;
-	private gameMode: string = "classic"; // 기본 게임 모드
-	private roomNumber: number;
 	private room: GameRoom | null = null;
 	private phaseEndCallback: (() => void) | null = null; // 페이즈 종료 시 실행할 콜백
 
@@ -92,8 +90,7 @@ export class GameFlowManager {
 	private dayChatCooldowns: { [playerId: string]: number } = {}; // 플레이어별 채팅 쿨다운(타임스탬프)
 	private readonly CHAT_COOLDOWN: number = 0.3; // 채팅 쿨다운 시간(초)
 
-	constructor(roomNumber: number) {
-		this.roomNumber = roomNumber;
+	constructor() {
 		this.currentPhase = MafiaPhase.DAY;
 		// 기본 단계 순서 설정: 밤 → 낮 → 투표 → 최후 변론 → 찬반 투표 → 밤 ... 의 순환
 		this.phaseCycle = [MafiaPhase.NIGHT, MafiaPhase.DAY, MafiaPhase.VOTING, MafiaPhase.FINAL_DEFENSE, MafiaPhase.APPROVAL_VOTING];

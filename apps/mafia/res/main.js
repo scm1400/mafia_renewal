@@ -560,10 +560,10 @@ const JOBS = [{
   team: JobTeam.MAFIA,
   description: "마피아와 접촉하여 대화할 수 있습니다.",
   abilityType: JobAbilityType.CONTACT,
-  abilityDescription: "마피아를 유혹할 경우, 서로의 존재를 알아차리고 밤에 대화할 수 있게 된다.",
+  abilityDescription: "[유혹] VOTE 시간에 투표한 플레이어를 유혹하여 직업의 고유 능력을 사용하지 못하도록 한다. 마피아를 유혹할 경우 접선한다.",
   icon: "💋",
-  nightAbility: true,
-  dayAbility: false,
+  nightAbility: false,
+  dayAbility: true,
   targetType: "player"
 }, {
   id: JobId.CITIZEN,
@@ -939,8 +939,10 @@ class GameFlowManager {
     this.approvalPlayerVotes = {};
     this.loverPlayers = [];
     this.deadPlayers = [];
+    this.mafiaChatPlayers = [];
     this.chatMessages = [];
     this.deadChatWidgetShown = {};
+    this.mafiaChatWidgetShown = {};
     this.dayChatMessages = [];
     this.dayChatCooldowns = {};
     this.CHAT_COOLDOWN = 0.3;
@@ -1011,7 +1013,9 @@ class GameFlowManager {
       playersShuffled[i].isAlive = true;
     }
     this.loverPlayers = playersShuffled.filter(p => p.jobId === JobId.LOVER).map(p => p.id);
+    this.mafiaChatPlayers = playersShuffled.filter(p => p.jobId === JobId.MAFIA).map(p => p.id);
     this.chatMessages = [];
+    this.mafiaChatWidgetShown = {};
     this.state = GameState.IN_PROGRESS;
     this.dayCount = 1;
     if (this.room.players.length <= 4) {
@@ -1228,6 +1232,8 @@ class GameFlowManager {
                       this.broadcastLoverMessage(player, data.message);
                     } else if (data.chatTarget === "dead") {
                       this.broadcastPermanentDeadMessage(player, data.message);
+                    } else if (data.chatTarget === "mafia" && (mafiaPlayer.jobId === JobId.MAFIA || mafiaPlayer.jobId === JobId.SPY)) {
+                      this.broadcastMafiaMessage(player, data.message);
                     }
                     break;
                   case "initChat":
@@ -1235,6 +1241,8 @@ class GameFlowManager {
                       this.initLoverChat(player);
                     } else if (data.chatTarget === "dead") {
                       this.initMediumChat(player);
+                    } else if (data.chatTarget === "mafia" && (mafiaPlayer.jobId === JobId.MAFIA || mafiaPlayer.jobId === JobId.SPY)) {
+                      this.initMafiaChat(player);
                     }
                     break;
                 }
@@ -1245,6 +1253,22 @@ class GameFlowManager {
                 const gamePlayer = getPlayerById(player.id);
                 if (gamePlayer && gamePlayer.tag.widget.nightAction) {
                   this.initLoverChat(gamePlayer);
+                }
+              }, 1);
+            }
+            if (player.jobId === JobId.MAFIA && this.mafiaChatPlayers.includes(player.id)) {
+              App.runLater(() => {
+                const gamePlayer = getPlayerById(player.id);
+                if (gamePlayer && gamePlayer.tag.widget.nightAction) {
+                  this.initMafiaChat(gamePlayer);
+                }
+              }, 1);
+            }
+            if (player.jobId === JobId.SPY && this.mafiaChatPlayers.includes(player.id)) {
+              App.runLater(() => {
+                const gamePlayer = getPlayerById(player.id);
+                if (gamePlayer && gamePlayer.tag.widget.nightAction) {
+                  this.initMafiaChat(gamePlayer);
                 }
               }, 1);
             }
@@ -1411,6 +1435,11 @@ class GameFlowManager {
         const mafiaPlayer = sender.tag.mafiaPlayer;
         if (mafiaPlayer && mafiaPlayer.isAlive) {
           this.processVote(mafiaPlayer.id, data.targetId);
+        }
+      } else if (data.type === "seduce" && data.targetId) {
+        const mafiaPlayer = sender.tag.mafiaPlayer;
+        if (mafiaPlayer && mafiaPlayer.isAlive && mafiaPlayer.jobId === JobId.MADAM) {
+          this.madamAction(data.targetId, sender);
         }
       }
     });
@@ -1702,8 +1731,10 @@ class GameFlowManager {
     this.approvalPlayerVotes = {};
     this.loverPlayers = [];
     this.deadPlayers = [];
+    this.mafiaChatPlayers = [];
     this.chatMessages = [];
     this.deadChatWidgetShown = {};
+    this.mafiaChatWidgetShown = {};
   }
   setPhase(phase) {
     this.currentPhase = phase;
@@ -1737,6 +1768,16 @@ class GameFlowManager {
     if (!player || !player.isAlive) return;
     const job = getJobById(player.jobId);
     if (!job) return;
+    if (player.seducedBy) {
+      const gamePlayer = getPlayerById(player.id);
+      if (gamePlayer && gamePlayer.tag.widget.nightAction) {
+        gamePlayer.tag.widget.nightAction.sendMessage({
+          type: "abilityBlocked",
+          message: "당신은 마담에게 유혹당해 능력을 사용할 수 없습니다."
+        });
+      }
+      return;
+    }
     if (job.usesPerGame !== undefined && player.abilityUses !== undefined) {
       if (player.abilityUses <= 0) return;
       player.abilityUses--;
@@ -1933,6 +1974,11 @@ class GameFlowManager {
         player.isBlocked = true;
       }
     });
+    this.room.players.forEach(player => {
+      if (player.seducedBy) {
+        player.seducedBy = undefined;
+      }
+    });
     killedPlayers.forEach(playerId => {
       const player = this.room.players.find(p => p.id === playerId);
       if (player) {
@@ -2120,6 +2166,13 @@ class GameFlowManager {
         } else {
           spy.abilityUses++;
         }
+        if (!this.mafiaChatPlayers.includes(spy.id)) {
+          this.mafiaChatPlayers.push(spy.id);
+        }
+        if (!this.mafiaChatPlayers.includes(targetPlayer.id)) {
+          this.mafiaChatPlayers.push(targetPlayer.id);
+        }
+        this.activateMafiaChat();
       }
     }
     if (spyPlayer.tag.widget.nightAction) {
@@ -2128,7 +2181,110 @@ class GameFlowManager {
         targetName: targetPlayer.name,
         targetJob: targetJob.name,
         isMafia: targetJob.team === JobTeam.MAFIA,
-        canUseAgain: targetPlayer.jobId === JobId.MAFIA
+        canUseAgain: targetPlayer.jobId === JobId.MAFIA,
+        enableMafiaChat: targetPlayer.jobId === JobId.MAFIA
+      });
+    }
+  }
+  activateMafiaChat() {
+    if (!this.room) return;
+    this.mafiaChatPlayers.forEach(playerId => {
+      const player = this.room.getPlayer(playerId);
+      if (player && player.isAlive) {
+        const gamePlayer = getPlayerById(playerId);
+        if (gamePlayer && !this.mafiaChatWidgetShown[playerId]) {
+          this.initMafiaChat(gamePlayer);
+          this.mafiaChatWidgetShown[playerId] = true;
+          const isSpy = player.jobId === JobId.SPY;
+          const systemMessage = isSpy ? "마피아와 접선에 성공했습니다! 마피아와 대화할 수 있습니다." : "스파이가 접선했습니다! 스파이와 대화할 수 있습니다.";
+          this.chatMessages.push({
+            target: "mafia",
+            sender: "system",
+            senderName: "시스템",
+            message: systemMessage
+          });
+          if (gamePlayer.tag.widget.nightAction) {
+            gamePlayer.tag.widget.nightAction.sendMessage({
+              type: "chatMessage",
+              chatTarget: "mafia",
+              sender: "시스템",
+              message: systemMessage
+            });
+          }
+        }
+      }
+    });
+  }
+  initMafiaChat(player) {
+    if (!player.tag.widget || !player.tag.widget.nightAction) return;
+    player.tag.widget.nightAction.sendMessage({
+      type: "initChat",
+      chatTarget: "mafia"
+    });
+    this.chatMessages.filter(msg => msg.target === "mafia").forEach(msg => {
+      player.tag.widget.nightAction.sendMessage({
+        type: "chatMessage",
+        chatTarget: "mafia",
+        sender: msg.senderName,
+        message: msg.message
+      });
+    });
+  }
+  broadcastMafiaMessage(sender, message) {
+    this.chatMessages.push({
+      target: "mafia",
+      sender: sender.id,
+      senderName: sender.name,
+      message: message
+    });
+    this.mafiaChatPlayers.forEach(mafiaId => {
+      var _a;
+      if (mafiaId === sender.id) return;
+      const player = (_a = this.room) === null || _a === void 0 ? void 0 : _a.players.find(p => p.id === mafiaId);
+      if (!player || !player.isAlive) return;
+      const mafiaPlayer = getPlayerById(mafiaId);
+      if (mafiaPlayer && mafiaPlayer.tag.widget.nightAction) {
+        mafiaPlayer.tag.widget.nightAction.sendMessage({
+          type: "chatMessage",
+          chatTarget: "mafia",
+          sender: sender.name,
+          message: message
+        });
+      }
+    });
+  }
+  madamAction(targetPlayerId, madamPlayer) {
+    var _a;
+    if (this.currentPhase !== MafiaPhase.VOTING) {
+      return;
+    }
+    const targetPlayer = this.room.players.find(p => p.id === targetPlayerId);
+    if (!targetPlayer) return;
+    targetPlayer.seducedBy = madamPlayer.id;
+    this.nightActions.push({
+      playerId: madamPlayer.id,
+      targetId: targetPlayerId,
+      jobId: JobId.MADAM
+    });
+    if (targetPlayer.jobId === JobId.MAFIA) {
+      const madam = this.room.players.find(p => p.id === madamPlayer.id);
+      if (madam) {
+        if (!this.mafiaChatPlayers.includes(madam.id)) {
+          this.mafiaChatPlayers.push(madam.id);
+        }
+        if (!this.mafiaChatPlayers.includes(targetPlayer.id)) {
+          this.mafiaChatPlayers.push(targetPlayer.id);
+        }
+        this.activateMafiaChat();
+      }
+    }
+    if (madamPlayer.tag.widget.vote) {
+      madamPlayer.tag.widget.vote.sendMessage({
+        type: "seduceResult",
+        targetName: targetPlayer.name,
+        targetJob: ((_a = getJobById(targetPlayer.jobId)) === null || _a === void 0 ? void 0 : _a.name) || "알 수 없음",
+        isMafia: targetPlayer.jobId === JobId.MAFIA,
+        enableMafiaChat: targetPlayer.jobId === JobId.MAFIA
       });
     }
   }
