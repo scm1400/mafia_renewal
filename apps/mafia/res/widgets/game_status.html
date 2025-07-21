@@ -288,6 +288,26 @@
             background-color: #3f51b5;
             color: white;
         }
+
+        .armor-status {
+            margin-top: 8px;
+            padding: 6px 10px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .armor-available {
+            background-color: #e8f5e9;
+            color: #2e7d32;
+            border: 1px solid #4caf50;
+        }
+
+        .armor-used {
+            background-color: #ffebee;
+            color: #c62828;
+            border: 1px solid #f44336;
+        }
         
         .politician {
             background-color: #efebe9;
@@ -471,6 +491,9 @@
             <div class="role-info">
                 <div class="role-name" id="role-name">역할 미정</div>
                 <div class="role-desc" id="role-desc">게임이 시작되면 역할이 배정됩니다</div>
+                <div class="armor-status" id="armor-status" style="display: none;">
+                    <!-- 군인의 방탄복 상태가 여기에 표시됩니다 -->
+                </div>
             </div>
         </div>
     </div>
@@ -485,6 +508,7 @@
         let timerInterval;
         let serverTime = 0;
         let timeDiff = 0;
+        let armorUsed = false; // 군인의 방탄복 사용 여부
 
         // 역할 데이터 객체 선언
         let roleData = {
@@ -588,6 +612,7 @@
                 document.getElementById('role-icon').textContent = "?";
                 document.getElementById('role-desc').textContent = "게임이 시작되면 역할이 배정됩니다";
                 document.getElementById('my-role').className = "my-role";
+                document.getElementById('armor-status').style.display = 'none';
                 return;
             }
             
@@ -595,6 +620,31 @@
             document.getElementById('role-icon').textContent = role.icon;
             document.getElementById('role-desc').textContent = role.description;
             document.getElementById('my-role').className = `my-role ${role.id}`;
+            
+            // 군인인 경우 방탄복 상태 표시
+            if (role.id === 'soldier') {
+                updateArmorStatus();
+            } else {
+                document.getElementById('armor-status').style.display = 'none';
+            }
+        }
+
+        function updateArmorStatus() {
+            const armorStatusElement = document.getElementById('armor-status');
+            
+            if (myRole && myRole.id === 'soldier') {
+                armorStatusElement.style.display = 'block';
+                
+                if (armorUsed) {
+                    armorStatusElement.className = 'armor-status armor-used';
+                    armorStatusElement.textContent = '🛡️ 방탄복 사용됨 - 공격을 막았습니다!';
+                } else {
+                    armorStatusElement.className = 'armor-status armor-available';
+                    armorStatusElement.textContent = '🛡️ 방탄복 보유 - 한 번의 공격을 막을 수 있습니다';
+                }
+            } else {
+                armorStatusElement.style.display = 'none';
+            }
         }
 
         function updateTimer(seconds, serverTimestamp) {
@@ -722,6 +772,15 @@
                 if (data.timeRemaining) {
                     updateTimer(data.timeRemaining, data.serverTime);
                 }
+                
+                if (data.armorUsed !== undefined) {
+                    armorUsed = data.armorUsed;
+                    updateArmorStatus();
+                }
+            } else if (data.type === "armorUsed") {
+                // 방탄복 사용 알림
+                armorUsed = true;
+                updateArmorStatus();
             } else if (data.type === "gameResult") {
                 // 게임 결과 처리
                 console.log("게임 결과 수신:", data);

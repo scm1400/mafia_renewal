@@ -67,6 +67,13 @@ export class GameFlowManager {
 
 	// 밤에 수행되는 액션들을 저장하는 변수들
 	private nightActions: AbilityAction[] = [];
+	private blockedVoters: string[] = []; // 건달에 의해 투표가 차단된 플레이어들
+	private journalistReport: { targetName: string; targetJob: string } | null = null; // 기자의 특종 정보
+	private werewolfTamed: boolean = false; // 짐승인간이 마피아에게 길들여졌는지 여부
+	private werewolfTargetSelection: string | null = null; // 짐승인간이 선택한 대상
+	private soldierArmor: { [playerId: string]: boolean } = {}; // 군인의 방탄복 상태
+	private terroristTarget: string | null = null; // 테러리스트가 함께 처형할 대상
+	private gravediggerJob: JobId | null = null; // 도굴꾼이 복사한 직업
 
 	// 투표 결과를 저장하는 변수
 	private voteResults: VoteResults = {};
@@ -211,6 +218,15 @@ export class GameFlowManager {
 		// 게임 상태 초기화
 		this.state = GameState.IN_PROGRESS;
 		this.dayCount = 1;
+
+		// 게임 관련 변수 초기화
+		this.blockedVoters = [];
+		this.journalistReport = null;
+		this.werewolfTamed = false;
+		this.werewolfTargetSelection = null;
+		this.soldierArmor = {};
+		this.terroristTarget = null;
+		this.gravediggerJob = null;
 
 		// 플레이어 수에 따라 초기 단계 결정
 		if (this.room.players.length <= 4) {
@@ -371,6 +387,11 @@ export class GameFlowManager {
 		// 이전 단계의 위젯 정리
 		this.cleanupPhaseWidgets();
 
+		// 투표 단계가 끝나면 투표 차단 목록 초기화
+		if (this.currentPhase === MafiaPhase.APPROVAL_VOTING) {
+			this.blockedVoters = [];
+		}
+
 		const currentIndex = this.phaseCycle.indexOf(this.currentPhase);
 		const nextIndex = (currentIndex + 1) % this.phaseCycle.length;
 
@@ -456,6 +477,7 @@ export class GameFlowManager {
 
 					// 밤 액션 초기화
 					this.nightActions = [];
+					this.werewolfTargetSelection = null;
 
 					// NIGHT 단계 시작 시 마피아 채팅 활성화 여부 확인 (2명 이상일 경우)
 					if (this.mafiaChatPlayers.length >= 2) {
@@ -483,17 +505,26 @@ export class GameFlowManager {
 							widgetManager.showWidget(gamePlayer, WidgetType.NIGHT_ACTION);
 
 							// 밤 액션 위젯에 데이터 전송
+							// 짐승인간의 경우 길들여진 상태에 따라 다른 roleId 전송
+							let roleId = player.jobId.toLowerCase();
+							if (player.jobId === JobId.WEREWOLF && this.werewolfTamed) {
+								roleId = "werewolf_tamed";
+							}
+							
 							widgetManager.sendMessageToWidget(gamePlayer, WidgetType.NIGHT_ACTION, {
 								type: "init",
 								players: this.room?.players || [],
 								myPlayerId: player.id,
-								role: player.jobId.toLowerCase(),
+								role: roleId,
 								timeLimit: phaseDurations[MafiaPhase.NIGHT],
 								serverTime: Date.now(), // 서버 시간 전송
 							});
 
 							// 마피아팀 채팅 참여자가 2명 이상이고 현재 플레이어가 마피아팀인 경우 채팅 위젯 활성화
-							if (this.mafiaChatPlayers.length >= 2 && this.mafiaChatPlayers.includes(player.id)) {
+							// 길들여진 짐승인간도 마피아 채팅에 참여 가능
+							const canUseMafiaChat = this.mafiaChatPlayers.includes(player.id) || 
+													(player.jobId === JobId.WEREWOLF && this.werewolfTamed);
+							if (this.mafiaChatPlayers.length >= 2 && canUseMafiaChat) {
 								ScriptApp.runLater(() => {
 									if (gamePlayer && gamePlayer.tag.widget.nightAction) {
 										this.initMafiaChat(gamePlayer);
@@ -538,13 +569,38 @@ export class GameFlowManager {
 											this.processAbility(mafiaPlayer.id, data.targetId);
 										}
 										break;
+									case "block":
+										if (mafiaPlayer.jobId === JobId.GANGSTER) {
+											this.gangsterAction(data.targetId, player);
+										}
+										break;
+									case "track":
+										if (mafiaPlayer.jobId === JobId.DETECTIVE) {
+											this.detectiveAction(data.targetId, player);
+										}
+										break;
+									case "announce":
+										if (mafiaPlayer.jobId === JobId.JOURNALIST) {
+											this.journalistAction(data.targetId, player);
+										}
+										break;
+									case "convert":
+										if (mafiaPlayer.jobId === JobId.WEREWOLF) {
+											this.werewolfAction(data.targetId, player);
+										}
+										break;
+									case "suicide":
+										if (mafiaPlayer.jobId === JobId.TERRORIST) {
+											this.terroristAction(data.targetId, player);
+										}
+										break;
 									case "chatMessage":
 										// 채팅 메시지 처리
 										if (data.chatTarget === "lover" && mafiaPlayer.jobId === JobId.LOVER) {
 											this.broadcastLoverMessage(player, data.message);
 										} else if (data.chatTarget === "dead") {
 											this.broadcastPermanentDeadMessage(player, data.message);
-										} else if (data.chatTarget === "mafia" && (mafiaPlayer.jobId === JobId.MAFIA || mafiaPlayer.jobId === JobId.SPY)) {
+										} else if (data.chatTarget === "mafia" && (mafiaPlayer.jobId === JobId.MAFIA || mafiaPlayer.jobId === JobId.SPY || (mafiaPlayer.jobId === JobId.WEREWOLF && this.werewolfTamed))) {
 											this.broadcastMafiaMessage(player, data.message);
 										}
 										break;
@@ -554,7 +610,7 @@ export class GameFlowManager {
 											this.initLoverChat(player);
 										} else if (data.chatTarget === "dead") {
 											this.initMediumChat(player);
-										} else if (data.chatTarget === "mafia" && (mafiaPlayer.jobId === JobId.MAFIA || mafiaPlayer.jobId === JobId.SPY)) {
+										} else if (data.chatTarget === "mafia" && (mafiaPlayer.jobId === JobId.MAFIA || mafiaPlayer.jobId === JobId.SPY || (mafiaPlayer.jobId === JobId.WEREWOLF && this.werewolfTamed))) {
 											this.initMafiaChat(player);
 										}
 										break;
@@ -609,6 +665,12 @@ export class GameFlowManager {
 			case MafiaPhase.DAY:
 				{
 					this.sayToRoom(`낮 단계 - 플레이어들이 토론을 진행합니다.`);
+
+					// 기자의 특종 공개
+					if (this.journalistReport) {
+						this.showRoomLabel(`📰 특종! ${this.journalistReport.targetName}님의 직업은 ${this.journalistReport.targetJob}입니다!`, 5000);
+						this.journalistReport = null;
+					}
 
 					// 낮 채팅 메시지 초기화
 					this.dayChatMessages = [];
@@ -810,6 +872,7 @@ export class GameFlowManager {
 			players: this.room?.players.filter((p) => p.isAlive && p.id !== player.id) || [],
 			timeLimit: phaseDurations[MafiaPhase.VOTING],
 			serverTime: Date.now(), // 서버 시간 전송
+			blockedVoters: this.blockedVoters, // 투표 차단된 플레이어 목록 추가
 		});
 
 		widgetManager.clearMessageHandlers(gamePlayer, WidgetType.VOTE);
@@ -1025,6 +1088,18 @@ export class GameFlowManager {
 			return;
 		}
 
+		// 건달에 의해 투표가 차단되었는지 확인
+		if (this.blockedVoters.includes(voterId)) {
+			const voter = getPlayerById(voterId);
+			if (voter && voter.tag.widget.vote) {
+				voter.tag.widget.vote.sendMessage({
+					type: "voteBlocked",
+					message: "건달에 의해 투표가 차단되었습니다.",
+				});
+			}
+			return;
+		}
+
 		// 중복 투표 확인
 		if (this.playerVotes[voterId] === targetId) {
 			this.sayToRoom(`이미 해당 플레이어에게 투표했습니다.`);
@@ -1131,14 +1206,36 @@ export class GameFlowManager {
 
 		// 처형 결과 처리
 		if (defendant && this.approvalVoteResults.approve > this.approvalVoteResults.reject) {
-			// 찬성이 더 많으면 플레이어 처형
-			defendant.isAlive = false;
-			this.sayToRoom(`${defendant.name}님이 처형되었습니다.`);
+			// 정치인은 처형되지 않음
+			if (defendant.jobId === JobId.POLITICIAN) {
+				this.sayToRoom(`${defendant.name}님은 정치인이라 처형되지 않습니다!`);
+			} else {
+				// 찬성이 더 많으면 플레이어 처형
+				defendant.isAlive = false;
+				this.sayToRoom(`${defendant.name}님이 처형되었습니다.`);
 
-			// 사망자 채팅 위젯 표시
-			const gamePlayer = getPlayerById(defendant.id);
-			if (gamePlayer) {
-				this.showPermanentDeadChatWidget(gamePlayer);
+				// 테러리스트의 자폭 능력 확인
+				if (defendant.jobId === JobId.TERRORIST && this.terroristTarget) {
+					const targetPlayer = this.room.players.find(p => p.id === this.terroristTarget);
+					if (targetPlayer && targetPlayer.isAlive) {
+						targetPlayer.isAlive = false;
+						this.sayToRoom(`💣 ${defendant.name}님의 자폭으로 ${targetPlayer.name}님도 함께 처형되었습니다!`);
+						
+						// 함께 죽은 플레이어도 사망자 채팅 위젯 표시
+						const targetGamePlayer = getPlayerById(targetPlayer.id);
+						if (targetGamePlayer) {
+							this.showPermanentDeadChatWidget(targetGamePlayer);
+						}
+					}
+					// 자폭 대상 초기화
+					this.terroristTarget = null;
+				}
+
+				// 사망자 채팅 위젯 표시
+				const gamePlayer = getPlayerById(defendant.id);
+				if (gamePlayer) {
+					this.showPermanentDeadChatWidget(gamePlayer);
+				}
 			}
 		} else if (defendant) {
 			// 반대가 더 많거나 같으면 처형 무효
@@ -1328,7 +1425,13 @@ export class GameFlowManager {
 	// 플레이어의 팀 확인 (마피아 여부)
 	isMafia(player: MafiaPlayer): boolean {
 		const job = getJobById(player.jobId);
-		return job?.team === JobTeam.MAFIA;
+		return job?.team === JobTeam.MAFIA || (player.jobId === JobId.WEREWOLF && this.werewolfTamed);
+	}
+
+	// 현재 살아있는 마피아 수 계산
+	getMafiaCount(): number {
+		if (!this.room) return 0;
+		return this.room.players.filter(p => p.isAlive && this.isMafia(p)).length;
 	}
 
 	// 능력 사용 처리
@@ -1626,12 +1729,15 @@ export class GameFlowManager {
 	 * 밤 단계 액션 평가
 	 */
 	evaluateNightActions(): void {
+		if (!this.room) return;
+		
 		// 밤 액션 처리 로직
 		const killedPlayers: string[] = [];
 		const protectedPlayers: string[] = [];
 		const blockedPlayers: string[] = [];
+		const werewolfTargets: { werewolfId: string; targetId: string }[] = [];
 
-		// 보호 액션 먼저 처리
+		// 1. 보호 액션 먼저 처리
 		this.nightActions.forEach((action) => {
 			const job = getJobById(action.jobId);
 			if (!job) return;
@@ -1640,22 +1746,68 @@ export class GameFlowManager {
 			if (job.abilityType === JobAbilityType.PROTECT) {
 				protectedPlayers.push(action.targetId);
 			}
+		});
 
-			// 투표 방해 능력
+		// 2. 방해 액션 처리
+		this.nightActions.forEach((action) => {
+			const job = getJobById(action.jobId);
+			if (!job) return;
+
+			// 건달의 투표 방해 능력
 			if (job.abilityType === JobAbilityType.BLOCK) {
 				blockedPlayers.push(action.targetId);
+				this.blockedVoters.push(action.targetId); // 다음날 투표시 사용
 			}
 		});
 
-		// 살해 액션 처리
+		// 3. 살해 액션 처리
 		this.nightActions.forEach((action) => {
 			const job = getJobById(action.jobId);
 			if (!job) return;
 
 			// 마피아 등의 살해 능력
-			if (job.abilityType === JobAbilityType.KILL) {
+			if (job.abilityType === JobAbilityType.KILL || 
+				(action.jobId === JobId.WEREWOLF && this.werewolfTamed)) {
 				const target = this.room.players.find((p) => p.id === action.targetId);
 				if (!target || !target.isAlive) return;
+
+				// 짐승인간은 마피아의 공격으로부터 죽지 않음
+				if (target.jobId === JobId.WEREWOLF && action.jobId === JobId.MAFIA) {
+					// 짐승인간이 마피아의 처형 대상으로 지목되었을 때 길들여짐
+					if (!this.werewolfTamed) {
+						this.werewolfTamed = true;
+						if (!this.mafiaChatPlayers.includes(target.id)) {
+							this.mafiaChatPlayers.push(target.id);
+						}
+						this.showRoomLabel(`짐승인간이 마피아에게 길들여졌습니다!`);
+						
+						// 짐승인간에게 길들여짐 알림 전송
+						const werewolfGamePlayer = getPlayerById(target.id);
+						if (werewolfGamePlayer && werewolfGamePlayer.tag.widget.nightAction) {
+							werewolfGamePlayer.tag.widget.nightAction.sendMessage({
+								type: "werewolfTamed",
+								message: "마피아에게 길들여졌습니다! 이제 밤에 플레이어를 제거할 수 있습니다.",
+							});
+						}
+					}
+					return; // 짐승인간은 죽지 않음
+				}
+
+				// 군인의 방탄복 확인
+				if (target.jobId === JobId.SOLDIER && !this.soldierArmor[target.id]) {
+					this.soldierArmor[target.id] = true; // 방탄복 사용됨
+					this.showRoomLabel(`${target.name}님이 방탄복으로 공격을 막았습니다!`);
+					
+					// 군인에게 방탄복 사용 알림 전송
+					const soldierGamePlayer = getPlayerById(target.id);
+					if (soldierGamePlayer && soldierGamePlayer.tag.widget.gameStatus) {
+						soldierGamePlayer.tag.widget.gameStatus.sendMessage({
+							type: "armorUsed"
+						});
+					}
+					
+					return;
+				}
 
 				// 보호되지 않았고, 면역이 없으면 사망
 				if (!protectedPlayers.includes(action.targetId) && !target.isImmune) {
@@ -1665,9 +1817,60 @@ export class GameFlowManager {
 					target.isImmune = false;
 				}
 			}
+
+			// 짐승인간의 갈망 처리 (아직 길들여지지 않은 경우에만)
+			if (action.jobId === JobId.WEREWOLF && !this.werewolfTamed) {
+				werewolfTargets.push({ werewolfId: action.playerId, targetId: action.targetId });
+				this.werewolfTargetSelection = action.targetId;
+			}
 		});
 
-		// 투표 방해 상태 적용
+		// 4. 짐승인간 갈망 처리 (마피아에게 죽은 대상을 선택했는지 확인)
+		werewolfTargets.forEach(({ werewolfId, targetId }) => {
+			if (killedPlayers.includes(targetId)) {
+				// 선택한 플레이어가 마피아에게 죽었으므로 마피아팀으로 전환
+				const werewolf = this.room.players.find(p => p.id === werewolfId);
+				if (werewolf) {
+					this.werewolfTamed = true;
+					if (!this.mafiaChatPlayers.includes(werewolfId)) {
+						this.mafiaChatPlayers.push(werewolfId);
+					}
+					this.showRoomLabel(`짐승인간이 마피아에게 길들여졌습니다!`);
+					
+					// 짐승인간에게 길들여짐 알림 전송
+					const werewolfGamePlayer = getPlayerById(werewolfId);
+					if (werewolfGamePlayer && werewolfGamePlayer.tag.widget.nightAction) {
+						werewolfGamePlayer.tag.widget.nightAction.sendMessage({
+							type: "werewolfTamed",
+							message: "선택한 플레이어가 마피아에게 살해당했습니다! 마피아에게 길들여졌습니다.",
+						});
+					}
+				}
+			}
+		});
+
+		// 5. 도굴꾼 능력 처리 (첫날 밤에만)
+		if (this.dayCount === 1 && killedPlayers.length > 0) {
+			const gravediggers = this.room.players.filter(p => p.jobId === JobId.GRAVEDIGGER && p.isAlive);
+			if (gravediggers.length > 0 && killedPlayers.length > 0) {
+				const deadPlayer = this.room.players.find(p => p.id === killedPlayers[0]);
+				if (deadPlayer) {
+					this.gravediggerJob = deadPlayer.jobId;
+					gravediggers.forEach(gravedigger => {
+						gravedigger.jobId = deadPlayer.jobId; // 직업 복사
+						const gamePlayer = getPlayerById(gravedigger.id);
+						if (gamePlayer && gamePlayer.tag.widget.main) {
+							gamePlayer.tag.widget.main.sendMessage({
+								type: "job_changed",
+								newJob: getJobById(deadPlayer.jobId)?.name || "알 수 없음",
+							});
+						}
+					});
+				}
+			}
+		}
+
+		// 6. 투표 방해 상태 적용
 		blockedPlayers.forEach((playerId) => {
 			const player = this.room.players.find((p) => p.id === playerId);
 			if (player) {
@@ -1675,14 +1878,14 @@ export class GameFlowManager {
 			}
 		});
 
-		// 각 플레이어의 유혹 상태 초기화 (다음 날을 위해)
+		// 7. 각 플레이어의 유혹 상태 초기화 (다음 날을 위해)
 		this.room.players.forEach((player) => {
 			if (player.seducedBy) {
 				player.seducedBy = undefined;
 			}
 		});
 
-		// 사망 처리
+		// 8. 사망 처리
 		killedPlayers.forEach((playerId) => {
 			const player = this.room.players.find((p) => p.id === playerId);
 			if (player) {
@@ -2129,6 +2332,168 @@ export class GameFlowManager {
 				});
 			}
 		});
+	}
+
+	/**
+	 * 밤 단계에서 건달이 플레이어의 투표를 방해합니다.
+	 * @param targetPlayerId 대상 플레이어의 ID
+	 * @param gangsterPlayer 건달 플레이어
+	 */
+	gangsterAction(targetPlayerId: string, gangsterPlayer: GamePlayer): void {
+		if (this.currentPhase !== MafiaPhase.NIGHT) {
+			return;
+		}
+
+		// 능력 사용 기록
+		this.nightActions.push({
+			playerId: gangsterPlayer.id,
+			targetId: targetPlayerId,
+			jobId: JobId.GANGSTER,
+		});
+
+		// 결과는 다음날 투표시 적용됨
+		if (gangsterPlayer.tag.widget.nightAction) {
+			gangsterPlayer.tag.widget.nightAction.sendMessage({
+				type: "abilityResult",
+				message: "다음날 투표시 대상 플레이어가 투표할 수 없게 됩니다.",
+			});
+		}
+	}
+
+	/**
+	 * 밤 단계에서 사립탐정이 플레이어의 능력 사용을 추적합니다.
+	 * @param targetPlayerId 추적할 플레이어의 ID
+	 * @param detectivePlayer 사립탐정 플레이어
+	 */
+	detectiveAction(targetPlayerId: string, detectivePlayer: GamePlayer): void {
+		if (this.currentPhase !== MafiaPhase.NIGHT) {
+			return;
+		}
+
+		// 능력 사용 기록
+		this.nightActions.push({
+			playerId: detectivePlayer.id,
+			targetId: targetPlayerId,
+			jobId: JobId.DETECTIVE,
+		});
+
+		// 대상이 이번 밤에 사용한 능력 확인
+		const targetActions = this.nightActions.filter(action => action.playerId === targetPlayerId);
+		
+		if (detectivePlayer.tag.widget.nightAction) {
+			if (targetActions.length > 0) {
+				const targetAction = targetActions[0];
+				const targetPlayer = this.room?.players.find(p => p.id === targetAction.targetId);
+				detectivePlayer.tag.widget.nightAction.sendMessage({
+					type: "trackResult",
+					message: `대상이 ${targetPlayer?.name || '누군가'}에게 능력을 사용했습니다.`,
+				});
+			} else {
+				detectivePlayer.tag.widget.nightAction.sendMessage({
+					type: "trackResult",
+					message: "대상이 아무런 능력도 사용하지 않았습니다.",
+				});
+			}
+		}
+	}
+
+	/**
+	 * 밤 단계에서 기자가 플레이어의 직업을 조사합니다.
+	 * @param targetPlayerId 조사할 플레이어의 ID
+	 * @param journalistPlayer 기자 플레이어
+	 */
+	journalistAction(targetPlayerId: string, journalistPlayer: GamePlayer): void {
+		if (this.currentPhase !== MafiaPhase.NIGHT) {
+			return;
+		}
+
+		// 능력 사용 기록
+		this.nightActions.push({
+			playerId: journalistPlayer.id,
+			targetId: targetPlayerId,
+			jobId: JobId.JOURNALIST,
+		});
+
+		// 대상 플레이어 찾기
+		const targetPlayer = this.room?.players.find(p => p.id === targetPlayerId);
+		if (!targetPlayer) return;
+
+		// 다음날 아침 공개할 정보 저장
+		this.journalistReport = {
+			targetName: targetPlayer.name,
+			targetJob: getJobById(targetPlayer.jobId)?.name || "알 수 없음",
+		};
+
+		// 기자에게 결과 전송
+		if (journalistPlayer.tag.widget.nightAction) {
+			journalistPlayer.tag.widget.nightAction.sendMessage({
+				type: "investigateResult",
+				targetName: targetPlayer.name,
+				targetJob: this.journalistReport.targetJob,
+				message: "다음날 아침에 모든 플레이어에게 공개됩니다.",
+			});
+		}
+	}
+
+	/**
+	 * 밤 단계에서 짐승인간이 플레이어를 선택합니다.
+	 * @param targetPlayerId 선택한 플레이어의 ID
+	 * @param werewolfPlayer 짐승인간 플레이어
+	 */
+	werewolfAction(targetPlayerId: string, werewolfPlayer: GamePlayer): void {
+		if (this.currentPhase !== MafiaPhase.NIGHT) {
+			return;
+		}
+
+		// 능력 사용 기록
+		this.nightActions.push({
+			playerId: werewolfPlayer.id,
+			targetId: targetPlayerId,
+			jobId: JobId.WEREWOLF,
+		});
+
+		if (this.werewolfTamed) {
+			// 길들여진 후: 선택한 플레이어 제거
+			if (werewolfPlayer.tag.widget.nightAction) {
+				werewolfPlayer.tag.widget.nightAction.sendMessage({
+					type: "abilityResult",
+					message: "선택한 플레이어를 제거합니다.",
+				});
+			}
+		} else {
+			// 길들여지지 않은 상태: 갈망 상태
+			if (werewolfPlayer.tag.widget.nightAction) {
+				werewolfPlayer.tag.widget.nightAction.sendMessage({
+					type: "abilityResult",
+					message: "선택한 플레이어가 마피아에게 살해당하면 마피아에게 길들여집니다.",
+				});
+			}
+		}
+	}
+
+	/**
+	 * 밤 단계에서 테러리스트가 자폭 대상을 선택합니다.
+	 * @param targetPlayerId 함께 죽을 플레이어의 ID
+	 * @param terroristPlayer 테러리스트 플레이어
+	 */
+	terroristAction(targetPlayerId: string, terroristPlayer: GamePlayer): void {
+		if (this.currentPhase !== MafiaPhase.NIGHT) {
+			return;
+		}
+
+		// 자폭 대상 저장
+		this.terroristTarget = targetPlayerId;
+
+		// 대상 플레이어 정보 가져오기
+		const targetPlayer = this.room?.players.find(p => p.id === targetPlayerId);
+		
+		// 테러리스트에게 확인 메시지 전송
+		if (terroristPlayer.tag.widget.nightAction) {
+			terroristPlayer.tag.widget.nightAction.sendMessage({
+				type: "abilityResult",
+				message: `${targetPlayer?.name || '선택한 플레이어'}를 자폭 대상으로 지정했습니다. 처형될 때 함께 죽게 됩니다.`,
+			});
+		}
 	}
 
 	/**

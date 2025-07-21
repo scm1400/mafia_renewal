@@ -1,7 +1,7 @@
 /******/ (() => { // webpackBootstrap
 /******/ 	"use strict";
 
-;// CONCATENATED MODULE: ../../libs/utils/Localizer.ts
+;// ../../libs/utils/Localizer.ts
 const LOCALIZE_KEYS = {};
 const LOCALIZE_CONTAINER = {
   ko: null,
@@ -32,7 +32,7 @@ class Localizer_Localizer {
     return acc;
   }
 }
-;// CONCATENATED MODULE: ../../libs/utils/Common.ts
+;// ../../libs/utils/Common.ts
 
 
 let log;
@@ -124,7 +124,7 @@ function getLocationAreaCoordinates(locationName) {
   }
   return coordinates;
 }
-;// CONCATENATED MODULE: ../../libs/utils/CustomLabelFunctions.ts
+;// ../../libs/utils/CustomLabelFunctions.ts
 
 const LABEL_SPACING = 60;
 const labelCounts = {};
@@ -281,7 +281,7 @@ function showLabel(player, key, options = {}) {
   };
   player.showCustomLabel(htmlStr, 0xffffff, backgroundColor, topGap, labelPercentWidth, 0.64, labelDisplayTime, customLabelOption);
 }
-;// CONCATENATED MODULE: ../../libs/core/GameBase.ts
+;// ../../libs/core/GameBase.ts
 class GameBase {
   constructor() {
     this.onStartCallbacks = [];
@@ -355,7 +355,7 @@ class GameBase {
     this.onTriggerObjectCallbacks.push(callback);
   }
 }
-;// CONCATENATED MODULE: ../../libs/core/mafia/types/JobTypes.ts
+;// ../../libs/core/mafia/types/JobTypes.ts
 var JobId;
 (function (JobId) {
   JobId["MAFIA"] = "mafia";
@@ -700,7 +700,7 @@ function shuffleArray(array) {
   }
   return newArray;
 }
-;// CONCATENATED MODULE: ../../libs/core/mafia/managers/widget/WidgetType.ts
+;// ../../libs/core/mafia/managers/widget/WidgetType.ts
 var WidgetType;
 (function (WidgetType) {
   WidgetType["LOBBY"] = "LOBBY";
@@ -714,7 +714,7 @@ var WidgetType;
   WidgetType["ROLE_CARD"] = "ROLE_CARD";
   WidgetType["DAY_CHAT"] = "DAY_CHAT";
 })(WidgetType || (WidgetType = {}));
-;// CONCATENATED MODULE: ../../libs/core/mafia/managers/widget/WidgetManager.ts
+;// ../../libs/core/mafia/managers/widget/WidgetManager.ts
 
 
 class WidgetManager {
@@ -981,7 +981,7 @@ class WidgetManager {
     return widgetMap[widgetType];
   }
 }
-;// CONCATENATED MODULE: ../../libs/core/mafia/managers/gameFlow/GameFlowManager.ts
+;// ../../libs/core/mafia/managers/gameFlow/GameFlowManager.ts
 
 
 
@@ -1015,6 +1015,12 @@ class GameFlowManager {
     this.room = null;
     this.phaseEndCallback = null;
     this.nightActions = [];
+    this.blockedVoters = [];
+    this.journalistReport = null;
+    this.werewolfTamed = false;
+    this.soldierArmor = {};
+    this.terroristTarget = null;
+    this.gravediggerJob = null;
     this.voteResults = {};
     this.playerVotes = {};
     this.defenseText = "";
@@ -1103,6 +1109,12 @@ class GameFlowManager {
     this.mafiaChatWidgetShown = {};
     this.state = GameState.IN_PROGRESS;
     this.dayCount = 1;
+    this.blockedVoters = [];
+    this.journalistReport = null;
+    this.werewolfTamed = false;
+    this.soldierArmor = {};
+    this.terroristTarget = null;
+    this.gravediggerJob = null;
     if (this.room.players.length <= 4) {
       this.phaseCycle = [MafiaPhase.DAY, MafiaPhase.VOTING, MafiaPhase.FINAL_DEFENSE, MafiaPhase.APPROVAL_VOTING, MafiaPhase.NIGHT];
       this.setPhase(MafiaPhase.DAY);
@@ -1199,6 +1211,9 @@ class GameFlowManager {
       return;
     }
     this.cleanupPhaseWidgets();
+    if (this.currentPhase === MafiaPhase.APPROVAL_VOTING) {
+      this.blockedVoters = [];
+    }
     const currentIndex = this.phaseCycle.indexOf(this.currentPhase);
     const nextIndex = (currentIndex + 1) % this.phaseCycle.length;
     if (this.phaseCycle[nextIndex] === MafiaPhase.FINAL_DEFENSE) {
@@ -1326,6 +1341,26 @@ class GameFlowManager {
                       this.processAbility(mafiaPlayer.id, data.targetId);
                     }
                     break;
+                  case "block":
+                    if (mafiaPlayer.jobId === JobId.GANGSTER) {
+                      this.gangsterAction(data.targetId, player);
+                    }
+                    break;
+                  case "track":
+                    if (mafiaPlayer.jobId === JobId.DETECTIVE) {
+                      this.detectiveAction(data.targetId, player);
+                    }
+                    break;
+                  case "announce":
+                    if (mafiaPlayer.jobId === JobId.JOURNALIST) {
+                      this.journalistAction(data.targetId, player);
+                    }
+                    break;
+                  case "convert":
+                    if (mafiaPlayer.jobId === JobId.WEREWOLF) {
+                      this.werewolfAction(data.targetId, player);
+                    }
+                    break;
                   case "chatMessage":
                     if (data.chatTarget === "lover" && mafiaPlayer.jobId === JobId.LOVER) {
                       this.broadcastLoverMessage(player, data.message);
@@ -1382,6 +1417,10 @@ class GameFlowManager {
       case MafiaPhase.DAY:
         {
           this.sayToRoom(`낮 단계 - 플레이어들이 토론을 진행합니다.`);
+          if (this.journalistReport) {
+            this.showRoomLabel(`📰 특종! ${this.journalistReport.targetName}님의 직업은 ${this.journalistReport.targetJob}입니다!`, 5000);
+            this.journalistReport = null;
+          }
           this.dayChatMessages = [];
           this.dayChatCooldowns = {};
           this.room.actionToRoomPlayers(player => {
@@ -1554,6 +1593,7 @@ class GameFlowManager {
     return defendantId;
   }
   showFinalDefenseWidget(player, targetPlayer) {
+    var _a;
     const gamePlayer = getPlayerById(player.id);
     if (!gamePlayer) return;
     const widgetManager = WidgetManager.instance;
@@ -1565,7 +1605,12 @@ class GameFlowManager {
       isDefendant: player.id === targetPlayer.id,
       defendantName: targetPlayer.name,
       defendantId: targetPlayer.id,
-      myPlayerId: player.id
+      myPlayerId: player.id,
+      isTerrorist: player.jobId === JobId.TERRORIST && player.id === targetPlayer.id,
+      alivePlayers: ((_a = this.room) === null || _a === void 0 ? void 0 : _a.players.filter(p => p.isAlive && p.id !== player.id).map(p => ({
+        id: p.id,
+        name: p.name
+      }))) || []
     });
     widgetManager.clearMessageHandlers(gamePlayer, WidgetType.FINAL_DEFENSE);
     widgetManager.registerMessageHandler(gamePlayer, WidgetType.FINAL_DEFENSE, (sender, data) => {
@@ -1574,6 +1619,17 @@ class GameFlowManager {
         if (sender.id === currentDefendantId) {
           this.defenseText = data.defense || "";
           this.broadcastDefense(this.defenseText);
+        }
+      } else if (data.type === "terroristTarget" && data.targetId) {
+        const mafiaPlayer = sender.tag.mafiaPlayer;
+        if (mafiaPlayer && mafiaPlayer.jobId === JobId.TERRORIST && mafiaPlayer.id === this.findFinalDefenseDefendant()) {
+          this.terroristTarget = data.targetId;
+          if (sender.tag.widget.finalDefense) {
+            sender.tag.widget.finalDefense.sendMessage({
+              type: "targetSelected",
+              targetId: data.targetId
+            });
+          }
         }
       }
     });
@@ -1656,6 +1712,16 @@ class GameFlowManager {
       this.sayToRoom(`현재 단계는 투표 단계가 아닙니다.`);
       return;
     }
+    if (this.blockedVoters.includes(voterId)) {
+      const voter = getPlayerById(voterId);
+      if (voter && voter.tag.widget.vote) {
+        voter.tag.widget.vote.sendMessage({
+          type: "voteBlocked",
+          message: "건달에 의해 투표가 차단되었습니다."
+        });
+      }
+      return;
+    }
     if (this.playerVotes[voterId] === targetId) {
       this.sayToRoom(`이미 해당 플레이어에게 투표했습니다.`);
       return;
@@ -1724,11 +1790,26 @@ class GameFlowManager {
     }
     const defendant = defendantId ? this.room.players.find(p => p.id === defendantId) : null;
     if (defendant && this.approvalVoteResults.approve > this.approvalVoteResults.reject) {
-      defendant.isAlive = false;
-      this.sayToRoom(`${defendant.name}님이 처형되었습니다.`);
-      const gamePlayer = getPlayerById(defendant.id);
-      if (gamePlayer) {
-        this.showPermanentDeadChatWidget(gamePlayer);
+      if (defendant.jobId === JobId.POLITICIAN) {
+        this.sayToRoom(`${defendant.name}님은 정치인이라 처형되지 않습니다!`);
+      } else {
+        defendant.isAlive = false;
+        this.sayToRoom(`${defendant.name}님이 처형되었습니다.`);
+        if (defendant.jobId === JobId.TERRORIST && this.terroristTarget) {
+          const targetPlayer = this.room.players.find(p => p.id === this.terroristTarget);
+          if (targetPlayer && targetPlayer.isAlive) {
+            targetPlayer.isAlive = false;
+            this.sayToRoom(`💣 ${defendant.name}님의 자폭으로 ${targetPlayer.name}님도 함께 처형되었습니다!`);
+            const targetGamePlayer = getPlayerById(targetPlayer.id);
+            if (targetGamePlayer) {
+              this.showPermanentDeadChatWidget(targetGamePlayer);
+            }
+          }
+        }
+        const gamePlayer = getPlayerById(defendant.id);
+        if (gamePlayer) {
+          this.showPermanentDeadChatWidget(gamePlayer);
+        }
       }
     } else if (defendant) {
       this.sayToRoom(`처형이 부결되었습니다.`);
@@ -1858,7 +1939,11 @@ class GameFlowManager {
   }
   isMafia(player) {
     const job = getJobById(player.jobId);
-    return (job === null || job === void 0 ? void 0 : job.team) === JobTeam.MAFIA;
+    return (job === null || job === void 0 ? void 0 : job.team) === JobTeam.MAFIA || player.jobId === JobId.WEREWOLF && this.werewolfTamed;
+  }
+  getMafiaCount() {
+    if (!this.room) return 0;
+    return this.room.players.filter(p => p.isAlive && this.isMafia(p)).length;
   }
   processAbility(playerId, targetId) {
     if (!this.room) return;
@@ -2040,32 +2125,85 @@ class GameFlowManager {
     }
   }
   evaluateNightActions() {
+    if (!this.room) return;
     const killedPlayers = [];
     const protectedPlayers = [];
     const blockedPlayers = [];
+    const werewolfTargets = [];
     this.nightActions.forEach(action => {
       const job = getJobById(action.jobId);
       if (!job) return;
       if (job.abilityType === JobAbilityType.PROTECT) {
         protectedPlayers.push(action.targetId);
       }
+    });
+    this.nightActions.forEach(action => {
+      const job = getJobById(action.jobId);
+      if (!job) return;
       if (job.abilityType === JobAbilityType.BLOCK) {
         blockedPlayers.push(action.targetId);
+        this.blockedVoters.push(action.targetId);
       }
     });
     this.nightActions.forEach(action => {
       const job = getJobById(action.jobId);
       if (!job) return;
-      if (job.abilityType === JobAbilityType.KILL) {
+      if (job.abilityType === JobAbilityType.KILL || action.jobId === JobId.WEREWOLF && this.getMafiaCount() === 0) {
         const target = this.room.players.find(p => p.id === action.targetId);
         if (!target || !target.isAlive) return;
+        if (target.jobId === JobId.SOLDIER && !this.soldierArmor[target.id]) {
+          this.soldierArmor[target.id] = true;
+          this.showRoomLabel(`${target.name}님이 방탄복으로 공격을 막았습니다!`);
+          return;
+        }
         if (!protectedPlayers.includes(action.targetId) && !target.isImmune) {
           killedPlayers.push(action.targetId);
         } else if (target.isImmune) {
           target.isImmune = false;
         }
       }
+      if (action.jobId === JobId.WEREWOLF && this.getMafiaCount() > 0) {
+        werewolfTargets.push({
+          werewolfId: action.playerId,
+          targetId: action.targetId
+        });
+      }
     });
+    werewolfTargets.forEach(({
+      werewolfId,
+      targetId
+    }) => {
+      if (killedPlayers.includes(targetId)) {
+        const werewolf = this.room.players.find(p => p.id === werewolfId);
+        if (werewolf) {
+          this.werewolfTamed = true;
+          if (!this.mafiaChatPlayers.includes(werewolfId)) {
+            this.mafiaChatPlayers.push(werewolfId);
+          }
+          this.showRoomLabel(`짐승인간이 마피아에게 길들여졌습니다!`);
+        }
+      }
+    });
+    if (this.dayCount === 1 && killedPlayers.length > 0) {
+      const gravediggers = this.room.players.filter(p => p.jobId === JobId.GRAVEDIGGER && p.isAlive);
+      if (gravediggers.length > 0 && killedPlayers.length > 0) {
+        const deadPlayer = this.room.players.find(p => p.id === killedPlayers[0]);
+        if (deadPlayer) {
+          this.gravediggerJob = deadPlayer.jobId;
+          gravediggers.forEach(gravedigger => {
+            var _a;
+            gravedigger.jobId = deadPlayer.jobId;
+            const gamePlayer = getPlayerById(gravedigger.id);
+            if (gamePlayer && gamePlayer.tag.widget.main) {
+              gamePlayer.tag.widget.main.sendMessage({
+                type: "job_changed",
+                newJob: ((_a = getJobById(deadPlayer.jobId)) === null || _a === void 0 ? void 0 : _a.name) || "알 수 없음"
+              });
+            }
+          });
+        }
+      }
+    }
     blockedPlayers.forEach(playerId => {
       const player = this.room.players.find(p => p.id === playerId);
       if (player) {
@@ -2363,6 +2501,101 @@ class GameFlowManager {
       }
     });
   }
+  gangsterAction(targetPlayerId, gangsterPlayer) {
+    if (this.currentPhase !== MafiaPhase.NIGHT) {
+      return;
+    }
+    this.nightActions.push({
+      playerId: gangsterPlayer.id,
+      targetId: targetPlayerId,
+      jobId: JobId.GANGSTER
+    });
+    if (gangsterPlayer.tag.widget.nightAction) {
+      gangsterPlayer.tag.widget.nightAction.sendMessage({
+        type: "abilityResult",
+        message: "다음날 투표시 대상 플레이어가 투표할 수 없게 됩니다."
+      });
+    }
+  }
+  detectiveAction(targetPlayerId, detectivePlayer) {
+    var _a;
+    if (this.currentPhase !== MafiaPhase.NIGHT) {
+      return;
+    }
+    this.nightActions.push({
+      playerId: detectivePlayer.id,
+      targetId: targetPlayerId,
+      jobId: JobId.DETECTIVE
+    });
+    const targetActions = this.nightActions.filter(action => action.playerId === targetPlayerId);
+    if (detectivePlayer.tag.widget.nightAction) {
+      if (targetActions.length > 0) {
+        const targetAction = targetActions[0];
+        const targetPlayer = (_a = this.room) === null || _a === void 0 ? void 0 : _a.players.find(p => p.id === targetAction.targetId);
+        detectivePlayer.tag.widget.nightAction.sendMessage({
+          type: "trackResult",
+          message: `대상이 ${(targetPlayer === null || targetPlayer === void 0 ? void 0 : targetPlayer.name) || '누군가'}에게 능력을 사용했습니다.`
+        });
+      } else {
+        detectivePlayer.tag.widget.nightAction.sendMessage({
+          type: "trackResult",
+          message: "대상이 아무런 능력도 사용하지 않았습니다."
+        });
+      }
+    }
+  }
+  journalistAction(targetPlayerId, journalistPlayer) {
+    var _a, _b;
+    if (this.currentPhase !== MafiaPhase.NIGHT) {
+      return;
+    }
+    this.nightActions.push({
+      playerId: journalistPlayer.id,
+      targetId: targetPlayerId,
+      jobId: JobId.JOURNALIST
+    });
+    const targetPlayer = (_a = this.room) === null || _a === void 0 ? void 0 : _a.players.find(p => p.id === targetPlayerId);
+    if (!targetPlayer) return;
+    this.journalistReport = {
+      targetName: targetPlayer.name,
+      targetJob: ((_b = getJobById(targetPlayer.jobId)) === null || _b === void 0 ? void 0 : _b.name) || "알 수 없음"
+    };
+    if (journalistPlayer.tag.widget.nightAction) {
+      journalistPlayer.tag.widget.nightAction.sendMessage({
+        type: "investigateResult",
+        targetName: targetPlayer.name,
+        targetJob: this.journalistReport.targetJob,
+        message: "다음날 아침에 모든 플레이어에게 공개됩니다."
+      });
+    }
+  }
+  werewolfAction(targetPlayerId, werewolfPlayer) {
+    var _a;
+    if (this.currentPhase !== MafiaPhase.NIGHT) {
+      return;
+    }
+    this.nightActions.push({
+      playerId: werewolfPlayer.id,
+      targetId: targetPlayerId,
+      jobId: JobId.WEREWOLF
+    });
+    const aliveMafia = (_a = this.room) === null || _a === void 0 ? void 0 : _a.players.filter(p => p.isAlive && this.isMafia(p));
+    if (aliveMafia && aliveMafia.length === 0) {
+      if (werewolfPlayer.tag.widget.nightAction) {
+        werewolfPlayer.tag.widget.nightAction.sendMessage({
+          type: "abilityResult",
+          message: "마피아가 모두 사망하여 처형 능력이 활성화되었습니다."
+        });
+      }
+    } else {
+      if (werewolfPlayer.tag.widget.nightAction) {
+        werewolfPlayer.tag.widget.nightAction.sendMessage({
+          type: "abilityResult",
+          message: "선택한 플레이어가 마피아에게 죽으면 마피아에게 길들여집니다."
+        });
+      }
+    }
+  }
   madamAction(targetPlayerId, madamPlayer) {
     var _a;
     if (this.currentPhase !== MafiaPhase.VOTING) {
@@ -2401,7 +2634,7 @@ class GameFlowManager {
     }
   }
 }
-;// CONCATENATED MODULE: ../../libs/core/mafia/managers/gameRoom/GameRoom.ts
+;// ../../libs/core/mafia/managers/gameRoom/GameRoom.ts
 
 
 
@@ -2711,7 +2944,7 @@ class GameRoom {
     };
   }
 }
-;// CONCATENATED MODULE: ../../libs/core/mafia/managers/gameRoom/GameRoomManager.ts
+;// ../../libs/core/mafia/managers/gameRoom/GameRoomManager.ts
 
 
 
@@ -2848,7 +3081,7 @@ class GameRoomManager {
     }
   }
 }
-;// CONCATENATED MODULE: ../../libs/core/mafia/gameMode/GameMode.ts
+;// ../../libs/core/mafia/gameMode/GameMode.ts
 class GameMode {
   constructor(config) {
     this.jobs = [];
@@ -2891,7 +3124,7 @@ class GameMode {
     };
   }
 }
-;// CONCATENATED MODULE: ../../libs/core/mafia/gameMode/defaultGameModes.ts
+;// ../../libs/core/mafia/gameMode/defaultGameModes.ts
 
 
 function createDefaultGameModes() {
@@ -2914,7 +3147,7 @@ function createDefaultGameModes() {
   });
   return modes;
 }
-;// CONCATENATED MODULE: ../../libs/core/mafia/managers/Sprite/SpriteManager.ts
+;// ../../libs/core/mafia/managers/Sprite/SpriteManager.ts
 var SpriteType;
 (function (SpriteType) {
   SpriteType["CHARACTER_BASIC"] = "character_basic";
@@ -2947,7 +3180,7 @@ class SpriteManager {
     };
   }
 }
-;// CONCATENATED MODULE: ../../libs/core/mafia/Game.ts
+;// ../../libs/core/mafia/Game.ts
 
 
 
@@ -3660,7 +3893,7 @@ class Game extends GameBase {
   }
 }
 Game.ROOM_COUNT = 0;
-;// CONCATENATED MODULE: ./main.ts
+;// ./main.ts
 
 App.onInit.Add(() => {
   Game.create();

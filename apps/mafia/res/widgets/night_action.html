@@ -439,55 +439,116 @@
             padding: 10px;
             margin-bottom: 10px;
             background-color: #f9f9f9;
+            scrollbar-width: thin;
+            scrollbar-color: #999 transparent;
+        }
+
+        .chat-messages::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .chat-messages::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .chat-messages::-webkit-scrollbar-thumb {
+            background-color: #999;
+            border-radius: 3px;
         }
 
         .chat-message {
             margin-bottom: 8px;
-            padding: 5px;
-            border-radius: 5px;
+            padding: 8px 10px;
+            border-radius: 8px;
+            word-break: break-word;
+            animation: fadeIn 0.3s ease;
+            max-width: 80%;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
         }
 
         .chat-message.my-message {
             background-color: #e3f2fd;
-            text-align: right;
+            margin-left: auto;
+            border: 1px solid #bbdefb;
         }
 
         .chat-message.other-message {
             background-color: #f1f1f1;
+            margin-right: auto;
+            border: 1px solid #e0e0e0;
+        }
+
+        .chat-message.system-message {
+            background-color: rgba(255, 193, 7, 0.1);
+            margin: 8px auto;
+            color: #f57f17;
+            font-style: italic;
+            text-align: center;
+            max-width: 100%;
+            border: 1px solid rgba(255, 193, 7, 0.3);
         }
 
         .chat-message .sender {
             font-weight: 600;
-            margin-bottom: 2px;
+            margin-bottom: 3px;
+            font-size: 12px;
+            color: #666;
         }
 
         .chat-message .content {
             word-break: break-word;
+            font-size: 14px;
+            line-height: 1.4;
+        }
+
+        .chat-message .timestamp {
+            font-size: 10px;
+            margin-top: 3px;
+            color: rgba(0, 0, 0, 0.5);
+            text-align: right;
         }
 
         .chat-input-container {
             display: flex;
             width: 100%;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 1px solid #ddd;
         }
 
         .chat-input {
             flex: 1;
-            padding: 8px;
-            border: 1px solid #ddd;
-            border-radius: 4px 0 0 4px;
+            padding: 10px 12px;
+            border: none;
+            outline: none;
+            font-size: 14px;
+            background-color: white;
+        }
+
+        .chat-input::placeholder {
+            color: #999;
         }
 
         .chat-send-button {
-            padding: 8px 15px;
+            padding: 10px 15px;
             background-color: #4caf50;
             color: white;
             border: none;
-            border-radius: 0 4px 4px 0;
             cursor: pointer;
+            font-weight: 500;
+            transition: background-color 0.2s;
         }
 
         .chat-send-button:hover {
             background-color: #3d8b40;
+        }
+
+        .chat-send-button:active {
+            background-color: #2e7d32;
         }
     </style>
 </head>
@@ -635,8 +696,17 @@
             },
             "werewolf": {
                 title: "짐승인간 행동",
-                subtitle: "마피아에게 길들여질 플레이어를 선택하세요",
+                subtitle: "갈망 대상을 선택하세요",
                 buttonText: "선택하기",
+                actionType: "convert",
+                containerClass: "werewolf",
+                showTargetSelector: true,
+                showChat: false
+            },
+            "werewolf_tamed": {
+                title: "길들여진 짐승인간",
+                subtitle: "제거할 플레이어를 선택하세요",
+                buttonText: "제거하기",
                 actionType: "convert",
                 containerClass: "werewolf",
                 showTargetSelector: true,
@@ -670,12 +740,12 @@
                 showChat: false
             },
             "terrorist": {
-                title: "테러리스트",
-                subtitle: "처형될 때 다른 플레이어를 함께 처형합니다",
-                buttonText: "확인",
-                actionType: "none",
+                title: "테러리스트 행동",
+                subtitle: "처형될 때 함께 죽일 플레이어를 미리 선택하세요",
+                buttonText: "자폭 대상 선택",
+                actionType: "suicide",
                 containerClass: "terrorist",
-                showTargetSelector: false,
+                showTargetSelector: true,
                 showChat: false
             },
             "madam": {
@@ -806,6 +876,9 @@
                 case "madam":
                     resultMessage = "유혹 대상이 선택되었습니다. 마피아인 경우 서로 대화할 수 있게 됩니다.";
                     break;
+                case "terrorist":
+                    resultMessage = "자폭 대상이 선택되었습니다. 처형될 때 해당 플레이어도 함께 죽게 됩니다.";
+                    break;
                 default:
                     resultMessage = "행동이 완료되었습니다. 낮이 될 때까지 기다려주세요.";
             }
@@ -839,8 +912,8 @@
             }
 
             const systemMessage = document.createElement('div');
-            systemMessage.className = 'chat-message';
-            systemMessage.innerHTML = `<div class="content"><i>${welcomeMessage}</i></div>`;
+            systemMessage.className = 'chat-message system-message';
+            systemMessage.innerHTML = `<div class="content">${welcomeMessage}</div>`;
             chatMessages.appendChild(systemMessage);
 
             // 서버에 채팅 초기화 알림
@@ -886,10 +959,19 @@
             const messageDiv = document.createElement('div');
             messageDiv.className = `chat-message ${isMyMessage ? 'my-message' : 'other-message'}`;
 
-            messageDiv.innerHTML = `
-                <div class="sender">${sender}</div>
-                <div class="content">${content}</div>
-            `;
+            let html = '';
+            if (!isMyMessage) {
+                html += `<div class="sender">${sender}</div>`;
+            }
+            html += `<div class="content">${content}</div>`;
+            
+            // 타임스탬프 추가
+            const now = new Date();
+            const hours = now.getHours().toString().padStart(2, '0');
+            const minutes = now.getMinutes().toString().padStart(2, '0');
+            html += `<div class="timestamp">${hours}:${minutes}</div>`;
+
+            messageDiv.innerHTML = html;
 
             chatMessages.appendChild(messageDiv);
             chatMessages.scrollTop = chatMessages.scrollHeight;
@@ -1092,6 +1174,15 @@
                 revealWidget();
             } else if (data.type === 'spyResult') {
                 showSpyResult(data.targetName, data.targetJob, data.isMafia, data.canUseAgain, data.enableMafiaChat);
+            } else if (data.type === 'werewolfTamed') {
+                // 짐승인간이 길들여졌을 때 UI 업데이트
+                if (myRoleId === 'werewolf') {
+                    myRoleId = 'werewolf_tamed';
+                    updateUI();
+                }
+                
+                // 길들여짐 메시지 표시
+                showAbilityBlocked(data.message || '마피아에게 길들여졌습니다!');
             }
         });
 

@@ -119,6 +119,27 @@
             text-decoration: line-through;
         }
 
+        .player-item.vote-blocked {
+            opacity: 0.7;
+            background-color: #ffebee;
+            border: 1px solid #f44336;
+            cursor: not-allowed;
+        }
+
+        .player-item.vote-blocked .player-name {
+            color: #c62828;
+        }
+
+        .vote-blocked-indicator {
+            background-color: #f44336;
+            color: white;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: 500;
+            margin-left: 8px;
+        }
+
         .player-avatar {
             width: 40px;
             height: 40px;
@@ -282,6 +303,7 @@
         let hasVoted = false;
         let remainingTime = 30;
         let timerInterval;
+        let blockedVoters = []; // 투표가 차단된 플레이어들
 
         let _isMobile = false;
         let _isTablet = false;
@@ -309,11 +331,23 @@
                     playerItem.addEventListener('click', () => selectPlayer(player.id));
                 }
 
+                // 투표 차단 표시
+                let statusText = player.id === myPlayerId ? '(나)' : '';
+                let nameHtml = player.name;
+                
+                if (blockedVoters.includes(player.id)) {
+                    playerItem.classList.add('vote-blocked');
+                    nameHtml += '<span class="vote-blocked-indicator">투표 차단</span>';
+                    if (player.id === myPlayerId) {
+                        statusText = '(나) - 건달에 의해 투표 차단됨';
+                    }
+                }
+
                 playerItem.innerHTML = `
                     <div class="player-avatar">${player.emoji || '👤'}</div>
                     <div class="player-info">
-                        <div class="player-name">${player.name}</div>
-                        <div class="player-status">${player.id === myPlayerId ? '(나)' : ''}</div>
+                        <div class="player-name">${nameHtml}</div>
+                        <div class="player-status">${statusText}</div>
                     </div>
                     <div class="vote-count" id="vote-count-${player.id}">${voteResults[player.id] ? voteResults[player.id] : ''}</div>
                 `;
@@ -323,11 +357,21 @@
 
             // 투표 버튼 활성화/비활성화
             const voteButton = document.getElementById('vote-button');
-            voteButton.disabled = !selectedPlayerId || hasVoted || !isVotePhase || selectedPlayerId === myPlayerId;
+            const isVoteBlocked = blockedVoters.includes(myPlayerId);
+            voteButton.disabled = !selectedPlayerId || hasVoted || !isVotePhase || selectedPlayerId === myPlayerId || isVoteBlocked;
+            
+            // 투표 차단 시 버튼 텍스트 변경
+            if (isVoteBlocked) {
+                voteButton.textContent = '투표 차단됨 (건달 능력)';
+                voteButton.style.backgroundColor = '#f44336';
+            } else {
+                voteButton.textContent = '투표하기';
+                voteButton.style.backgroundColor = '#1976d2';
+            }
         }
 
         function selectPlayer(playerId) {
-            if (hasVoted || !isVotePhase || playerId === myPlayerId) return;
+            if (hasVoted || !isVotePhase || playerId === myPlayerId || blockedVoters.includes(myPlayerId)) return;
             
             selectedPlayerId = playerId;
             renderPlayers();
@@ -515,6 +559,7 @@
                 hasVoted = false;
                 selectedPlayerId = null;
                 voteResults = {};
+                blockedVoters = data.blockedVoters || [];
                 
                 renderPlayers();
                 
@@ -532,6 +577,9 @@
             } else if (data.type === 'seduceResult') {
                 // 마담 유혹 결과 표시
                 showSeduceResult(data.targetName, data.targetJob, data.isMafia, data.enableMafiaChat);
+            } else if (data.type === 'voteBlocked') {
+                // 투표 차단 메시지 표시
+                alert(data.message || '건달에 의해 투표가 차단되었습니다.');
             } else if (data.type === "hide") {
                 hideWidget();
             } else if (data.type === "reveal") {
