@@ -71,7 +71,14 @@ export class Game extends GameBase {
 			profile: this.getDefaultProfile(player),
 		};
 
-		player.sprite = SpriteManager.getInstance().getSprite(SpriteType.CHARACTER_BASIC);
+		const color = Math.floor(Math.random() * 12);
+		//@ts-ignore
+		player.setAvatarParts({
+			hairId: 61 + color,
+			clothesId: 61 + color,
+		})
+
+		// player.sprite = SpriteManager.getInstance().getSprite(SpriteType.CHARACTER_BASIC);
 
 		if (!player.isMobile) {
 			player.displayRatio = 1.25;

@@ -1228,9 +1228,17 @@
                 // 능력 재사용 버튼 표시
                 document.getElementById('action-again-btn').style.display = 'block';
                 document.getElementById('action-again-btn').onclick = function () {
+                    // 선택 상태 초기화
+                    selectedPlayerId = null;
+                    hasActed = false;
+                    document.querySelectorAll('.player-item').forEach(item => {
+                        item.classList.remove('selected');
+                    });
+                    
+                    // UI 표시
                     document.getElementById('players-list').style.display = 'block';
                     document.getElementById('action-button').style.display = 'block';
-
+                    document.getElementById('action-button').disabled = true;
                     document.getElementById('result-container').style.display = 'none';
                 };
 

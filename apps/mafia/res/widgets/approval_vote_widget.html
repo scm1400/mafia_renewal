@@ -372,6 +372,12 @@
         let defenseText = "";
         let isAlive = true;
         let isDefendant = false;
+        
+        // 이벤트 리스너 저장
+        let approveListener = null;
+        let rejectListener = null;
+        let submitListener = null;
+        let closeListener = null;
 
         // DOM 요소
         const timerElement = document.getElementById('timer');
@@ -389,14 +395,35 @@
         const submitVoteBtn = document.getElementById('submitVoteBtn');
         const closeBtn = document.getElementById('closeBtn');
 
-        // 이벤트 리스너
-        approveOptionElement.addEventListener('click', () => selectVote('approve'));
-        rejectOptionElement.addEventListener('click', () => selectVote('reject'));
-        submitVoteBtn.addEventListener('click', submitVote);
-        closeBtn.addEventListener('click', closeWidget);
+        // 이벤트 리스너 설정 함수
+        function setupEventListeners() {
+            // 기존 리스너 제거
+            if (approveListener) {
+                approveOptionElement.removeEventListener('click', approveListener);
+                rejectOptionElement.removeEventListener('click', rejectListener);
+                submitVoteBtn.removeEventListener('click', submitListener);
+                closeBtn.removeEventListener('click', closeListener);
+            }
+            
+            // 새 리스너 생성 및 등록
+            approveListener = () => selectVote('approve');
+            rejectListener = () => selectVote('reject');
+            submitListener = submitVote;
+            closeListener = closeWidget;
+            
+            approveOptionElement.addEventListener('click', approveListener);
+            rejectOptionElement.addEventListener('click', rejectListener);
+            submitVoteBtn.addEventListener('click', submitListener);
+            closeBtn.addEventListener('click', closeListener);
+        }
 
         // 초기화 함수
         function initialize(data) {
+            // 기존 타이머 정리
+            if (timerInterval) {
+                clearInterval(timerInterval);
+            }
+            
             // 기존 상태 초기화
             voteSubmitted = false;
             selectedVote = null;
@@ -598,6 +625,7 @@
                 }
                 hideWidget();
             } else if (data.type === 'init') {
+                setupEventListeners(); // 이벤트 리스너 설정
                 initialize(data);
             } else if (data.type === 'showResults') {
                 showResults(data.results, data.isFinalResult);

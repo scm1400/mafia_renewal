@@ -74,7 +74,7 @@ export class GameRoom {
 		this.maxPlayers = config.maxPlayers;
 		this.password = config.password;
 		this.createdAt = Date.now();
-		this.roomLocation = GAMEROOM_LOCATIONS[parseInt(this.id)];
+		this.roomLocation = GAMEROOM_LOCATIONS[parseInt(this.id)] || null;
 
 		// 기존 코드와 호환되도록 수정
 		this.flowManager = new GameFlowManager();
@@ -210,6 +210,13 @@ export class GameRoom {
 	}
 
 	/**
+	 * 모든 이벤트 리스너 제거
+	 */
+	public removeAllListeners(): void {
+		this.callbacks = {};
+	}
+
+	/**
 	 * 이벤트 발생
 	 */
 	private emit(event: WaitingRoomEvent, ...args: any[]): void {
@@ -264,13 +271,20 @@ export class GameRoom {
 		if (this.players.length === 1 || !this.hostId) {
 			this.hostId = player.id;
 		}
-		const x = this.roomLocation.x + Math.floor(Math.random() * this.roomLocation.width);
-		const y = this.roomLocation.y + Math.floor(Math.random() * this.roomLocation.height);
-		player.spawnAt(x, y);
+		
+		// 방 위치가 유효한 경우에만 플레이어 스폰
+		if (this.roomLocation) {
+			const x = this.roomLocation.x + Math.floor(Math.random() * this.roomLocation.width);
+			const y = this.roomLocation.y + Math.floor(Math.random() * this.roomLocation.height);
+			player.spawnAt(x, y);
+		}
 
-		//@ts-ignore
-		player.setCameraTarget(-1, -1, 0);
-		player.setCameraTarget(this.roomLocation.x + this.roomLocation.width / 2, this.roomLocation.y + this.roomLocation.height / 2, 0);
+		// 카메라 타겟 설정
+		if (this.roomLocation) {
+			//@ts-ignore
+			player.setCameraTarget(-1, -1, 0);
+			player.setCameraTarget(this.roomLocation.x + this.roomLocation.width / 2, this.roomLocation.y + this.roomLocation.height / 2, 0);
+		}
 
 		// 이벤트 발생
 		this.emit(WaitingRoomEvent.PLAYER_JOIN, this, player);
@@ -288,6 +302,37 @@ export class GameRoom {
 		}
 
 		const player = getPlayerById(playerId);
+		
+		// 게임 중인 경우 GameFlowManager에 알림
+		if (this.state === GameState.IN_PROGRESS && this.flowManager) {
+			this.flowManager.handlePlayerLeave(playerId);
+			
+			// 게임 중에는 플레이어를 목록에서 제거하지 않음 (죽은 상태로만 유지)
+			// 단, 위젯은 정리
+			if (player) {
+				// 준비 상태 삭제
+				this.readyPlayers.delete(playerId);
+				
+				// 플레이어 태그 정보는 유지하되 위젯만 정리
+				if (player.tag) {
+					// 위젯 매니저 인스턴스 가져오기
+					const widgetManager = WidgetManager.instance;
+					widgetManager.hideAllWidgets(player);
+				}
+				
+				// 호스트가 나간 경우 새로운 호스트 지정 (살아있는 플레이어 중에서)
+				if (this.hostId && this.hostId === playerId) {
+					this.assignNewHostFromAlivePlayers();
+				}
+				
+				// 플레이어 퇴장 이벤트 발생
+				this.emit(WaitingRoomEvent.PLAYER_LEAVE, player);
+				
+				return true;
+			}
+		}
+
+		// 게임 중이 아닌 경우에만 플레이어를 완전히 제거
 		if (!player) {
 			// 플레이어 객체를 찾을 수 없는 경우에도 플레이어 목록에서는 제거
 			this.players.splice(playerIndex, 1);
@@ -383,6 +428,29 @@ export class GameRoom {
 
 		// 새 호스트 이벤트 발생
 		const newHost = getPlayerById(firstPlayerId);
+		if (newHost) {
+			this.emit(WaitingRoomEvent.HOST_CHANGE, newHost);
+		}
+	}
+
+	/**
+	 * 게임 중 살아있는 플레이어 중에서 새로운 호스트 지정
+	 */
+	private assignNewHostFromAlivePlayers(): void {
+		// 살아있는 플레이어 찾기
+		const alivePlayers = this.players.filter(p => p.isAlive);
+		
+		if (alivePlayers.length === 0) {
+			this.hostId = null;
+			return;
+		}
+
+		// 첫 번째 살아있는 플레이어를 호스트로 지정
+		const firstAlivePlayerId = alivePlayers[0].id;
+		this.hostId = firstAlivePlayerId;
+
+		// 새 호스트 이벤트 발생
+		const newHost = getPlayerById(firstAlivePlayerId);
 		if (newHost) {
 			this.emit(WaitingRoomEvent.HOST_CHANGE, newHost);
 		}
@@ -503,7 +571,7 @@ export class GameRoom {
 			host: this.hostId
 				? {
 					id: this.hostId,
-					name: hostPlayer ? hostPlayer.name : "알 수 없음",
+					name: hostPlayer?.name || "알 수 없음",
 				}
 				: null,
 			state: this.state,
@@ -511,9 +579,31 @@ export class GameRoom {
 				id: player.id,
 				name: player.name,
 				isReady: this.isPlayerReady(player.id),
-				isHost: this.hostId ? player.id === this.hostId : false,
+				isHost: this.hostId === player.id,
 			})),
 			createdAt: new Date(this.createdAt).toISOString(),
 		};
+	}
+
+	/**
+	 * 모든 플레이어의 준비 상태를 초기화합니다.
+	 * 게임 시작 시 호출됩니다.
+	 */
+	public resetAllPlayersReady(): void {
+		// 모든 플레이어의 준비 상태를 false로 초기화
+		this.readyPlayers.clear();
+		
+		// 각 플레이어에게 준비 상태 변경 이벤트 발생
+		this.players.forEach(player => {
+			// 호스트는 제외
+			if (this.hostId !== player.id) {
+				const gamePlayer = getPlayerById(player.id);
+				if (gamePlayer) {
+					this.emit(WaitingRoomEvent.READY_STATUS_CHANGE, gamePlayer, false);
+				}
+			}
+		});
+		
+		sendAdminConsoleMessage(`[GameRoom] 방 ${this.id}의 모든 플레이어 준비 상태 초기화됨`);
 	}
 }

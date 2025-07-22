@@ -78,6 +78,9 @@ export class GameRoomManager {
 			return false;
 		}
 		
+		// 이벤트 리스너 정리
+		this.cleanupRoomEventListeners(room);
+		
 		// 게임방 리셋
 		room.reset();
 		
@@ -245,5 +248,30 @@ export class GameRoomManager {
 		if (index !== -1) {
 			callbacks.splice(index, 1);
 		}
+	}
+
+	/**
+	 * 방 이벤트 리스너 정리
+	 */
+	private cleanupRoomEventListeners(room: GameRoom): void {
+		// 모든 이벤트 리스너 제거
+		room.removeAllListeners();
+	}
+
+	/**
+	 * 모든 게임방 정리
+	 */
+	public cleanup(): void {
+		// 모든 방의 이벤트 리스너 정리
+		Object.values(this.gameRooms).forEach(room => {
+			this.cleanupRoomEventListeners(room);
+			room.reset();
+		});
+		
+		// 게임방 목록 초기화
+		this.gameRooms = {};
+		
+		// 자체 이벤트 리스너 정리
+		this.callbacks = {};
 	}
 }

@@ -195,6 +195,15 @@
             background-color: #bdbdbd;
             cursor: not-allowed;
         }
+        
+        .vote-button.voted {
+            background-color: #4caf50;
+            cursor: not-allowed;
+        }
+        
+        .vote-button.voted:hover {
+            background-color: #4caf50;
+        }
 
         .vote-results {
             width: 100%;
@@ -304,12 +313,25 @@
         let remainingTime = 30;
         let timerInterval;
         let blockedVoters = []; // 투표가 차단된 플레이어들
+        let voteButtonListener = null; // 투표 버튼 이벤트 리스너 저장
 
         let _isMobile = false;
         let _isTablet = false;
         let $contentWrapper;
 
         function closeWidget() {
+            // 타이머 정리
+            if (timerInterval) {
+                clearInterval(timerInterval);
+            }
+            
+            // 이벤트 리스너 정리
+            if (voteButtonListener) {
+                const voteButton = document.getElementById('vote-button');
+                voteButton.removeEventListener('click', voteButtonListener);
+                voteButtonListener = null;
+            }
+            
             window.parent.postMessage({ type: "close" }, "*");
         }
 
@@ -380,8 +402,17 @@
         function submitVote() {
             if (!selectedPlayerId || hasVoted || !isVotePhase) return;
             
+            // 투표 차단된 경우 확인
+            if (blockedVoters.includes(myPlayerId)) {
+                alert('건달에 의해 투표가 차단되었습니다.');
+                return;
+            }
+            
             hasVoted = true;
-            document.getElementById('vote-button').disabled = true;
+            const voteButton = document.getElementById('vote-button');
+            voteButton.disabled = true;
+            voteButton.classList.add('voted');
+            voteButton.textContent = '투표 완료';
             
             // 서버에 투표 결과 전송
             window.parent.postMessage({
@@ -389,15 +420,7 @@
                 targetId: selectedPlayerId
             }, "*");
             
-            
-            // 투표 결과 UI 업데이트
-            if (!voteResults[selectedPlayerId]) {
-                voteResults[selectedPlayerId] = 1;
-            } else {
-                voteResults[selectedPlayerId]++;
-            }
-            
-            renderPlayers();
+            // 서버 응답을 기다리고 로컬 상태는 서버 확인 후 업데이트
         }
 
         function showVoteResults(results) {
@@ -553,6 +576,11 @@
                     alert("An error occurred:", error);
                 }
                 
+                // 기존 타이머 정리
+                if (timerInterval) {
+                    clearInterval(timerInterval);
+                }
+                
                 players = data.players;
                 myPlayerId = data.myPlayerId;
                 isVotePhase = true;
@@ -567,8 +595,26 @@
                     startTimer(data.timeLimit);
                 }
                 
-                // 투표 버튼 이벤트 리스너 설정
-                document.getElementById('vote-button').addEventListener('click', submitVote);
+                // 투표 버튼 이벤트 리스너 설정 (중복 방지)
+                const voteButton = document.getElementById('vote-button');
+                if (voteButtonListener) {
+                    voteButton.removeEventListener('click', voteButtonListener);
+                }
+                voteButtonListener = submitVote;
+                voteButton.addEventListener('click', voteButtonListener);
+            } else if (data.type === 'voteConfirmed') {
+                // 서버에서 투표 확인을 받은 후에만 로컬 상태 업데이트
+                if (!voteResults[data.targetId]) {
+                    voteResults[data.targetId] = 1;
+                } else {
+                    voteResults[data.targetId]++;
+                }
+                renderPlayers();
+            } else if (data.type === 'voteRejected') {
+                // 투표가 거부된 경우
+                hasVoted = false;
+                document.getElementById('vote-button').disabled = false;
+                alert(data.message || '투표에 실패했습니다.');
             } else if (data.type === 'updateVotes') {
                 voteResults = data.votes;
                 renderPlayers();
@@ -581,6 +627,10 @@
                 // 투표 차단 메시지 표시
                 alert(data.message || '건달에 의해 투표가 차단되었습니다.');
             } else if (data.type === "hide") {
+                // 타이머 정리
+                if (timerInterval) {
+                    clearInterval(timerInterval);
+                }
                 hideWidget();
             } else if (data.type === "reveal") {
                 revealWidget(true);
@@ -594,6 +644,19 @@
         });
 
         window.addEventListener('unload', function () {
+            // 타이머 정리
+            if (timerInterval) {
+                clearInterval(timerInterval);
+            }
+            
+            // 이벤트 리스너 정리
+            if (voteButtonListener) {
+                const voteButton = document.getElementById('vote-button');
+                if (voteButton) {
+                    voteButton.removeEventListener('click', voteButtonListener);
+                }
+            }
+            
             window.parent.focus();
         });
 

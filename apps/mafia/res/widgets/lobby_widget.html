@@ -1516,8 +1516,14 @@
 
         // 메시지 수신 처리
         let messageListener = null;
+        let isListenerSetup = false;
         
         function setupMessageListener() {
+            // 이미 설정된 경우 중복 설정 방지
+            if (isListenerSetup) {
+                return;
+            }
+            
             // 기존 이벤트 리스너가 있다면 제거
             if (messageListener) {
                 window.removeEventListener('message', messageListener);
@@ -1634,6 +1640,16 @@
             };
             
             window.addEventListener('message', messageListener);
+            isListenerSetup = true;
+        }
+
+        // 클린업 함수 추가
+        function cleanupMessageListener() {
+            if (messageListener) {
+                window.removeEventListener('message', messageListener);
+                messageListener = null;
+                isListenerSetup = false;
+            }
         }
 
         
@@ -1682,43 +1698,54 @@
          * 채팅 메시지를 추가합니다.
          */
         function addChatMessage(senderId, senderName, content, timestamp) {
-            const messageElement = document.createElement('div');
-            messageElement.className = 'chat-message';
+            try {
+                const messageElement = document.createElement('div');
+                messageElement.className = 'chat-message';
 
-            // 자신의 메시지인지 확인
-            if (senderId === currentUserId) {
-                messageElement.classList.add('self');
-            } else if (!senderId) {
-                messageElement.classList.add('system');
-            }
+                // 자신의 메시지인지 확인
+                if (senderId === currentUserId) {
+                    messageElement.classList.add('self');
+                } else if (!senderId) {
+                    messageElement.classList.add('system');
+                }
 
-            // 메시지 생성 시간 포맷
-            const time = new Date(timestamp);
-            const formattedTime = `${time.getHours().toString().padStart(2, '0')}:${time.getMinutes().toString().padStart(2, '0')}`;
+                // 메시지 생성 시간 포맷
+                const time = new Date(timestamp);
+                const formattedTime = `${time.getHours().toString().padStart(2, '0')}:${time.getMinutes().toString().padStart(2, '0')}`;
 
-            // 메시지 내용 구성
-            if (senderId) {
-                messageElement.innerHTML = `
-                    <span class="sender">${senderName}</span>: ${content}
-                    <span class="timestamp">${formattedTime}</span>
-                `;
-            } else {
-                // 시스템 메시지
-                messageElement.innerHTML = `
-                    <span>${content}</span>
-                    <span class="timestamp">${formattedTime}</span>
-                `;
-            }
+                // HTML 이스케이프 처리
+                const escapeHtml = (text) => {
+                    const div = document.createElement('div');
+                    div.textContent = text;
+                    return div.innerHTML;
+                };
 
-            // 채팅 영역에 메시지 추가
-            chatMessagesContainer.appendChild(messageElement);
+                // 메시지 내용 구성
+                if (senderId) {
+                    messageElement.innerHTML = `
+                        <span class="sender">${escapeHtml(senderName)}</span>: ${escapeHtml(content)}
+                        <span class="timestamp">${formattedTime}</span>
+                    `;
+                } else {
+                    // 시스템 메시지
+                    messageElement.innerHTML = `
+                        <span>${escapeHtml(content)}</span>
+                        <span class="timestamp">${formattedTime}</span>
+                    `;
+                }
 
-            // 스크롤을 최신 메시지로 이동
-            chatMessagesContainer.scrollTop = chatMessagesContainer.scrollHeight;
+                // 채팅 영역에 메시지 추가
+                chatMessagesContainer.appendChild(messageElement);
 
-            // 최대 50개 메시지만 유지 (DOM 부하 방지)
-            while (chatMessagesContainer.children.length > 50) {
-                chatMessagesContainer.removeChild(chatMessagesContainer.firstChild);
+                // 스크롤을 최신 메시지로 이동
+                chatMessagesContainer.scrollTop = chatMessagesContainer.scrollHeight;
+
+                // 최대 50개 메시지만 유지 (DOM 부하 방지)
+                while (chatMessagesContainer.children.length > 50) {
+                    chatMessagesContainer.removeChild(chatMessagesContainer.firstChild);
+                }
+            } catch (error) {
+                console.error('[lobby_widget] 채팅 메시지 추가 오류:', error);
             }
         }
 
