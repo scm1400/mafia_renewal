@@ -510,8 +510,6 @@ export class GameFlowManager {
 
 						// 밤 액션 위젯 표시 (살아있는 플레이어만)
 						if (player.isAlive) {
-							// 이전 메시지 핸들러 제거를 위해 위젯 초기화
-							widgetManager.clearMessageHandlers(gamePlayer, WidgetType.NIGHT_ACTION);
 
 							// 밤 액션 위젯 표시
 							widgetManager.showWidget(gamePlayer, WidgetType.NIGHT_ACTION);
@@ -879,6 +877,9 @@ export class GameFlowManager {
 
 		const widgetManager = WidgetManager.instance;
 
+
+		// 이전 메시지 핸들러 제거
+		widgetManager.clearMessageHandlers(gamePlayer, WidgetType.VOTE);
 		// 투표 위젯 표시
 		widgetManager.showWidget(gamePlayer, WidgetType.VOTE);
 
@@ -892,7 +893,6 @@ export class GameFlowManager {
 			blockedVoters: this.blockedVoters, // 투표 차단된 플레이어 목록 추가
 		});
 
-		widgetManager.clearMessageHandlers(gamePlayer, WidgetType.VOTE);
 
 		// 투표 위젯 메시지 처리 - 최초 한 번만 등록
 		widgetManager.registerMessageHandler(gamePlayer, WidgetType.VOTE, (sender: GamePlayer, data) => {
@@ -947,6 +947,9 @@ export class GameFlowManager {
 
 		const widgetManager = WidgetManager.instance;
 
+
+		// 이전 메시지 핸들러 제거
+		widgetManager.clearMessageHandlers(gamePlayer, WidgetType.FINAL_DEFENSE);
 		// 최후 변론 위젯 표시
 		widgetManager.showWidget(gamePlayer, WidgetType.FINAL_DEFENSE);
 
@@ -961,8 +964,6 @@ export class GameFlowManager {
 			myPlayerId: player.id,
 		});
 
-		// 핸들러 등록 전 기존 핸들러 정리
-		widgetManager.clearMessageHandlers(gamePlayer, WidgetType.FINAL_DEFENSE);
 
 		// 최후 변론 위젯 메시지 처리
 		widgetManager.registerMessageHandler(gamePlayer, WidgetType.FINAL_DEFENSE, (sender: GamePlayer, data) => {
@@ -992,11 +993,12 @@ export class GameFlowManager {
 
 		const widgetManager = WidgetManager.instance;
 
-		// 기존 위젯 제거 및 완전히 초기화
-		widgetManager.clearMessageHandlers(gamePlayer, WidgetType.APPROVAL_VOTE);
 
 		// 위젯 표시 전에 짧은 지연을 주어 완전히 제거되도록 함
 		ScriptApp.runLater(() => {
+			// 이전 메시지 핸들러 제거
+			widgetManager.clearMessageHandlers(gamePlayer, WidgetType.APPROVAL_VOTE);
+
 			// 찬반 투표 위젯 표시
 			widgetManager.showWidget(gamePlayer, WidgetType.APPROVAL_VOTE);
 
@@ -1011,8 +1013,6 @@ export class GameFlowManager {
 				isAlive: player.isAlive,
 				defenseText: this.defenseText,
 			});
-
-			widgetManager.clearMessageHandlers(gamePlayer, WidgetType.APPROVAL_VOTE);
 
 			// 찬반 투표 위젯 메시지 처리
 			widgetManager.registerMessageHandler(gamePlayer, WidgetType.APPROVAL_VOTE, (sender: GamePlayer, data) => {
@@ -1121,8 +1121,8 @@ export class GameFlowManager {
 		// 건달에 의해 투표가 차단되었는지 확인
 		if (this.blockedVoters.includes(voterId)) {
 			const voter = getPlayerById(voterId);
-			if (voter && voter.tag.widget.vote) {
-				voter.tag.widget.vote.sendMessage({
+			if (voter && voter.tag.widget.voteWidget) {
+				voter.tag.widget.voteWidget.sendMessage({
 					type: "voteRejected",
 					message: "건달에 의해 투표가 차단되었습니다.",
 				});
@@ -1133,8 +1133,8 @@ export class GameFlowManager {
 		// 중복 투표 확인
 		if (this.playerVotes[voterId] === targetId) {
 			const voter = getPlayerById(voterId);
-			if (voter && voter.tag.widget.vote) {
-				voter.tag.widget.vote.sendMessage({
+			if (voter && voter.tag.widget.voteWidget) {
+				voter.tag.widget.voteWidget.sendMessage({
 					type: "voteRejected",
 					message: "이미 해당 플레이어에게 투표했습니다.",
 				});
@@ -1146,8 +1146,8 @@ export class GameFlowManager {
 		const targetPlayer = this.room.players.find((p) => p.id === targetId);
 		if (!targetPlayer || !targetPlayer.isAlive) {
 			const voter = getPlayerById(voterId);
-			if (voter && voter.tag.widget.vote) {
-				voter.tag.widget.vote.sendMessage({
+			if (voter && voter.tag.widget.voteWidget) {
+				voter.tag.widget.voteWidget.sendMessage({
 					type: "voteRejected",
 					message: "대상 플레이어가 유효하지 않습니다.",
 				});
@@ -1181,8 +1181,8 @@ export class GameFlowManager {
 
 		// 투표한 플레이어에게 확인 메시지 전송
 		const voter = getPlayerById(voterId);
-		if (voter && voter.tag.widget.vote) {
-			voter.tag.widget.vote.sendMessage({
+		if (voter && voter.tag.widget.voteWidget) {
+			voter.tag.widget.voteWidget.sendMessage({
 				type: "voteConfirmed",
 				targetId: targetId,
 			});
@@ -1613,7 +1613,12 @@ export class GameFlowManager {
 
 		if (Object.keys(this.approvalPlayerVotes).length >= votablePlayerCount) {
 			// 모든 사람이 투표 완료
-			this.finalizeApprovalVoting();
+			// 페이즈 종료 콜백을 즉시 실행하여 타이머와 상관없이 바로 다음 단계로 진행
+			if (this.phaseEndCallback) {
+				const callback = this.phaseEndCallback;
+				this.phaseEndCallback = null;
+				callback();
+			}
 		}
 	}
 
@@ -2637,8 +2642,8 @@ export class GameFlowManager {
 		}
 
 		// 마담 플레이어에게 결과 전송
-		if (madamPlayer.tag.widget.vote) {
-			madamPlayer.tag.widget.vote.sendMessage({
+		if (madamPlayer.tag.widget.voteWidget) {
+			madamPlayer.tag.widget.voteWidget.sendMessage({
 				type: "seduceResult",
 				targetName: targetPlayer.name,
 				targetJob: getJobById(targetPlayer.jobId)?.name || "알 수 없음",
