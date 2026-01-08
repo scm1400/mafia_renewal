@@ -912,7 +912,7 @@ export class GameFlowManager {
 				if (mafiaPlayer && mafiaPlayer.isAlive) {
 					if(mafiaPlayer.jobId === JobId.MADAM){
 						this.processVote(mafiaPlayer.id, data.targetId);
-						this.madamAction(data.targetId, sender);
+						this.madamAction(mafiaPlayer.id, data.targetId, sender);
 					}else {
 						this.processVote(mafiaPlayer.id, data.targetId);
 					}
