@@ -1183,6 +1183,62 @@
                 
                 // 길들여짐 메시지 표시
                 showAbilityBlocked(data.message || '마피아에게 길들여졌습니다!');
+            } else if (data.type === 'abilityResult') {
+                // GANGSTER, WEREWOLF, TERRORIST, MEDIUM, MAFIA, DOCTOR 응답 처리
+                const resultContainer = document.getElementById('result-container');
+                resultContainer.style.display = 'block';
+                document.getElementById('result-title').textContent = "능력 사용 완료";
+                document.getElementById('result-content').textContent = data.message;
+
+                // 플레이어 목록과 버튼 숨기기
+                document.getElementById('players-list').style.display = 'none';
+                document.getElementById('action-button').style.display = 'none';
+
+            } else if (data.type === 'trackResult') {
+                // DETECTIVE 추적 결과 처리
+                const resultContainer = document.getElementById('result-container');
+                resultContainer.style.display = 'block';
+                document.getElementById('result-title').textContent = "추적 결과";
+                document.getElementById('result-content').textContent = data.message;
+
+                document.getElementById('players-list').style.display = 'none';
+                document.getElementById('action-button').style.display = 'none';
+
+            } else if (data.type === 'investigateResult') {
+                // JOURNALIST 조사 결과 처리
+                const resultContainer = document.getElementById('result-container');
+                resultContainer.style.display = 'block';
+                document.getElementById('result-title').textContent = "조사 결과";
+
+                const resultMessage = `<strong>${data.targetName}</strong>님의 직업은 <strong>${data.targetJob}</strong>입니다.<br>${data.message}`;
+                document.getElementById('result-content').innerHTML = resultMessage;
+
+                document.getElementById('players-list').style.display = 'none';
+                document.getElementById('action-button').style.display = 'none';
+
+            } else if (data.type === 'seduceResult') {
+                // MADAM 유혹 결과 처리
+                const resultContainer = document.getElementById('result-container');
+                resultContainer.style.display = 'block';
+                document.getElementById('result-title').textContent = "유혹 결과";
+
+                let resultMessage = `<strong>${data.targetName}</strong>님을 유혹했습니다.<br>직업: <strong>${data.targetJob}</strong>`;
+
+                if (data.isMafia) {
+                    resultMessage += '<br><span style="color: #ff4d4d;">마피아입니다! 마피아와 대화할 수 있습니다.</span>';
+                }
+
+                document.getElementById('result-content').innerHTML = resultMessage;
+
+                document.getElementById('players-list').style.display = 'none';
+                document.getElementById('action-button').style.display = 'none';
+
+                // 마피아 채팅 활성화
+                if (data.enableMafiaChat) {
+                    const roleAction = roleActions["madam"];
+                    roleAction.showChat = true;
+                    initializeChat("mafia");
+                }
             }
         });
 

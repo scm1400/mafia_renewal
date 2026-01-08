@@ -554,7 +554,7 @@ export class GameFlowManager {
 								switch (data.type) {
 									case "kill":
 										if (mafiaPlayer.jobId === JobId.MAFIA) {
-											this.mafiaAction(data.targetId);
+											this.mafiaAction(mafiaPlayer.id, data.targetId);
 										}
 										break;
 									case "investigate":
@@ -564,7 +564,7 @@ export class GameFlowManager {
 										break;
 									case "heal":
 										if (mafiaPlayer.jobId === JobId.DOCTOR) {
-											this.doctorAction(data.targetId);
+											this.doctorAction(mafiaPlayer.id, data.targetId);
 										}
 										break;
 									case "contact":
@@ -602,6 +602,11 @@ export class GameFlowManager {
 									case "suicide":
 										if (mafiaPlayer.jobId === JobId.TERRORIST) {
 											this.terroristAction(data.targetId, player);
+										}
+										break;
+									case "seduce":
+										if (mafiaPlayer.jobId === JobId.MADAM) {
+											this.madamAction(mafiaPlayer.id, data.targetId, player);
 										}
 										break;
 									case "chatMessage":
@@ -1541,6 +1546,15 @@ export class GameFlowManager {
 			targetId,
 			jobId: player.jobId,
 		});
+
+		// 플레이어에게 확인 메시지 전송
+		const gamePlayer = getPlayerById(playerId);
+		if (gamePlayer && gamePlayer.tag.widget.nightAction) {
+			gamePlayer.tag.widget.nightAction.sendMessage({
+				type: "abilityResult",
+				message: "능력을 사용했습니다.",
+			});
+		}
 	}
 
 	/**
@@ -1739,30 +1753,48 @@ export class GameFlowManager {
 	 * 밤 단계에서 마피아가 희생 대상을 선택합니다.
 	 * @param targetPlayerId 선택한 대상 플레이어의 ID
 	 */
-	mafiaAction(targetPlayerId: string): void {
+	mafiaAction(mafiaId: string, targetPlayerId: string): void {
 		if (this.currentPhase !== MafiaPhase.NIGHT) {
 			return;
 		}
 		this.nightActions.push({
-			playerId: targetPlayerId,
+			playerId: mafiaId,
 			targetId: targetPlayerId,
 			jobId: JobId.MAFIA,
 		});
+
+		// 마피아 플레이어에게 확인 메시지 전송
+		const gamePlayer = getPlayerById(mafiaId);
+		if (gamePlayer && gamePlayer.tag.widget.nightAction) {
+			gamePlayer.tag.widget.nightAction.sendMessage({
+				type: "abilityResult",
+				message: "살해 대상이 선택되었습니다.",
+			});
+		}
 	}
 
 	/**
 	 * 밤 단계에서 의사가 보호할 대상을 선택합니다.
 	 * @param targetPlayerId 선택한 보호 대상 플레이어의 ID
 	 */
-	doctorAction(targetPlayerId: string): void {
+	doctorAction(doctorId: string, targetPlayerId: string): void {
 		if (this.currentPhase !== MafiaPhase.NIGHT) {
 			return;
 		}
 		this.nightActions.push({
-			playerId: targetPlayerId,
+			playerId: doctorId,
 			targetId: targetPlayerId,
 			jobId: JobId.DOCTOR,
 		});
+
+		// 의사 플레이어에게 확인 메시지 전송
+		const gamePlayer = getPlayerById(doctorId);
+		if (gamePlayer && gamePlayer.tag.widget.nightAction) {
+			gamePlayer.tag.widget.nightAction.sendMessage({
+				type: "abilityResult",
+				message: "치료 대상이 선택되었습니다.",
+			});
+		}
 	}
 
 	/**
@@ -1775,7 +1807,7 @@ export class GameFlowManager {
 			return;
 		}
 		this.nightActions.push({
-			playerId: targetPlayerId,
+			playerId: policePlayer.id,
 			targetId: targetPlayerId,
 			jobId: JobId.POLICE,
 		});
@@ -2596,12 +2628,13 @@ export class GameFlowManager {
 	}
 
 	/**
-	 * 투표 단계에서 마담이 플레이어를 유혹합니다.
+	 * 밤 단계에서 마담이 플레이어를 유혹합니다.
+	 * @param madamId 마담 플레이어의 ID
 	 * @param targetPlayerId 대상 플레이어의 ID
 	 * @param madamPlayer 마담 플레이어
 	 */
-	madamAction(targetPlayerId: string, madamPlayer: GamePlayer): void {
-		if (this.currentPhase !== MafiaPhase.VOTING) {
+	madamAction(madamId: string, targetPlayerId: string, madamPlayer: GamePlayer): void {
+		if (this.currentPhase !== MafiaPhase.NIGHT) {
 			return;
 		}
 
@@ -2609,12 +2642,9 @@ export class GameFlowManager {
 		const targetPlayer = this.room.players.find((p) => p.id === targetPlayerId);
 		if (!targetPlayer) return;
 
-		// 유혹 상태 적용
-		targetPlayer.seducedBy = madamPlayer.id;
-
 		// 유혹 능력 사용 기록
 		this.nightActions.push({
-			playerId: madamPlayer.id,
+			playerId: madamId,
 			targetId: targetPlayerId,
 			jobId: JobId.MADAM,
 		});
@@ -2622,7 +2652,7 @@ export class GameFlowManager {
 		// 마피아 유혹 시 마피아 채팅 활성화
 		if (targetPlayer.jobId === JobId.MAFIA) {
 			// 마담 플레이어 찾기
-			const madam = this.room.players.find((p) => p.id === madamPlayer.id);
+			const madam = this.room.players.find((p) => p.id === madamId);
 			if (madam) {
 				// 마피아 채팅 플레이어 목록에 추가 (중복 방지)
 				if (!this.mafiaChatPlayers.includes(madam.id)) {
@@ -2641,9 +2671,9 @@ export class GameFlowManager {
 			}
 		}
 
-		// 마담 플레이어에게 결과 전송
-		if (madamPlayer.tag.widget.voteWidget) {
-			madamPlayer.tag.widget.voteWidget.sendMessage({
+		// 마담 플레이어에게 결과 전송 (nightAction 위젯으로)
+		if (madamPlayer.tag.widget.nightAction) {
+			madamPlayer.tag.widget.nightAction.sendMessage({
 				type: "seduceResult",
 				targetName: targetPlayer.name,
 				targetJob: getJobById(targetPlayer.jobId)?.name || "알 수 없음",
