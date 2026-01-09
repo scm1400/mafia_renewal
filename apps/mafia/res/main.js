@@ -1301,7 +1301,6 @@ class GameFlowManager {
             }
             widgetManager.hideWidget(gamePlayer, WidgetType.APPROVAL_VOTE);
             if (player.isAlive) {
-              widgetManager.clearMessageHandlers(gamePlayer, WidgetType.NIGHT_ACTION);
               widgetManager.showWidget(gamePlayer, WidgetType.NIGHT_ACTION);
               let roleId = player.jobId.toLowerCase();
               if (player.jobId === JobId.WEREWOLF && this.werewolfTamed) {
@@ -1332,7 +1331,7 @@ class GameFlowManager {
                 switch (data.type) {
                   case "kill":
                     if (mafiaPlayer.jobId === JobId.MAFIA) {
-                      this.mafiaAction(data.targetId);
+                      this.mafiaAction(mafiaPlayer.id, data.targetId);
                     }
                     break;
                   case "investigate":
@@ -1342,7 +1341,7 @@ class GameFlowManager {
                     break;
                   case "heal":
                     if (mafiaPlayer.jobId === JobId.DOCTOR) {
-                      this.doctorAction(data.targetId);
+                      this.doctorAction(mafiaPlayer.id, data.targetId);
                     }
                     break;
                   case "contact":
@@ -1380,6 +1379,11 @@ class GameFlowManager {
                   case "suicide":
                     if (mafiaPlayer.jobId === JobId.TERRORIST) {
                       this.terroristAction(data.targetId, player);
+                    }
+                    break;
+                  case "seduce":
+                    if (mafiaPlayer.jobId === JobId.MADAM) {
+                      this.madamAction(mafiaPlayer.id, data.targetId, player);
                     }
                     break;
                   case "chatMessage":
@@ -1582,6 +1586,7 @@ class GameFlowManager {
     const gamePlayer = getPlayerById(player.id);
     if (!gamePlayer) return;
     const widgetManager = WidgetManager.instance;
+    widgetManager.clearMessageHandlers(gamePlayer, WidgetType.VOTE);
     widgetManager.showWidget(gamePlayer, WidgetType.VOTE);
     widgetManager.sendMessageToWidget(gamePlayer, WidgetType.VOTE, {
       type: "init",
@@ -1591,7 +1596,6 @@ class GameFlowManager {
       serverTime: Date.now(),
       blockedVoters: this.blockedVoters
     });
-    widgetManager.clearMessageHandlers(gamePlayer, WidgetType.VOTE);
     widgetManager.registerMessageHandler(gamePlayer, WidgetType.VOTE, (sender, data) => {
       var _a;
       if (data.type === "vote" && data.targetId) {
@@ -1599,7 +1603,7 @@ class GameFlowManager {
         if (mafiaPlayer && mafiaPlayer.isAlive) {
           if (mafiaPlayer.jobId === JobId.MADAM) {
             this.processVote(mafiaPlayer.id, data.targetId);
-            this.madamAction(data.targetId, sender);
+            this.madamAction(mafiaPlayer.id, data.targetId, sender);
           } else {
             this.processVote(mafiaPlayer.id, data.targetId);
           }
@@ -1622,6 +1626,7 @@ class GameFlowManager {
     const gamePlayer = getPlayerById(player.id);
     if (!gamePlayer) return;
     const widgetManager = WidgetManager.instance;
+    widgetManager.clearMessageHandlers(gamePlayer, WidgetType.FINAL_DEFENSE);
     widgetManager.showWidget(gamePlayer, WidgetType.FINAL_DEFENSE);
     widgetManager.sendMessageToWidget(gamePlayer, WidgetType.FINAL_DEFENSE, {
       type: "init",
@@ -1632,7 +1637,6 @@ class GameFlowManager {
       defendantId: targetPlayer.id,
       myPlayerId: player.id
     });
-    widgetManager.clearMessageHandlers(gamePlayer, WidgetType.FINAL_DEFENSE);
     widgetManager.registerMessageHandler(gamePlayer, WidgetType.FINAL_DEFENSE, (sender, data) => {
       if (data.type === "submitDefense") {
         const currentDefendantId = this.findFinalDefenseDefendant();
@@ -1648,8 +1652,8 @@ class GameFlowManager {
     const gamePlayer = getPlayerById(player.id);
     if (!gamePlayer) return;
     const widgetManager = WidgetManager.instance;
-    widgetManager.clearMessageHandlers(gamePlayer, WidgetType.APPROVAL_VOTE);
     App.runLater(() => {
+      widgetManager.clearMessageHandlers(gamePlayer, WidgetType.APPROVAL_VOTE);
       widgetManager.showWidget(gamePlayer, WidgetType.APPROVAL_VOTE);
       widgetManager.sendMessageToWidget(gamePlayer, WidgetType.APPROVAL_VOTE, {
         type: "init",
@@ -1661,7 +1665,6 @@ class GameFlowManager {
         isAlive: player.isAlive,
         defenseText: this.defenseText
       });
-      widgetManager.clearMessageHandlers(gamePlayer, WidgetType.APPROVAL_VOTE);
       widgetManager.registerMessageHandler(gamePlayer, WidgetType.APPROVAL_VOTE, (sender, data) => {
         var _a;
         if (data.type === "submitApprovalVote" && (data.vote === "approve" || data.vote === "reject")) {
@@ -1724,8 +1727,8 @@ class GameFlowManager {
     }
     if (this.blockedVoters.includes(voterId)) {
       const voter = getPlayerById(voterId);
-      if (voter && voter.tag.widget.vote) {
-        voter.tag.widget.vote.sendMessage({
+      if (voter && voter.tag.widget.voteWidget) {
+        voter.tag.widget.voteWidget.sendMessage({
           type: "voteRejected",
           message: "건달에 의해 투표가 차단되었습니다."
         });
@@ -1734,8 +1737,8 @@ class GameFlowManager {
     }
     if (this.playerVotes[voterId] === targetId) {
       const voter = getPlayerById(voterId);
-      if (voter && voter.tag.widget.vote) {
-        voter.tag.widget.vote.sendMessage({
+      if (voter && voter.tag.widget.voteWidget) {
+        voter.tag.widget.voteWidget.sendMessage({
           type: "voteRejected",
           message: "이미 해당 플레이어에게 투표했습니다."
         });
@@ -1745,8 +1748,8 @@ class GameFlowManager {
     const targetPlayer = this.room.players.find(p => p.id === targetId);
     if (!targetPlayer || !targetPlayer.isAlive) {
       const voter = getPlayerById(voterId);
-      if (voter && voter.tag.widget.vote) {
-        voter.tag.widget.vote.sendMessage({
+      if (voter && voter.tag.widget.voteWidget) {
+        voter.tag.widget.voteWidget.sendMessage({
           type: "voteRejected",
           message: "대상 플레이어가 유효하지 않습니다."
         });
@@ -1769,8 +1772,8 @@ class GameFlowManager {
     const targetInfo = this.room.players.find(p => p.id === targetId);
     this.sayToRoom(`[투표] ${voterInfo === null || voterInfo === void 0 ? void 0 : voterInfo.name}님이 ${targetInfo === null || targetInfo === void 0 ? void 0 : targetInfo.name}님에게 투표했습니다. (현재 ${this.voteResults[targetId]}표)`);
     const voter = getPlayerById(voterId);
-    if (voter && voter.tag.widget.vote) {
-      voter.tag.widget.vote.sendMessage({
+    if (voter && voter.tag.widget.voteWidget) {
+      voter.tag.widget.voteWidget.sendMessage({
         type: "voteConfirmed",
         targetId: targetId
       });
@@ -2005,6 +2008,13 @@ class GameFlowManager {
       targetId,
       jobId: player.jobId
     });
+    const gamePlayer = getPlayerById(playerId);
+    if (gamePlayer && gamePlayer.tag.widget.nightAction) {
+      gamePlayer.tag.widget.nightAction.sendMessage({
+        type: "abilityResult",
+        message: "능력을 사용했습니다."
+      });
+    }
   }
   broadcastDefense(defense) {
     if (!this.room) return;
@@ -2044,7 +2054,11 @@ class GameFlowManager {
     const alivePlayers = this.room.players.filter(p => p.isAlive);
     const votablePlayerCount = alivePlayers.length - 1;
     if (Object.keys(this.approvalPlayerVotes).length >= votablePlayerCount) {
-      this.finalizeApprovalVoting();
+      if (this.phaseEndCallback) {
+        const callback = this.phaseEndCallback;
+        this.phaseEndCallback = null;
+        callback();
+      }
     }
   }
   updateApprovalVoteResults() {
@@ -2118,32 +2132,46 @@ class GameFlowManager {
       this.updateGameStatusWidget(gamePlayer, player);
     });
   }
-  mafiaAction(targetPlayerId) {
+  mafiaAction(mafiaId, targetPlayerId) {
     if (this.currentPhase !== MafiaPhase.NIGHT) {
       return;
     }
     this.nightActions.push({
-      playerId: targetPlayerId,
+      playerId: mafiaId,
       targetId: targetPlayerId,
       jobId: JobId.MAFIA
     });
+    const gamePlayer = getPlayerById(mafiaId);
+    if (gamePlayer && gamePlayer.tag.widget.nightAction) {
+      gamePlayer.tag.widget.nightAction.sendMessage({
+        type: "abilityResult",
+        message: "살해 대상이 선택되었습니다."
+      });
+    }
   }
-  doctorAction(targetPlayerId) {
+  doctorAction(doctorId, targetPlayerId) {
     if (this.currentPhase !== MafiaPhase.NIGHT) {
       return;
     }
     this.nightActions.push({
-      playerId: targetPlayerId,
+      playerId: doctorId,
       targetId: targetPlayerId,
       jobId: JobId.DOCTOR
     });
+    const gamePlayer = getPlayerById(doctorId);
+    if (gamePlayer && gamePlayer.tag.widget.nightAction) {
+      gamePlayer.tag.widget.nightAction.sendMessage({
+        type: "abilityResult",
+        message: "치료 대상이 선택되었습니다."
+      });
+    }
   }
   policeAction(targetPlayerId, policePlayer) {
     if (this.currentPhase !== MafiaPhase.NIGHT) {
       return;
     }
     this.nightActions.push({
-      playerId: targetPlayerId,
+      playerId: policePlayer.id,
       targetId: targetPlayerId,
       jobId: JobId.POLICE
     });
@@ -2682,21 +2710,20 @@ class GameFlowManager {
       });
     }
   }
-  madamAction(targetPlayerId, madamPlayer) {
+  madamAction(madamId, targetPlayerId, madamPlayer) {
     var _a;
-    if (this.currentPhase !== MafiaPhase.VOTING) {
+    if (this.currentPhase !== MafiaPhase.NIGHT) {
       return;
     }
     const targetPlayer = this.room.players.find(p => p.id === targetPlayerId);
     if (!targetPlayer) return;
-    targetPlayer.seducedBy = madamPlayer.id;
     this.nightActions.push({
-      playerId: madamPlayer.id,
+      playerId: madamId,
       targetId: targetPlayerId,
       jobId: JobId.MADAM
     });
     if (targetPlayer.jobId === JobId.MAFIA) {
-      const madam = this.room.players.find(p => p.id === madamPlayer.id);
+      const madam = this.room.players.find(p => p.id === madamId);
       if (madam) {
         if (!this.mafiaChatPlayers.includes(madam.id)) {
           this.mafiaChatPlayers.push(madam.id);
@@ -2709,8 +2736,8 @@ class GameFlowManager {
         }
       }
     }
-    if (madamPlayer.tag.widget.vote) {
-      madamPlayer.tag.widget.vote.sendMessage({
+    if (madamPlayer.tag.widget.nightAction) {
+      madamPlayer.tag.widget.nightAction.sendMessage({
         type: "seduceResult",
         targetName: targetPlayer.name,
         targetJob: ((_a = getJobById(targetPlayer.jobId)) === null || _a === void 0 ? void 0 : _a.name) || "알 수 없음",

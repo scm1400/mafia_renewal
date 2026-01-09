@@ -761,7 +761,7 @@
         };
 
         function closeWidget() {
-            window.parent.postMessage({ type: "close" }, "*");
+            // 서버에서 hideWidget 메시지로 위젯을 닫음
         }
 
         function renderPlayers() {

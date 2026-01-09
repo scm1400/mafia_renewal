@@ -274,10 +274,8 @@
                     anchor: "bottomRight",
                 }, "*");
                 document.querySelector('.chat-container').style.display = 'none';
-                window.parent.postMessage({ type: "hideDeadChat" }, "*");
             } else {
                 revealWidget();
-                window.parent.postMessage({ type: "showDeadChat" }, "*");
             }
         }
 

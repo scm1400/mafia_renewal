@@ -324,15 +324,15 @@
             if (timerInterval) {
                 clearInterval(timerInterval);
             }
-            
+
             // 이벤트 리스너 정리
             if (voteButtonListener) {
                 const voteButton = document.getElementById('vote-button');
                 voteButton.removeEventListener('click', voteButtonListener);
                 voteButtonListener = null;
             }
-            
-            window.parent.postMessage({ type: "close" }, "*");
+
+            // 서버에서 hideWidget 메시지로 위젯을 닫음
         }
 
         function renderPlayers() {

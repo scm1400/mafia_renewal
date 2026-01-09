@@ -559,11 +559,8 @@
         // 위젯 닫기
         function closeWidget() {
             hideWidget();
-            
-            // 부모 창에 닫기 메시지 전송
-            window.parent.postMessage({
-                type: 'closeApprovalVoteWidget'
-            }, '*');
+
+            // 서버에서 hideWidget 메시지로 위젯을 닫음
         }
 
         let _isMobile = false;
