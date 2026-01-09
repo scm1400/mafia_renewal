@@ -2,7 +2,12 @@
   "permissions": {
     "allow": [
       "Bash(npx tsc:*)",
-      "Bash(cat:*)"
+      "Bash(cat:*)",
+      "Bash(ls:*)",
+      "Bash(mkdir:*)",
+      "Bash(npm run build:*)",
+      "Skill(superpowers:requesting-code-review)",
+      "Bash(git rev-parse:*)"
     ],
     "deny": []
   }

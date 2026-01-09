@@ -124,6 +124,9 @@ function getLocationAreaCoordinates(locationName) {
   }
   return coordinates;
 }
+function isAdmin(player) {
+  return player.role >= 3000 || adminList.includes(player.id);
+}
 ;// ../../libs/utils/CustomLabelFunctions.ts
 
 const LABEL_SPACING = 60;
@@ -981,7 +984,266 @@ class WidgetManager {
     return widgetMap[widgetType];
   }
 }
+;// ../../libs/core/mafia/managers/command/CommandParser.ts
+class CommandParser {
+  static isCommand(message) {
+    if (!message) return false;
+    return message.trim().startsWith(this.COMMAND_PREFIX);
+  }
+  static parse(message) {
+    if (!this.isCommand(message)) {
+      return null;
+    }
+    const trimmed = message.trim();
+    const withoutPrefix = trimmed.substring(this.COMMAND_PREFIX.length);
+    if (!withoutPrefix) {
+      return null;
+    }
+    const parts = [];
+    let currentPart = "";
+    let inQuotes = false;
+    for (let i = 0; i < withoutPrefix.length; i++) {
+      const char = withoutPrefix[i];
+      if (char === '"') {
+        inQuotes = !inQuotes;
+      } else if (char === " " && !inQuotes) {
+        if (currentPart) {
+          parts.push(currentPart);
+          currentPart = "";
+        }
+      } else {
+        currentPart += char;
+      }
+    }
+    if (currentPart) {
+      parts.push(currentPart);
+    }
+    if (parts.length === 0) {
+      return null;
+    }
+    const command = parts[0].toLowerCase();
+    const args = parts.slice(1);
+    return {
+      command,
+      args,
+      rawMessage: message
+    };
+  }
+}
+CommandParser.COMMAND_PREFIX = "/";
+;// ../../libs/core/mafia/managers/command/CommandManager.ts
+
+
+class CommandManager {
+  static get instance() {
+    if (!CommandManager._instance) {
+      CommandManager._instance = new CommandManager();
+    }
+    return CommandManager._instance;
+  }
+  constructor() {
+    this.commands = {};
+  }
+  registerCommand(handler) {
+    this.commands[handler.name.toLowerCase()] = handler;
+  }
+  executeCommand(commandName, args, context) {
+    const handler = this.commands[commandName.toLowerCase()];
+    if (!handler) {
+      return false;
+    }
+    if (handler.adminOnly && !isAdmin(context.player)) {
+      showLabel(context.player, "관리자만 사용할 수 있는 명령어입니다.");
+      return true;
+    }
+    if (handler.requiresGameInProgress) {
+      if (!context.flowManager || !context.flowManager.isGameInProgress()) {
+        showLabel(context.player, "게임이 진행 중일 때만 사용할 수 있는 명령어입니다.");
+        return true;
+      }
+    }
+    try {
+      return handler.execute(context, args);
+    } catch (error) {
+      sendAdminConsoleMessage(`[ERROR] 명령어 실행 중 오류: ${error}`);
+      showLabel(context.player, "명령어 실행 중 오류가 발생했습니다.");
+      return true;
+    }
+  }
+  getAllCommands() {
+    const cmdList = [];
+    for (const key in this.commands) {
+      cmdList.push(this.commands[key]);
+    }
+    return cmdList;
+  }
+}
+;// ../../libs/core/mafia/managers/command/BotManager.ts
+
+class BotManager {
+  static get instance() {
+    if (!BotManager._instance) {
+      BotManager._instance = new BotManager();
+    }
+    return BotManager._instance;
+  }
+  constructor() {
+    this.botPlayers = {};
+  }
+  setBot(playerId, isBot) {
+    if (isBot) {
+      this.botPlayers[playerId] = true;
+      sendAdminConsoleMessage(`[BOT] 플레이어 ${playerId}가 봇으로 설정되었습니다.`);
+    } else {
+      delete this.botPlayers[playerId];
+      sendAdminConsoleMessage(`[BOT] 플레이어 ${playerId}의 봇 상태가 해제되었습니다.`);
+    }
+  }
+  isBot(playerId) {
+    return this.botPlayers[playerId] === true;
+  }
+  getAllBotIds() {
+    const ids = [];
+    for (const id in this.botPlayers) {
+      if (this.botPlayers[id]) {
+        ids.push(id);
+      }
+    }
+    return ids;
+  }
+  getBotCount() {
+    return this.getAllBotIds().length;
+  }
+  clearAllBots() {
+    this.botPlayers = {};
+    sendAdminConsoleMessage("[BOT] 모든 봇 상태가 초기화되었습니다.");
+  }
+  selectRandomTarget(candidates, excludeId) {
+    const filtered = excludeId ? candidates.filter(id => id !== excludeId) : candidates;
+    if (filtered.length === 0) return null;
+    const randomIndex = Math.floor(Math.random() * filtered.length);
+    return filtered[randomIndex];
+  }
+  selectRandomApproval() {
+    return Math.random() < 0.5 ? "approve" : "reject";
+  }
+  shouldUseAbility() {
+    return Math.random() < 0.8;
+  }
+}
+;// ../../libs/core/mafia/managers/command/BotActionScheduler.ts
+
+
+
+
+class BotActionScheduler {
+  constructor(flowManager) {
+    this.BOT_ACTION_MIN_DELAY = 2;
+    this.BOT_ACTION_MAX_DELAY = 5;
+    this.flowManager = flowManager;
+    this.botManager = BotManager.instance;
+  }
+  getRandomDelay() {
+    return this.BOT_ACTION_MIN_DELAY + Math.random() * (this.BOT_ACTION_MAX_DELAY - this.BOT_ACTION_MIN_DELAY);
+  }
+  scheduleActionsForPhase(phase) {
+    const botIds = this.botManager.getAllBotIds();
+    if (botIds.length === 0) return;
+    switch (phase) {
+      case MafiaPhase.VOTING:
+        this.scheduleVotingActions();
+        break;
+      case MafiaPhase.APPROVAL_VOTING:
+        this.scheduleApprovalVotingActions();
+        break;
+      case MafiaPhase.NIGHT:
+        this.scheduleNightActions();
+        break;
+    }
+  }
+  scheduleVotingActions() {
+    const room = this.flowManager["room"];
+    if (!room) return;
+    const aliveBots = room.players.filter(p => p.isAlive && this.botManager.isBot(p.id));
+    const candidates = room.players.filter(p => p.isAlive).map(p => p.id);
+    for (const bot of aliveBots) {
+      const delay = this.getRandomDelay();
+      App.runLater(() => {
+        if (this.flowManager.currentPhase !== MafiaPhase.VOTING) return;
+        const target = this.botManager.selectRandomTarget(candidates, bot.id);
+        if (target) {
+          this.flowManager.processVote(bot.id, target);
+          sendAdminConsoleMessage(`[BOT] ${bot.name}가 투표했습니다.`);
+        }
+      }, delay);
+    }
+  }
+  scheduleApprovalVotingActions() {
+    const room = this.flowManager["room"];
+    if (!room) return;
+    const defendantId = this.flowManager["defendantId"];
+    const aliveBots = room.players.filter(p => p.isAlive && this.botManager.isBot(p.id) && p.id !== defendantId);
+    for (const bot of aliveBots) {
+      const delay = this.getRandomDelay();
+      App.runLater(() => {
+        if (this.flowManager.currentPhase !== MafiaPhase.APPROVAL_VOTING) return;
+        const vote = this.botManager.selectRandomApproval();
+        this.flowManager.processApprovalVote(bot.id, vote);
+        sendAdminConsoleMessage(`[BOT] ${bot.name}가 ${vote === "approve" ? "찬성" : "반대"} 투표했습니다.`);
+      }, delay);
+    }
+  }
+  scheduleNightActions() {
+    const room = this.flowManager["room"];
+    if (!room) return;
+    const aliveBots = room.players.filter(p => p.isAlive && this.botManager.isBot(p.id));
+    for (const bot of aliveBots) {
+      const job = getJobById(bot.jobId);
+      if (!job || !job.nightAbility) continue;
+      if (!this.botManager.shouldUseAbility()) continue;
+      const delay = this.getRandomDelay();
+      App.runLater(() => {
+        if (this.flowManager.currentPhase !== MafiaPhase.NIGHT) return;
+        this.executeNightAction(bot, job);
+      }, delay);
+    }
+  }
+  executeNightAction(bot, job) {
+    if (!job) return;
+    const room = this.flowManager["room"];
+    if (!room) return;
+    let candidates = [];
+    switch (job.abilityType) {
+      case JobAbilityType.ARMOR:
+        candidates = [bot.id];
+        break;
+      case JobAbilityType.COPY:
+        candidates = this.flowManager.deadPlayers;
+        break;
+      case JobAbilityType.KILL:
+      case JobAbilityType.INVESTIGATE:
+      case JobAbilityType.PROTECT:
+      case JobAbilityType.CONTACT:
+      case JobAbilityType.LISTEN:
+      case JobAbilityType.BLOCK:
+      case JobAbilityType.TRACK:
+      case JobAbilityType.CONVERT:
+      case JobAbilityType.SUICIDE:
+      default:
+        candidates = room.players.filter(p => p.isAlive && p.id !== bot.id).map(p => p.id);
+        break;
+    }
+    const target = this.botManager.selectRandomTarget(candidates);
+    if (target) {
+      this.flowManager.processAbility(bot.id, target);
+      sendAdminConsoleMessage(`[BOT] ${bot.name}(${job.name})가 능력을 사용했습니다.`);
+    }
+  }
+}
 ;// ../../libs/core/mafia/managers/gameFlow/GameFlowManager.ts
+
+
+
 
 
 
@@ -1039,9 +1301,11 @@ class GameFlowManager {
     this.dayChatMessages = [];
     this.dayChatCooldowns = {};
     this.CHAT_COOLDOWN = 0.3;
+    this.speedMultiplier = 1;
     this.currentPhase = MafiaPhase.DAY;
     this.phaseCycle = [MafiaPhase.NIGHT, MafiaPhase.DAY, MafiaPhase.VOTING, MafiaPhase.FINAL_DEFENSE, MafiaPhase.APPROVAL_VOTING];
     this.phaseTimer = phaseDurations[this.currentPhase];
+    this.botScheduler = new BotActionScheduler(this);
   }
   showRoomLabel(message, duration = 3000) {
     if (!this.room) return;
@@ -1149,7 +1413,7 @@ class GameFlowManager {
   updateGameState(dt) {
     if (this.state !== GameState.IN_PROGRESS) return;
     if (this.phaseTimer > 0) {
-      this.phaseTimer -= dt;
+      this.phaseTimer -= dt * this.speedMultiplier;
       if (Math.floor(this.phaseTimer) !== Math.floor(this.phaseTimer + dt)) {
         this.updateAllGameStatusWidgets();
       }
@@ -1948,6 +2212,7 @@ class GameFlowManager {
     this.deadPlayers = [];
     this.mafiaChatPlayers = [];
     this.chatMessages = [];
+    this.speedMultiplier = 1;
     this.deadChatWidgetShown = {};
     this.mafiaChatWidgetShown = {};
   }
@@ -1966,6 +2231,7 @@ class GameFlowManager {
         }
       });
     }
+    this.botScheduler.scheduleActionsForPhase(phase);
   }
   getCurrentPhase() {
     return this.currentPhase;
@@ -2408,6 +2674,19 @@ class GameFlowManager {
     var _a;
     if (!this.room) return;
     if (this.currentPhase !== MafiaPhase.DAY) return;
+    if (CommandParser.isCommand(message)) {
+      const parsed = CommandParser.parse(message);
+      if (parsed) {
+        const executed = CommandManager.instance.executeCommand(parsed.command, parsed.args, {
+          player: player,
+          room: this.room,
+          flowManager: this
+        });
+        if (executed) {
+          return;
+        }
+      }
+    }
     const mafiaPlayer = (_a = this.room) === null || _a === void 0 ? void 0 : _a.players.find(p => p.id === player.id);
     if (!mafiaPlayer || !mafiaPlayer.isAlive) return;
     const currentTime = Date.now();
@@ -2810,6 +3089,7 @@ class GameFlowManager {
 
 
 
+
 var WaitingRoomEvent;
 (function (WaitingRoomEvent) {
   WaitingRoomEvent["PLAYER_JOIN"] = "playerJoin";
@@ -3104,6 +3384,28 @@ class GameRoom {
     }
     this.emit(WaitingRoomEvent.READY_STATUS_CHANGE, player, !isCurrentlyReady);
     return true;
+  }
+  setPlayerReady(playerId, ready) {
+    const player = getPlayerById(playerId);
+    if (!player) return false;
+    const isCurrentlyReady = this.readyPlayers.has(playerId);
+    if (isCurrentlyReady === ready) return true;
+    if (ready) {
+      this.readyPlayers.add(playerId);
+    } else {
+      this.readyPlayers.delete(playerId);
+    }
+    this.emit(WaitingRoomEvent.READY_STATUS_CHANGE, player, ready);
+    return true;
+  }
+  autoReadyBots() {
+    const botManager = BotManager.instance;
+    for (const mafiaPlayer of this.players) {
+      if (botManager.isBot(mafiaPlayer.id)) {
+        this.setPlayerReady(mafiaPlayer.id, true);
+        sendAdminConsoleMessage(`[BOT] ${mafiaPlayer.name}가 자동 준비되었습니다.`);
+      }
+    }
   }
   endGame() {
     this.state = GameState.WAITING;
@@ -3410,7 +3712,403 @@ class SpriteManager {
     };
   }
 }
+;// ../../libs/core/mafia/managers/command/CheatCommands.ts
+
+
+
+
+
+
+
+class SkipPhaseCommand {
+  constructor() {
+    this.name = "skip";
+    this.description = "현재 페이즈를 즉시 스킵합니다";
+    this.adminOnly = true;
+    this.requiresGameInProgress = true;
+  }
+  execute(context, args) {
+    if (!context.flowManager) return false;
+    context.flowManager.phaseTimer = 0;
+    sendAdminConsoleMessage(`[CHEAT] ${context.player.name}가 페이즈를 스킵했습니다.`);
+    showLabel(context.player, "페이즈를 스킵했습니다.");
+    return true;
+  }
+  getUsage() {
+    return "/skip";
+  }
+}
+class SpeedCommand {
+  constructor() {
+    this.name = "speed";
+    this.description = "타이머 속도를 배수로 조절합니다";
+    this.adminOnly = true;
+    this.requiresGameInProgress = true;
+  }
+  execute(context, args) {
+    if (!context.flowManager) return false;
+    const multiplier = parseInt(args[0]) || 1;
+    if (multiplier < 1 || multiplier > 100) {
+      showLabel(context.player, "속도 배수는 1-100 사이의 정수여야 합니다.");
+      return false;
+    }
+    context.flowManager.speedMultiplier = multiplier;
+    sendAdminConsoleMessage(`[CHEAT] 타이머 속도가 ${multiplier}배로 설정되었습니다.`);
+    showLabel(context.player, `타이머 속도: ${multiplier}배`);
+    return true;
+  }
+  getUsage() {
+    return "/speed [multiplier] - 예: /speed 10 (10배 빠르게)";
+  }
+}
+class EndGameCommand {
+  constructor() {
+    this.name = "endgame";
+    this.description = "게임을 즉시 종료합니다";
+    this.adminOnly = true;
+    this.requiresGameInProgress = true;
+  }
+  execute(context, args) {
+    if (!context.flowManager) return false;
+    context.flowManager.resetGame();
+    sendAdminConsoleMessage(`[CHEAT] ${context.player.name}가 게임을 강제 종료했습니다.`);
+    showLabel(context.player, "게임을 종료했습니다.");
+    return true;
+  }
+  getUsage() {
+    return "/endgame";
+  }
+}
+class GameStateCommand {
+  constructor() {
+    this.name = "gamestate";
+    this.description = "현재 게임 상태를 출력합니다";
+    this.adminOnly = true;
+    this.requiresGameInProgress = false;
+  }
+  execute(context, args) {
+    if (!context.flowManager || !context.room) {
+      showLabel(context.player, "게임이 진행 중이 아닙니다.");
+      return false;
+    }
+    const state = {
+      phase: context.flowManager.currentPhase,
+      day: context.flowManager.dayCount,
+      timer: Math.floor(context.flowManager.phaseTimer),
+      alivePlayers: context.room.players.filter(p => p.isAlive).length,
+      totalPlayers: context.room.players.length,
+      speed: context.flowManager.speedMultiplier
+    };
+    const message = `Phase: ${state.phase} | Day: ${state.day} | Timer: ${state.timer}s | Alive: ${state.alivePlayers}/${state.totalPlayers} | Speed: ${state.speed}x`;
+    showLabel(context.player, message, {
+      labelDisplayTime: 5000
+    });
+    sendAdminConsoleMessage(`[GAMESTATE] ${message}`);
+    return true;
+  }
+  getUsage() {
+    return "/gamestate";
+  }
+}
+class SetPhaseCommand {
+  constructor() {
+    this.name = "setphase";
+    this.description = "특정 페이즈로 즉시 이동합니다";
+    this.adminOnly = true;
+    this.requiresGameInProgress = true;
+  }
+  execute(context, args) {
+    if (!context.flowManager) return false;
+    const phaseMap = {
+      night: MafiaPhase.NIGHT,
+      day: MafiaPhase.DAY,
+      voting: MafiaPhase.VOTING,
+      defense: MafiaPhase.FINAL_DEFENSE,
+      approval: MafiaPhase.APPROVAL_VOTING
+    };
+    const phaseName = (args[0] || "").toLowerCase();
+    const targetPhase = phaseMap[phaseName];
+    if (!targetPhase) {
+      showLabel(context.player, `유효하지 않은 페이즈: ${args[0]}`);
+      return false;
+    }
+    context.flowManager.setPhase(targetPhase);
+    sendAdminConsoleMessage(`[CHEAT] 페이즈가 ${targetPhase}로 변경되었습니다.`);
+    showLabel(context.player, `페이즈 변경: ${targetPhase}`);
+    return true;
+  }
+  getUsage() {
+    return "/setphase [night|day|voting|defense|approval]";
+  }
+}
+class KillPlayerCommand {
+  constructor() {
+    this.name = "kill";
+    this.description = "특정 플레이어를 강제로 사망시킵니다";
+    this.adminOnly = true;
+    this.requiresGameInProgress = true;
+  }
+  execute(context, args) {
+    if (!context.flowManager || !context.room) return false;
+    const playerName = args.join(" ");
+    if (!playerName) {
+      showLabel(context.player, "플레이어 이름을 입력하세요.");
+      return false;
+    }
+    const targetPlayer = context.room.players.find(p => p.name.toLowerCase() === playerName.toLowerCase());
+    if (!targetPlayer) {
+      showLabel(context.player, `플레이어를 찾을 수 없습니다: ${playerName}`);
+      return false;
+    }
+    if (!targetPlayer.isAlive) {
+      showLabel(context.player, `${targetPlayer.name}는 이미 사망했습니다.`);
+      return false;
+    }
+    targetPlayer.isAlive = false;
+    context.flowManager.deadPlayers.push(targetPlayer.id);
+    context.flowManager.showRoomLabel(`⚠️ ${targetPlayer.name}이(가) 관리자에 의해 사망했습니다.`);
+    context.flowManager.updateAllGameStatusWidgets();
+    context.flowManager.checkWinCondition();
+    sendAdminConsoleMessage(`[CHEAT] ${targetPlayer.name}를 강제 사망시켰습니다.`);
+    showLabel(context.player, `${targetPlayer.name}를 사망시켰습니다.`);
+    return true;
+  }
+  getUsage() {
+    return "/kill [PlayerName] - 예: /kill Alice";
+  }
+}
+class RevivePlayerCommand {
+  constructor() {
+    this.name = "revive";
+    this.description = "사망한 플레이어를 부활시킵니다";
+    this.adminOnly = true;
+    this.requiresGameInProgress = true;
+  }
+  execute(context, args) {
+    if (!context.flowManager || !context.room) return false;
+    const playerName = args.join(" ");
+    if (!playerName) {
+      showLabel(context.player, "플레이어 이름을 입력하세요.");
+      return false;
+    }
+    const targetPlayer = context.room.players.find(p => p.name.toLowerCase() === playerName.toLowerCase());
+    if (!targetPlayer) {
+      showLabel(context.player, `플레이어를 찾을 수 없습니다: ${playerName}`);
+      return false;
+    }
+    if (targetPlayer.isAlive) {
+      showLabel(context.player, `${targetPlayer.name}는 이미 살아있습니다.`);
+      return false;
+    }
+    targetPlayer.isAlive = true;
+    const deadIndex = context.flowManager.deadPlayers.indexOf(targetPlayer.id);
+    if (deadIndex !== -1) {
+      context.flowManager.deadPlayers.splice(deadIndex, 1);
+    }
+    context.flowManager.showRoomLabel(`✨ ${targetPlayer.name}이(가) 부활했습니다!`);
+    context.flowManager.updateAllGameStatusWidgets();
+    sendAdminConsoleMessage(`[CHEAT] ${targetPlayer.name}를 부활시켰습니다.`);
+    showLabel(context.player, `${targetPlayer.name}를 부활시켰습니다.`);
+    return true;
+  }
+  getUsage() {
+    return "/revive [PlayerName] - 예: /revive Alice";
+  }
+}
+class SetRoleCommand {
+  constructor() {
+    this.name = "setrole";
+    this.description = "플레이어의 직업을 강제로 변경합니다";
+    this.adminOnly = true;
+    this.requiresGameInProgress = true;
+  }
+  execute(context, args) {
+    var _a, _b;
+    if (!context.flowManager || !context.room) return false;
+    if (args.length < 2) {
+      showLabel(context.player, "사용법: /setrole [PlayerName] [RoleName]");
+      return false;
+    }
+    const roleName = args[args.length - 1].toLowerCase();
+    const playerName = args.slice(0, -1).join(" ");
+    const targetPlayer = context.room.players.find(p => p.name.toLowerCase() === playerName.toLowerCase());
+    if (!targetPlayer) {
+      showLabel(context.player, `플레이어를 찾을 수 없습니다: ${playerName}`);
+      return false;
+    }
+    const roleMap = {
+      mafia: JobId.MAFIA,
+      police: JobId.POLICE,
+      doctor: JobId.DOCTOR,
+      citizen: JobId.CITIZEN,
+      spy: JobId.SPY,
+      detective: JobId.DETECTIVE,
+      journalist: JobId.JOURNALIST,
+      lover: JobId.LOVER,
+      medium: JobId.MEDIUM,
+      werewolf: JobId.WEREWOLF,
+      terrorist: JobId.TERRORIST,
+      madam: JobId.MADAM,
+      soldier: JobId.SOLDIER,
+      gangster: JobId.GANGSTER,
+      gravedigger: JobId.GRAVEDIGGER,
+      politician: JobId.POLITICIAN
+    };
+    const jobId = roleMap[roleName];
+    if (!jobId) {
+      showLabel(context.player, `유효하지 않은 직업: ${roleName}`);
+      return false;
+    }
+    const oldJobId = targetPlayer.jobId;
+    targetPlayer.jobId = jobId;
+    const gamePlayer = getPlayerById(targetPlayer.id);
+    if (gamePlayer) {
+      context.flowManager.showRoleCard(gamePlayer, jobId);
+    }
+    const oldJobName = ((_a = getJobById(oldJobId)) === null || _a === void 0 ? void 0 : _a.name) || oldJobId;
+    const newJobName = ((_b = getJobById(jobId)) === null || _b === void 0 ? void 0 : _b.name) || jobId;
+    sendAdminConsoleMessage(`[CHEAT] ${targetPlayer.name}의 직업이 ${oldJobName} -> ${newJobName}로 변경되었습니다.`);
+    showLabel(context.player, `${targetPlayer.name}: ${oldJobName} -> ${newJobName}`);
+    return true;
+  }
+  getUsage() {
+    return "/setrole [PlayerName] [RoleName] - 예: /setrole Alice mafia";
+  }
+}
+class HelpCommand {
+  constructor() {
+    this.name = "help";
+    this.description = "사용 가능한 명령어 목록을 표시합니다";
+    this.adminOnly = true;
+    this.requiresGameInProgress = false;
+  }
+  execute(context, args) {
+    const commands = CommandManager.instance.getAllCommands();
+    let helpText = "=== 치트 명령어 목록 ===\n";
+    commands.forEach(cmd => {
+      helpText += `\n/${cmd.name} - ${cmd.description}`;
+      const usage = cmd.getUsage();
+      if (usage && usage !== `/${cmd.name}`) {
+        helpText += `\n  사용법: ${usage}`;
+      }
+    });
+    sendAdminConsoleMessage(helpText);
+    showLabel(context.player, "명령어 목록이 관리자 콘솔에 출력되었습니다.");
+    return true;
+  }
+  getUsage() {
+    return "/help";
+  }
+}
+class AutoBotCommand {
+  constructor() {
+    this.name = "autobot";
+    this.description = "플레이어를 봇으로 설정/해제합니다";
+    this.adminOnly = true;
+    this.requiresGameInProgress = false;
+  }
+  execute(context, args) {
+    if (args.length === 0) {
+      showLabel(context.player, "사용법: /autobot [플레이어 이름]");
+      return true;
+    }
+    const targetName = args.join(" ");
+    const botManager = BotManager.instance;
+    let targetPlayer = null;
+    if (context.room) {
+      const mafiaPlayer = context.room.players.find(p => p.name.toLowerCase() === targetName.toLowerCase());
+      if (mafiaPlayer) {
+        targetPlayer = getPlayerById(mafiaPlayer.id);
+      }
+    }
+    if (!targetPlayer) {
+      showLabel(context.player, `플레이어 "${targetName}"를 찾을 수 없습니다.`);
+      return true;
+    }
+    if (targetPlayer.id === context.player.id) {
+      showLabel(context.player, "자기 자신을 봇으로 설정할 수 없습니다.");
+      return true;
+    }
+    const isCurrentlyBot = botManager.isBot(targetPlayer.id);
+    botManager.setBot(targetPlayer.id, !isCurrentlyBot);
+    const status = !isCurrentlyBot ? "봇으로 설정" : "봇 해제";
+    showLabel(context.player, `${targetPlayer.name}이(가) ${status}되었습니다.`);
+    if (!isCurrentlyBot && context.room) {
+      context.room.setPlayerReady(targetPlayer.id, true);
+    }
+    return true;
+  }
+  getUsage() {
+    return "/autobot [플레이어 이름] - 봇 설정/해제 토글";
+  }
+}
+class AutoBotAllCommand {
+  constructor() {
+    this.name = "autobotall";
+    this.description = "자신을 제외한 모든 플레이어를 봇으로 설정합니다";
+    this.adminOnly = true;
+    this.requiresGameInProgress = false;
+  }
+  execute(context, args) {
+    const botManager = BotManager.instance;
+    if (!context.room) {
+      showLabel(context.player, "게임 방에서만 사용할 수 있습니다.");
+      return true;
+    }
+    let botCount = 0;
+    for (const mafiaPlayer of context.room.players) {
+      if (mafiaPlayer.id === context.player.id) continue;
+      if (!botManager.isBot(mafiaPlayer.id)) {
+        botManager.setBot(mafiaPlayer.id, true);
+        context.room.setPlayerReady(mafiaPlayer.id, true);
+        botCount++;
+      }
+    }
+    showLabel(context.player, `${botCount}명의 플레이어가 봇으로 설정되었습니다.`);
+    sendAdminConsoleMessage(`[BOT] ${context.player.name}가 ${botCount}명을 봇으로 설정했습니다.`);
+    return true;
+  }
+  getUsage() {
+    return "/autobotall - 자신 제외 모든 플레이어를 봇으로 설정";
+  }
+}
+class ClearBotsCommand {
+  constructor() {
+    this.name = "clearbots";
+    this.description = "모든 봇 상태를 해제합니다";
+    this.adminOnly = true;
+    this.requiresGameInProgress = false;
+  }
+  execute(context, args) {
+    const botManager = BotManager.instance;
+    const botCount = botManager.getBotCount();
+    botManager.clearAllBots();
+    showLabel(context.player, `${botCount}명의 봇 상태가 해제되었습니다.`);
+    return true;
+  }
+  getUsage() {
+    return "/clearbots - 모든 봇 상태 해제";
+  }
+}
+function registerCheatCommands() {
+  const manager = CommandManager.instance;
+  manager.registerCommand(new SkipPhaseCommand());
+  manager.registerCommand(new SpeedCommand());
+  manager.registerCommand(new EndGameCommand());
+  manager.registerCommand(new GameStateCommand());
+  manager.registerCommand(new SetPhaseCommand());
+  manager.registerCommand(new KillPlayerCommand());
+  manager.registerCommand(new RevivePlayerCommand());
+  manager.registerCommand(new SetRoleCommand());
+  manager.registerCommand(new HelpCommand());
+  manager.registerCommand(new AutoBotCommand());
+  manager.registerCommand(new AutoBotAllCommand());
+  manager.registerCommand(new ClearBotsCommand());
+}
 ;// ../../libs/core/mafia/Game.ts
+
+
+
 
 
 
@@ -3444,6 +4142,7 @@ class Game extends GameBase {
     gameModes.forEach(mode => {
       this.mafiaGameRoomManager.registerGameMode(mode);
     });
+    registerCheatCommands();
     for (let i = 1; i <= 20; i++) {
       if (Map.hasLocation(`GameRoom_${i}`)) {
         Game.ROOM_COUNT++;
@@ -3563,6 +4262,19 @@ class Game extends GameBase {
         } else if (data.type === "requestUsers") {
           this.sendUsersList(sender);
         } else if (data.type === "lobbyChatMessage" && data.content) {
+          if (CommandParser.isCommand(data.content)) {
+            const parsed = CommandParser.parse(data.content);
+            if (parsed) {
+              const executed = CommandManager.instance.executeCommand(parsed.command, parsed.args, {
+                player: sender,
+                room: null,
+                flowManager: null
+              });
+              if (executed) {
+                return;
+              }
+            }
+          }
           this.sendLobbyChatMessage(sender, data.content);
         } else if (data.type === "createRoom" && data.data) {
           const {

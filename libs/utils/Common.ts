@@ -112,3 +112,10 @@ export function getLocationAreaCoordinates(locationName: string): [number, numbe
 	}
 	return coordinates;
 }
+
+/**
+ * 플레이어가 관리자인지 확인
+ */
+export function isAdmin(player: GamePlayer): boolean {
+	return player.role >= 3000 || adminList.includes(player.id);
+}

@@ -6,6 +6,7 @@ import { GAME_MODES, getGameModeConfigById, JobId } from "../../types/JobTypes";
 import { GameMode } from "../../gameMode/GameMode";
 import { WidgetManager } from "../widget/WidgetManager";
 import { WidgetType } from "../widget/WidgetType";
+import { BotManager } from "../command/BotManager";
 
 // WaitingRoomEvent 열거형
 export enum WaitingRoomEvent {
@@ -515,6 +516,42 @@ export class GameRoom {
 		this.emit(WaitingRoomEvent.READY_STATUS_CHANGE, player, !isCurrentlyReady);
 
 		return true;
+	}
+
+	/**
+	 * 플레이어 준비 상태 직접 설정
+	 */
+	public setPlayerReady(playerId: string, ready: boolean): boolean {
+		const player = getPlayerById(playerId);
+		if (!player) return false;
+
+		const isCurrentlyReady = this.readyPlayers.has(playerId);
+		if (isCurrentlyReady === ready) return true; // 이미 원하는 상태
+
+		if (ready) {
+			this.readyPlayers.add(playerId);
+		} else {
+			this.readyPlayers.delete(playerId);
+		}
+
+		// 준비 상태 변경 이벤트 발생
+		this.emit(WaitingRoomEvent.READY_STATUS_CHANGE, player, ready);
+
+		return true;
+	}
+
+	/**
+	 * 모든 봇 플레이어 자동 준비
+	 */
+	public autoReadyBots(): void {
+		const botManager = BotManager.instance;
+
+		for (const mafiaPlayer of this.players) {
+			if (botManager.isBot(mafiaPlayer.id)) {
+				this.setPlayerReady(mafiaPlayer.id, true);
+				sendAdminConsoleMessage(`[BOT] ${mafiaPlayer.name}가 자동 준비되었습니다.`);
+			}
+		}
 	}
 
 	/**

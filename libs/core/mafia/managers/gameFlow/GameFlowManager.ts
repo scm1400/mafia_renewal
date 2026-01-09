@@ -1,10 +1,13 @@
 import { GamePlayer } from "../../types/GamePlayer";
 import { GameRoom } from "../gameRoom/GameRoom";
-import { getPlayerById } from "../../../../utils/Common";
+import { getPlayerById, isAdmin } from "../../../../utils/Common";
 import { Job, JobTeam, JobAbilityType, getJobById, getJobsByGameMode, JobId, JOBS } from "../../types/JobTypes";
 import { showLabel } from "../../../../utils/CustomLabelFunctions";
 import { WidgetManager } from "../widget/WidgetManager";
 import { WidgetType } from "../widget/WidgetType";
+import { CommandParser } from "../command/CommandParser";
+import { CommandManager } from "../command/CommandManager";
+import { BotActionScheduler } from "../command/BotActionScheduler";
 
 // GameState Enum: 게임의 주요 상태를 정의
 export enum GameState {
@@ -58,8 +61,8 @@ interface AbilityAction {
 
 export class GameFlowManager {
 	public state: GameState = GameState.WAITING;
-	private currentPhase: MafiaPhase;
-	private dayCount: number = 0;
+	public currentPhase: MafiaPhase;
+	public dayCount: number = 0;
 	private phaseCycle: MafiaPhase[];
 	public phaseTimer: number;
 	private room: GameRoom | null = null;
@@ -86,7 +89,7 @@ export class GameFlowManager {
 
 	// 채팅 관련 프로퍼티
 	private loverPlayers: string[] = []; // 연인 플레이어 ID 목록
-	private deadPlayers: string[] = []; // 죽은 플레이어 ID 목록
+	public deadPlayers: string[] = []; // 죽은 플레이어 ID 목록 (치트 명령어에서 접근)
 	private mafiaChatPlayers: string[] = []; // 마피아 채팅 가능한 플레이어 ID 목록 (마피아, 스파이)
 	private chatMessages: { target: string; sender: string; senderName: string; message: string }[] = [];
 	private deadChatWidgetShown: { [playerId: string]: boolean } = {}; // 죽은 플레이어별 채팅 위젯 표시 여부
@@ -97,11 +100,20 @@ export class GameFlowManager {
 	private dayChatCooldowns: { [playerId: string]: number } = {}; // 플레이어별 채팅 쿨다운(타임스탬프)
 	private readonly CHAT_COOLDOWN: number = 0.3; // 채팅 쿨다운 시간(초)
 
+	// 치트 명령어용 필드
+	public speedMultiplier: number = 1; // 타이머 속도 배수
+
+	// 봇 자동 행동 스케줄러
+	private botScheduler: BotActionScheduler;
+
 	constructor() {
 		this.currentPhase = MafiaPhase.DAY;
 		// 기본 단계 순서 설정: 밤 → 낮 → 투표 → 최후 변론 → 찬반 투표 → 밤 ... 의 순환
 		this.phaseCycle = [MafiaPhase.NIGHT, MafiaPhase.DAY, MafiaPhase.VOTING, MafiaPhase.FINAL_DEFENSE, MafiaPhase.APPROVAL_VOTING];
 		this.phaseTimer = phaseDurations[this.currentPhase];
+
+		// 봇 스케줄러 초기화
+		this.botScheduler = new BotActionScheduler(this);
 	}
 
 	/**
@@ -109,7 +121,7 @@ export class GameFlowManager {
 	 * @param message 표시할 메시지
 	 * @param duration 표시 시간 (ms)
 	 */
-	private showRoomLabel(message: string, duration: number = 3000) {
+	public showRoomLabel(message: string, duration: number = 3000) {
 		if (!this.room) return;
 
 		this.room.actionToRoomPlayers((player) => {
@@ -278,9 +290,9 @@ export class GameFlowManager {
 	updateGameState(dt: number): void {
 		if (this.state !== GameState.IN_PROGRESS) return;
 
-		// 타이머 감소
+		// 타이머 감소 (속도 배수 적용)
 		if (this.phaseTimer > 0) {
-			this.phaseTimer -= dt;
+			this.phaseTimer -= dt * this.speedMultiplier;
 
 			// 모든 플레이어의 게임 상태 위젯 업데이트 (매 초마다)
 			if (Math.floor(this.phaseTimer) !== Math.floor(this.phaseTimer + dt)) {
@@ -316,8 +328,8 @@ export class GameFlowManager {
 		return [...jobs].sort(() => Math.random() - 0.5);
 	}
 
-	// 역할 카드 표시
-	private showRoleCard(player: GamePlayer, jobId: JobId) {
+	// 역할 카드 표시 (치트 명령어에서 접근)
+	public showRoleCard(player: GamePlayer, jobId: JobId) {
 		const job = getJobById(jobId);
 		if (!job) return;
 
@@ -1462,6 +1474,7 @@ export class GameFlowManager {
 		this.deadPlayers = [];
 		this.mafiaChatPlayers = [];
 		this.chatMessages = [];
+		this.speedMultiplier = 1; // 속도 배수 초기화
 		this.deadChatWidgetShown = {};
 		this.mafiaChatWidgetShown = {};
 	}
@@ -1483,6 +1496,9 @@ export class GameFlowManager {
 				}
 			});
 		}
+
+		// 봇 자동 행동 스케줄링
+		this.botScheduler.scheduleActionsForPhase(phase);
 	}
 
 	getCurrentPhase(): MafiaPhase {
@@ -2153,6 +2169,24 @@ export class GameFlowManager {
 	private processDayChatMessage(player: GamePlayer, message: string): void {
 		if (!this.room) return;
 		if (this.currentPhase !== MafiaPhase.DAY) return;
+
+		// 명령어 확인 (CommandManager에서 권한 체크)
+		if (CommandParser.isCommand(message)) {
+			const parsed = CommandParser.parse(message);
+			if (parsed) {
+				const executed = CommandManager.instance.executeCommand(parsed.command, parsed.args, {
+					player: player,
+					room: this.room,
+					flowManager: this,
+				});
+
+				// 명령어가 처리되었으면 채팅으로 브로드캐스트하지 않음
+				if (executed) {
+					return;
+				}
+				// 알 수 없는 명령어면 일반 채팅으로 진행
+			}
+		}
 
 		const mafiaPlayer = this.room?.players.find((p) => p.id === player.id);
 		if (!mafiaPlayer || !mafiaPlayer.isAlive) return;

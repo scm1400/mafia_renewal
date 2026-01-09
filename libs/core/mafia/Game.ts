@@ -13,6 +13,9 @@ import { MafiaPlayer } from "./managers/gameFlow/GameFlowManager";
 import { WidgetManager } from "./managers/widget/WidgetManager";
 import { WidgetType } from "./managers/widget/WidgetType";
 import { SpriteManager, SpriteType } from "./managers/Sprite/SpriteManager";
+import { CommandParser } from "./managers/command/CommandParser";
+import { CommandManager } from "./managers/command/CommandManager";
+import { registerCheatCommands } from "./managers/command/CheatCommands";
 
 export const adminList = [];
 export class Game extends GameBase {
@@ -47,6 +50,9 @@ export class Game extends GameBase {
 		gameModes.forEach((mode) => {
 			this.mafiaGameRoomManager.registerGameMode(mode);
 		});
+
+		// 치트 명령어 등록
+		registerCheatCommands();
 
 		for (let i = 1; i <= 20; i++) {
 			if (ScriptMap.hasLocation(`GameRoom_${i}`)) {
@@ -229,7 +235,24 @@ export class Game extends GameBase {
 				} else if (data.type === "requestUsers") {
 					this.sendUsersList(sender);
 				} else if (data.type === "lobbyChatMessage" && data.content) {
-					// 로비 채팅 메시지 처리
+					// 명령어 확인
+					if (CommandParser.isCommand(data.content)) {
+						const parsed = CommandParser.parse(data.content);
+						if (parsed) {
+							const executed = CommandManager.instance.executeCommand(parsed.command, parsed.args, {
+								player: sender,
+								room: null, // 로비에서는 null
+								flowManager: null,
+							});
+
+							// 명령어가 실행되었으면 채팅으로 브로드캐스트하지 않음
+							if (executed) {
+								return;
+							}
+						}
+					}
+
+					// 일반 채팅 메시지 처리
 					this.sendLobbyChatMessage(sender, data.content);
 				} else if (data.type === "createRoom" && data.data) {
 					const { title, maxPlayers, gameModeId } = data.data;
