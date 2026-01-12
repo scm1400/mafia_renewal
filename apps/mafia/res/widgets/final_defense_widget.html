@@ -1,113 +1,212 @@
 <!DOCTYPE html>
-<html style="overflow: hidden">
-
+<html lang="ko">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script>
-        /* create style sheet */
-        const newFontStylePath = document.URL.includes('https://zep.us') ? "https://cdn-static.zep.us/static/zep-script/css/typography.css" : "https://cdn-static-stage.zep.us/static/zep-script/css/typography.css";
-
+        const fontPath = document.URL.includes('https://zep.us')
+            ? "https://cdn-static.zep.us/static/zep-script/css/typography.css"
+            : "https://cdn-static-stage.zep.us/static/zep-script/css/typography.css";
         document.head.appendChild(Object.assign(document.createElement("link"), {
             rel: "stylesheet",
             type: "text/css",
-            href: newFontStylePath
+            href: fontPath
         }));
     </script>
-    <style type="text/css">
+    <style>
+        /* ============================================
+           Design System Variables
+           ============================================ */
         :root {
             --sat: env(safe-area-inset-top);
             --sar: env(safe-area-inset-right);
             --sab: env(safe-area-inset-bottom);
             --sal: env(safe-area-inset-left);
-            --primary-color: #00bcd4;
-            --primary-dark: #008ba3;
-            --secondary-color: #e91e63;
-            --text-color: #27262E;
-            --bg-color: #f5f5f5;
-            --card-color: #ffffff;
-            --card-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+
+            /* Neon Colors */
+            --neon-cyan: #00f0ff;
+            --neon-pink: #ff2d95;
+            --neon-purple: #b026ff;
+
+            /* Background */
+            --bg-base: #0a0a0f;
+            --bg-surface: #12121a;
+            --bg-elevated: #1a1a25;
+            --bg-overlay: rgba(10, 10, 15, 0.92);
+
+            /* Text */
+            --text-primary: #ffffff;
+            --text-secondary: #a0a0b0;
+            --text-muted: #606070;
+
+            /* Border */
+            --border-subtle: rgba(255, 255, 255, 0.05);
+            --border-default: rgba(255, 255, 255, 0.1);
+
+            /* Danger/Warning */
+            --danger: #ff3366;
+            --danger-glow: 0 0 20px rgba(255, 51, 102, 0.5);
+            --warning: #ffaa00;
+
+            /* Shadow */
+            --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.5);
+
+            /* Spacing */
+            --space-xs: 4px;
+            --space-sm: 8px;
+            --space-md: 12px;
+            --space-lg: 16px;
+            --space-xl: 24px;
+
+            /* Radius */
+            --radius-sm: 6px;
+            --radius-md: 10px;
+            --radius-lg: 14px;
+            --radius-full: 9999px;
+
+            /* Typography */
+            --font-family: 'Pretendard', 'Pretendard JP', -apple-system, BlinkMacSystemFont, sans-serif;
+
+            /* Transition */
+            --transition-fast: 0.15s ease;
+            --transition-normal: 0.25s ease;
         }
 
+        /* ============================================
+           Base Reset
+           ============================================ */
         * {
-            padding: 0;
             margin: 0;
+            padding: 0;
             box-sizing: border-box;
-            user-select: none !important;
-            font-family: 'Pretendard JP', 'Pretendard', sans-serif, Arial;
-            color: var(--text-color);
         }
 
         html {
             width: 100%;
             height: 100%;
+            overflow: hidden;
         }
 
         body {
             width: 100%;
             height: 100%;
+            font-family: var(--font-family);
+            font-size: 14px;
+            color: var(--text-primary);
+            background: var(--bg-overlay);
             display: flex;
-            flex-direction: column;
             align-items: center;
             justify-content: center;
-            background-color: rgba(0, 0, 0, 0.7);
+            user-select: none;
+            -webkit-user-select: none;
+            -webkit-font-smoothing: antialiased;
+            padding: var(--space-lg);
         }
 
+        /* ============================================
+           Main Container
+           ============================================ */
         .final-defense-container {
-            width: 90%;
-            max-width: 600px;
-            background-color: var(--card-color);
-            border-radius: 12px;
-            box-shadow: var(--card-shadow);
-            display: flex;
-            flex-direction: column;
+            width: 100%;
+            max-width: 480px;
+            background: var(--bg-surface);
+            border: 1px solid var(--danger);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-lg), var(--danger-glow);
+            overflow: hidden;
+            animation: containerAppear 0.4s ease-out;
         }
 
+        @keyframes containerAppear {
+            from {
+                opacity: 0;
+                transform: scale(0.95) translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1) translateY(0);
+            }
+        }
+
+        /* ============================================
+           Header
+           ============================================ */
         .header {
-            background-color: var(--primary-color);
-            color: white;
-            padding: 15px 20px;
+            background: linear-gradient(135deg, rgba(255, 51, 102, 0.2), rgba(255, 51, 102, 0.1));
+            border-bottom: 1px solid rgba(255, 51, 102, 0.3);
+            padding: var(--space-lg) var(--space-xl);
             text-align: center;
+            position: relative;
+        }
+
+        .header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, var(--danger), transparent);
+        }
+
+        .header-icon {
+            font-size: 28px;
+            margin-bottom: var(--space-sm);
         }
 
         .header h1 {
-            color: white;
-            font-size: 24px;
+            font-size: 20px;
             font-weight: 700;
-            margin-bottom: 5px;
+            color: var(--danger);
+            text-shadow: var(--danger-glow);
+            margin-bottom: var(--space-xs);
         }
 
         .header p {
-            color: rgba(255, 255, 255, 0.9);
-            font-size: 14px;
+            font-size: 12px;
+            color: var(--text-secondary);
         }
 
+        /* ============================================
+           Content
+           ============================================ */
         .content {
-            padding: 20px;
-            flex: 1;
+            padding: var(--space-lg);
             display: flex;
             flex-direction: column;
-            gap: 20px;
+            gap: var(--space-lg);
         }
 
+        /* Player Info */
         .player-info {
             display: flex;
             align-items: center;
-            gap: 15px;
-            padding: 15px;
-            background-color: #f8f8f8;
-            border-radius: 8px;
+            gap: var(--space-md);
+            padding: var(--space-md);
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-default);
+            border-radius: var(--radius-md);
         }
 
         .player-avatar {
-            width: 60px;
-            height: 60px;
-            border-radius: 50%;
-            background-color: #e0e0e0;
+            width: 48px;
+            height: 48px;
+            border-radius: var(--radius-full);
+            background: linear-gradient(135deg, var(--danger), rgba(255, 51, 102, 0.5));
+            border: 2px solid var(--danger);
             display: flex;
             align-items: center;
             justify-content: center;
-            font-weight: bold;
-            color: #555;
-            font-size: 24px;
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--text-primary);
+            box-shadow: var(--danger-glow);
+            animation: avatarPulse 2s ease-in-out infinite;
+        }
+
+        @keyframes avatarPulse {
+            0%, 100% { box-shadow: 0 0 15px rgba(255, 51, 102, 0.4); }
+            50% { box-shadow: 0 0 25px rgba(255, 51, 102, 0.7); }
         }
 
         .player-details {
@@ -115,95 +214,211 @@
         }
 
         .player-name {
-            font-size: 18px;
+            font-size: 16px;
             font-weight: 600;
-            margin-bottom: 5px;
+            color: var(--text-primary);
+            margin-bottom: var(--space-xs);
         }
 
         .player-status {
-            font-size: 14px;
-            color: #666;
+            font-size: 12px;
+            color: var(--danger);
+            display: flex;
+            align-items: center;
+            gap: var(--space-xs);
         }
 
+        .player-status::before {
+            content: '';
+            width: 6px;
+            height: 6px;
+            background: var(--danger);
+            border-radius: var(--radius-full);
+            animation: statusBlink 1s ease-in-out infinite;
+        }
+
+        @keyframes statusBlink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.4; }
+        }
+
+        /* Timer */
         .timer-container {
             text-align: center;
-            margin-bottom: 10px;
+            padding: var(--space-md);
+            background: var(--bg-base);
+            border-radius: var(--radius-md);
+            border: 1px solid var(--border-subtle);
+        }
+
+        .timer-label {
+            font-size: 11px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: var(--space-xs);
         }
 
         .timer {
-            font-size: 24px;
-            font-weight: 600;
-            color: var(--primary-color);
+            font-size: 32px;
+            font-weight: 700;
+            font-variant-numeric: tabular-nums;
+            color: var(--danger);
+            text-shadow: var(--danger-glow);
+            animation: timerPulse 1s ease-in-out infinite;
         }
 
+        .timer.warning {
+            color: var(--warning);
+            text-shadow: 0 0 20px rgba(255, 170, 0, 0.5);
+        }
+
+        .timer.critical {
+            animation: timerCritical 0.5s ease-in-out infinite;
+        }
+
+        @keyframes timerPulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.8; }
+        }
+
+        @keyframes timerCritical {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.7; transform: scale(1.05); }
+        }
+
+        /* Defense Area */
         .defense-area {
-            flex: 1;
             display: flex;
             flex-direction: column;
-            gap: 10px;
+            gap: var(--space-sm);
         }
 
         .defense-title {
-            font-size: 16px;
+            font-size: 13px;
             font-weight: 600;
+            color: var(--text-secondary);
+            display: flex;
+            align-items: center;
+            gap: var(--space-sm);
+        }
+
+        .defense-title::before {
+            content: '';
+            width: 3px;
+            height: 12px;
+            background: var(--danger);
+            border-radius: 2px;
         }
 
         .defense-input {
             width: 100%;
-            min-height: 100px;
-            padding: 10px;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-            resize: none;
+            min-height: 120px;
+            padding: var(--space-md);
+            background: var(--bg-base);
+            border: 1px solid var(--border-default);
+            border-radius: var(--radius-md);
+            color: var(--text-primary);
+            font-family: var(--font-family);
             font-size: 14px;
+            line-height: 1.5;
+            resize: none;
+            transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+        }
+
+        .defense-input::placeholder {
+            color: var(--text-muted);
+        }
+
+        .defense-input:focus {
+            outline: none;
+            border-color: var(--neon-cyan);
+            box-shadow: 0 0 0 3px rgba(0, 240, 255, 0.1);
         }
 
         .defense-message {
             width: 100%;
-            min-height: 100px;
-            padding: 10px;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-            background-color: #f9f9f9;
+            min-height: 120px;
+            max-height: 200px;
+            padding: var(--space-md);
+            background: var(--bg-base);
+            border: 1px solid var(--border-default);
+            border-radius: var(--radius-md);
             font-size: 14px;
+            line-height: 1.6;
+            color: var(--text-secondary);
             overflow-y: auto;
             white-space: pre-wrap;
         }
 
+        .defense-message.empty {
+            color: var(--text-muted);
+            font-style: italic;
+        }
+
+        /* Views */
+        .defendant-view,
+        .spectator-view {
+            display: none;
+        }
+
+        .defendant-view.active,
+        .spectator-view.active {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-md);
+        }
+
+        /* ============================================
+           Footer / Actions
+           ============================================ */
         .footer {
-            padding: 15px 20px;
+            padding: var(--space-md) var(--space-lg);
+            border-top: 1px solid var(--border-subtle);
             display: flex;
             justify-content: flex-end;
-            gap: 10px;
-            border-top: 1px solid #eee;
+            gap: var(--space-sm);
         }
 
         .button {
-            padding: 10px 20px;
-            border-radius: 5px;
+            padding: var(--space-sm) var(--space-lg);
+            border-radius: var(--radius-md);
             border: none;
+            font-family: var(--font-family);
+            font-size: 13px;
             font-weight: 600;
-            font-size: 14px;
             cursor: pointer;
-            transition: all 0.2s ease;
+            transition: all var(--transition-fast);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: var(--space-sm);
         }
 
         .button.primary {
-            background-color: var(--primary-color);
-            color: white;
+            background: linear-gradient(135deg, var(--neon-cyan), #00b8cc);
+            color: var(--bg-base);
+            box-shadow: 0 0 15px rgba(0, 240, 255, 0.3);
         }
 
-        .button.primary:hover {
-            background-color: var(--primary-dark);
+        .button.primary:hover:not(:disabled) {
+            box-shadow: 0 0 25px rgba(0, 240, 255, 0.5);
+            transform: translateY(-1px);
+        }
+
+        .button.primary:active:not(:disabled) {
+            transform: scale(0.98);
         }
 
         .button.secondary {
-            background-color: #e0e0e0;
-            color: #333;
+            background: var(--bg-elevated);
+            color: var(--text-secondary);
+            border: 1px solid var(--border-default);
         }
 
-        .button.secondary:hover {
-            background-color: #d5d5d5;
+        .button.secondary:hover:not(:disabled) {
+            border-color: var(--neon-pink);
+            color: var(--neon-pink);
         }
 
         .button:disabled {
@@ -211,25 +426,72 @@
             cursor: not-allowed;
         }
 
-        .spectator-view {
-            display: none;
+        .button.submitted {
+            background: var(--bg-elevated);
+            color: var(--text-muted);
+            pointer-events: none;
         }
 
-        .defendant-view {
-            display: none;
+        .button.submitted::before {
+            content: '✓';
+            margin-right: var(--space-xs);
         }
 
         .hidden {
-            display: none;
+            display: none !important;
+        }
+
+        /* ============================================
+           Mobile Styles
+           ============================================ */
+        body.mobile {
+            padding: 0;
+        }
+
+        body.mobile .final-defense-container {
+            max-width: 100%;
+            border-radius: 0;
+            border-left: none;
+            border-right: none;
+            min-height: 100%;
+        }
+
+        body.mobile .content {
+            flex: 1;
+        }
+
+        body.mobile .defense-input,
+        body.mobile .defense-message {
+            min-height: 150px;
+        }
+
+        /* ============================================
+           Scrollbar
+           ============================================ */
+        ::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--bg-base);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--bg-elevated);
+            border-radius: var(--radius-full);
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(0, 240, 255, 0.3);
         }
     </style>
 </head>
-
 <body>
     <div class="final-defense-container">
         <div class="header">
+            <div class="header-icon">⚖️</div>
             <h1>최후 변론</h1>
-            <p>가장 많은 표를 받은 플레이어의 최후 변론 시간입니다.</p>
+            <p>가장 많은 표를 받은 플레이어의 최후 변론 시간입니다</p>
         </div>
 
         <div class="content">
@@ -242,20 +504,21 @@
             </div>
 
             <div class="timer-container">
+                <div class="timer-label">남은 시간</div>
                 <div class="timer" id="timer">00:20</div>
             </div>
 
-            <!-- 피고인 뷰 -->
+            <!-- Defendant View -->
             <div class="defense-area defendant-view" id="defendantView">
-                <div class="defense-title">당신의 최후 변론을 입력하세요:</div>
+                <div class="defense-title">당신의 최후 변론을 입력하세요</div>
                 <textarea class="defense-input" id="defenseInput" placeholder="자신의 무죄를 주장하세요..."></textarea>
                 <button class="button primary" id="submitDefenseBtn">변론 제출</button>
             </div>
 
-            <!-- 관전자 뷰 -->
+            <!-- Spectator View -->
             <div class="defense-area spectator-view" id="spectatorView">
-                <div class="defense-title">최후 변론 내용:</div>
-                <div class="defense-message" id="defenseMessage">
+                <div class="defense-title">최후 변론 내용</div>
+                <div class="defense-message empty" id="defenseMessage">
                     아직 변론이 제출되지 않았습니다.
                 </div>
             </div>
@@ -267,15 +530,17 @@
     </div>
 
     <script>
-        // 전역 변수
-        let timeLeft = 20; // 기본 20초
+        // Global variables
+        let timeLeft = 20;
         let timerInterval;
         let isDefendant = false;
         let defenseSubmitted = false;
         let defendantId = null;
         let myPlayerId = null;
+        let _isMobile = false;
+        let _isTablet = false;
 
-        // DOM 요소
+        // DOM elements
         const timerElement = document.getElementById('timer');
         const playerNameElement = document.getElementById('playerName');
         const playerAvatarElement = document.getElementById('playerAvatar');
@@ -286,55 +551,70 @@
         const submitDefenseBtn = document.getElementById('submitDefenseBtn');
         const closeBtn = document.getElementById('closeBtn');
 
-        // 이벤트 리스너
+        // Event listeners
         submitDefenseBtn.addEventListener('click', submitDefense);
         closeBtn.addEventListener('click', closeWidget);
 
-        // 초기화 함수
         function initialize(data) {
-
-            // 플레이어 정보 설정
+            // Set player info
             defendantId = data.defendantId;
             myPlayerId = data.myPlayerId;
             isDefendant = defendantId === myPlayerId;
             defenseSubmitted = false;
 
-            // 플레이어 이름과 아바타 설정
+            // Set player name and avatar
             playerNameElement.textContent = data.defendantName;
             playerAvatarElement.textContent = data.defendantName.charAt(0).toUpperCase();
 
-            // 타이머 설정
+            // Set timer
             timeLeft = data.timeLimit || 20;
             updateTimerDisplay();
             startTimer();
 
-            // 뷰 설정
+            // Reset input
+            defenseInput.value = '';
+            submitDefenseBtn.disabled = false;
+            submitDefenseBtn.classList.remove('submitted');
+            submitDefenseBtn.textContent = '변론 제출';
+
+            // Set view
             if (isDefendant) {
-                defendantView.style.display = 'block';
-                spectatorView.style.display = 'none';
-                submitDefenseBtn.disabled = false;
+                defendantView.classList.add('active');
+                spectatorView.classList.remove('active');
             } else {
-                defendantView.style.display = 'none';
-                spectatorView.style.display = 'block';
-                submitDefenseBtn.disabled = true;
+                defendantView.classList.remove('active');
+                spectatorView.classList.add('active');
             }
 
-            updateDefenseMessage();
+            // Reset defense message
+            defenseMessage.textContent = '아직 변론이 제출되지 않았습니다.';
+            defenseMessage.classList.add('empty');
 
-            // 위젯 표시
             revealWidget();
         }
 
-        // 타이머 시작
         function startTimer() {
+            if (timerInterval) {
+                clearInterval(timerInterval);
+            }
+
             timerInterval = setInterval(() => {
                 timeLeft--;
                 updateTimerDisplay();
 
+                // Add warning/critical classes
+                if (timeLeft <= 5) {
+                    timerElement.classList.add('critical');
+                    timerElement.classList.remove('warning');
+                } else if (timeLeft <= 10) {
+                    timerElement.classList.add('warning');
+                    timerElement.classList.remove('critical');
+                }
+
                 if (timeLeft <= 0) {
                     clearInterval(timerInterval);
 
-                    // 시간이 다 되었을 때 자동 제출
+                    // Auto-submit when time is up
                     if (isDefendant && !defenseSubmitted) {
                         submitDefense();
                     }
@@ -342,94 +622,81 @@
             }, 1000);
         }
 
-        // 타이머 표시 업데이트
         function updateTimerDisplay() {
             const minutes = Math.floor(timeLeft / 60);
             const seconds = timeLeft % 60;
             timerElement.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
         }
 
-        // 변론 제출
         function submitDefense() {
             if (defenseSubmitted) return;
 
             const defenseText = defenseInput.value.trim();
             defenseSubmitted = true;
             submitDefenseBtn.disabled = true;
+            submitDefenseBtn.classList.add('submitted');
+            submitDefenseBtn.textContent = '제출 완료';
 
-            // 부모 창에 변론 내용 전송
             window.parent.postMessage({
                 type: 'submitDefense',
                 defense: defenseText
             }, '*');
         }
 
-        // 변론 내용 업데이트 (관전자 뷰)
         function updateDefenseMessage(message) {
-            defenseMessage.textContent = message || '변론이 제출되지 않았습니다.';
+            if (message && message.trim()) {
+                defenseMessage.textContent = message;
+                defenseMessage.classList.remove('empty');
+            } else {
+                defenseMessage.textContent = '변론이 제출되지 않았습니다.';
+                defenseMessage.classList.add('empty');
+            }
         }
 
-        // 위젯 닫기
         function closeWidget() {
             hideWidget();
-
-            // 서버에서 hideWidget 메시지로 위젯을 닫음
         }
 
-        let _isMobile = false;
-        let _isTablet = false;
-        let $contentWrapper;
-
         function hideWidget() {
+            if (timerInterval) {
+                clearInterval(timerInterval);
+            }
             window.parent.postMessage({
                 type: "WidgetRearrange",
                 width: "0px",
                 height: "0px",
-            }, "*")
+            }, "*");
             window.parent.focus();
         }
 
-        function revealWidget(moveScrollToBottom = false) {
-            if (moveScrollToBottom && $contentWrapper) {
-                $contentWrapper.scrollTop = $contentWrapper.scrollHeight;
-            }
+        function revealWidget() {
             if (_isMobile) {
-                const rtcAndNotchHeight = 160 + parseInt(getComputedStyle(document.documentElement,).getPropertyValue("--sat"));
                 window.parent.postMessage({
                     type: 'WidgetRearrange',
                     anchor: 'middle',
                     height: '100%',
                     width: '100%',
-                    top: `-${parseInt(0)}px`
-                }, '*')
+                }, '*');
             } else {
                 window.parent.postMessage({
                     type: "WidgetRearrange",
                     anchor: "middle",
-                    width: `100%`,
-                    height: `${document.querySelector('.final-defense-container').offsetHeight + 10}px`,
-                }, "*")
+                    width: "520px",
+                    height: "500px",
+                }, "*");
             }
         }
 
-        function fitTheSize() {
-            window.parent.postMessage({
-                type: "WidgetRearrange",
-                width: document.body.offsetWidth + 10,
-                height: document.body.offsetHeight + 10,
-            }, "*")
-        }
-
-        // 메시지 수신 처리
-        window.addEventListener('message', function (e) {
+        // Message handler
+        window.addEventListener('message', function(e) {
             const data = e.data;
 
-            if(data.type === "setWidget"){
+            if (data.type === "setWidget") {
                 _isMobile = data.isMobile;
                 _isTablet = data.isTablet;
-                if(data.isMobile && !data.isTablet){
+                if (data.isMobile && !data.isTablet) {
                     document.body.classList.add('mobile');
-                }else{
+                } else {
                     document.body.classList.remove('mobile');
                 }
                 hideWidget();
@@ -437,18 +704,16 @@
                 initialize(data);
             } else if (data.type === 'updateDefense') {
                 updateDefenseMessage(data.defense);
-            } else if (data.type === 'hideWidget') {
-                // WidgetManager에서 보내는 숨김 메시지 처리
+            } else if (data.type === 'hideWidget' || data.type === 'hide') {
                 hideWidget();
-            } else if (data.type === 'showWidget') {
-                // WidgetManager에서 보내는 표시 메시지 처리
+            } else if (data.type === 'showWidget' || data.type === 'reveal') {
                 revealWidget();
             } else if (data.type === 'focusInput') {
                 defenseInput.focus();
             }
         });
 
-        // ESC 키 이벤트 리스너 추가
+        // ESC key handler
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape') {
                 window.parent.focus();
@@ -456,5 +721,4 @@
         });
     </script>
 </body>
-
 </html>

@@ -1,120 +1,269 @@
 <!DOCTYPE html>
-<html style="overflow: hidden">
-
+<html lang="ko">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script>
-        /* create style sheet */
-        const newFontStylePath = document.URL.includes('https://zep.us') ? "https://cdn-static.zep.us/static/zep-script/css/typography.css" : "https://cdn-static-stage.zep.us/static/zep-script/css/typography.css";
-
+        const fontPath = document.URL.includes('https://zep.us')
+            ? "https://cdn-static.zep.us/static/zep-script/css/typography.css"
+            : "https://cdn-static-stage.zep.us/static/zep-script/css/typography.css";
         document.head.appendChild(Object.assign(document.createElement("link"), {
             rel: "stylesheet",
             type: "text/css",
-            href: newFontStylePath
+            href: fontPath
         }));
     </script>
-    <style type="text/css">
+    <style>
+        /* ============================================
+           Design System Variables
+           ============================================ */
         :root {
             --sat: env(safe-area-inset-top);
             --sar: env(safe-area-inset-right);
             --sab: env(safe-area-inset-bottom);
             --sal: env(safe-area-inset-left);
+
+            /* Neon Colors */
+            --neon-cyan: #00f0ff;
+            --neon-cyan-dark: #00b8cc;
+            --neon-pink: #ff2d95;
+            --neon-pink-dark: #cc0055;
+            --neon-purple: #b026ff;
+
+            /* Role Colors */
+            --role-mafia: #ff3366;
+            --role-police: #00aaff;
+            --role-doctor: #00ff88;
+            --role-spy: #b026ff;
+            --role-medium: #8b5cf6;
+            --role-soldier: #64748b;
+            --role-politician: #f59e0b;
+            --role-lover: #ec4899;
+            --role-journalist: #06b6d4;
+            --role-werewolf: #78350f;
+            --role-gangster: #475569;
+            --role-detective: #0284c7;
+            --role-gravedigger: #6b7280;
+            --role-terrorist: #dc2626;
+            --role-madam: #db2777;
+
+            /* Background */
+            --bg-base: #0a0a0f;
+            --bg-surface: #12121a;
+            --bg-elevated: #1a1a25;
+            --bg-overlay: rgba(10, 10, 15, 0.92);
+
+            /* Text */
+            --text-primary: #ffffff;
+            --text-secondary: #a0a0b0;
+            --text-muted: #606070;
+
+            /* Border */
+            --border-subtle: rgba(255, 255, 255, 0.05);
+            --border-default: rgba(255, 255, 255, 0.1);
+
+            /* Glow */
+            --glow-pink: 0 0 20px rgba(255, 45, 149, 0.5);
+
+            /* Shadow */
+            --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.5);
+
+            /* Spacing */
+            --space-xs: 4px;
+            --space-sm: 8px;
+            --space-md: 12px;
+            --space-lg: 16px;
+            --space-xl: 24px;
+
+            /* Radius */
+            --radius-sm: 6px;
+            --radius-md: 10px;
+            --radius-lg: 14px;
+            --radius-full: 9999px;
+
+            /* Typography */
+            --font-family: 'Pretendard', 'Pretendard JP', -apple-system, BlinkMacSystemFont, sans-serif;
+
+            /* Transition */
+            --transition-fast: 0.15s ease;
+            --transition-normal: 0.25s ease;
+
+            /* Role Glow */
+            --role-glow: var(--glow-pink);
+            --role-color: var(--neon-pink);
         }
 
+        /* ============================================
+           Base Reset
+           ============================================ */
         * {
-            padding: 0;
             margin: 0;
+            padding: 0;
             box-sizing: border-box;
-            user-select: none !important;
-            font-family: 'Pretendard JP', 'Pretendard', sans-serif, Arial;
-            color: #27262E;
         }
 
         html {
             width: 100%;
             height: 100%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: rgba(28, 27, 31, 0.80);
-            backdrop-filter: blur(2px);
+            overflow: hidden;
         }
 
         body {
+            width: 100%;
+            height: 100%;
+            font-family: var(--font-family);
+            font-size: 14px;
+            color: var(--text-primary);
+            background: var(--bg-overlay);
             display: flex;
-            flex-direction: column;
-            justify-content: center;
-            width: 400px;
-            max-width: 100%;
             align-items: center;
-            height: max-content;
+            justify-content: center;
+            user-select: none;
+            -webkit-user-select: none;
+            -webkit-font-smoothing: antialiased;
         }
 
+        /* ============================================
+           Action Container
+           ============================================ */
         .action-container {
-            width: 100%;
-            background-color: #fff;
-            border-radius: 12px;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
-            overflow: hidden;
+            width: 420px;
+            max-width: calc(100% - 32px);
+            max-height: 90vh;
+            background: var(--bg-surface);
+            border: 1px solid var(--role-color);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-lg), var(--role-glow);
             display: flex;
             flex-direction: column;
-            align-items: center;
-            padding: 20px;
+            overflow: hidden;
+            animation: scaleIn 0.3s ease-out;
             position: relative;
         }
 
+        @keyframes scaleIn {
+            from {
+                opacity: 0;
+                transform: scale(0.95);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        /* Close Button */
+        .close-button {
+            position: absolute;
+            top: var(--space-md);
+            right: var(--space-md);
+            width: 32px;
+            height: 32px;
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-default);
+            border-radius: var(--radius-full);
+            color: var(--text-secondary);
+            font-size: 18px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all var(--transition-fast);
+            z-index: 10;
+        }
+
+        .close-button:hover {
+            border-color: var(--neon-pink);
+            color: var(--neon-pink);
+        }
+
+        /* ============================================
+           Header
+           ============================================ */
         .action-header {
-            width: 100%;
+            padding: var(--space-xl);
+            padding-right: 50px;
             text-align: center;
-            margin-bottom: 20px;
+            border-bottom: 1px solid var(--border-subtle);
         }
 
         .action-title {
-            font-size: 24px;
+            font-size: 22px;
             font-weight: 700;
-            margin-bottom: 5px;
+            color: var(--role-color);
+            text-shadow: var(--role-glow);
+            margin-bottom: var(--space-xs);
         }
 
         .action-subtitle {
-            font-size: 14px;
-            color: #666;
+            font-size: 13px;
+            color: var(--text-secondary);
         }
 
+        /* Timer */
         .timer {
+            text-align: center;
+            padding: var(--space-md);
             font-size: 18px;
             font-weight: 600;
-            color: #d32f2f;
-            margin-bottom: 15px;
+            color: var(--text-primary);
+            font-variant-numeric: tabular-nums;
+            border-bottom: 1px solid var(--border-subtle);
         }
 
+        .timer.urgent {
+            color: var(--neon-pink);
+            animation: urgentPulse 1s ease-in-out infinite;
+        }
+
+        @keyframes urgentPulse {
+            0%, 100% {
+                color: var(--neon-pink);
+                text-shadow: 0 0 20px rgba(255, 45, 149, 0.5);
+            }
+            50% {
+                color: #ff6b9d;
+                text-shadow: 0 0 35px rgba(255, 45, 149, 0.8);
+            }
+        }
+
+        /* ============================================
+           Players List
+           ============================================ */
         .players-list {
-            width: 100%;
-            max-height: 300px;
+            flex: 1;
             overflow-y: auto;
-            margin-bottom: 20px;
+            padding: var(--space-md);
+            min-height: 0;
+            max-height: 280px;
         }
 
         .player-item {
             display: flex;
             align-items: center;
-            padding: 10px 15px;
-            border-radius: 8px;
-            margin-bottom: 8px;
+            gap: var(--space-md);
+            padding: var(--space-md);
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-md);
+            margin-bottom: var(--space-sm);
             cursor: pointer;
-            transition: all 0.2s ease;
-            background-color: #f5f5f5;
+            transition: all var(--transition-fast);
         }
 
-        .player-item:hover {
-            background-color: #e0e0e0;
+        .player-item:hover:not(.dead) {
+            background: rgba(255, 45, 149, 0.05);
+            border-color: rgba(255, 45, 149, 0.3);
         }
 
         .player-item.selected {
-            background-color: #e3f2fd;
-            border: 1px solid #1976d2;
+            background: rgba(255, 45, 149, 0.1);
+            border-color: var(--neon-pink);
+            box-shadow: var(--glow-pink);
         }
 
         .player-item.dead {
-            opacity: 0.5;
+            opacity: 0.4;
             cursor: not-allowed;
             text-decoration: line-through;
         }
@@ -122,466 +271,348 @@
         .player-avatar {
             width: 40px;
             height: 40px;
-            border-radius: 50%;
-            background-color: #ddd;
+            background: var(--bg-base);
+            border: 1px solid var(--border-default);
+            border-radius: var(--radius-full);
             display: flex;
             align-items: center;
             justify-content: center;
-            margin-right: 15px;
             font-size: 20px;
+            flex-shrink: 0;
         }
 
         .player-info {
             flex: 1;
+            min-width: 0;
         }
 
         .player-name {
+            font-size: 15px;
             font-weight: 600;
-            font-size: 16px;
-            margin-bottom: 2px;
+            color: var(--text-primary);
         }
 
         .player-status {
             font-size: 12px;
-            color: #666;
+            color: var(--text-muted);
+        }
+
+        /* ============================================
+           Action Button
+           ============================================ */
+        .action-button-container {
+            padding: var(--space-lg);
+            border-top: 1px solid var(--border-subtle);
         }
 
         .action-button {
             width: 100%;
-            padding: 12px;
-            border-radius: 8px;
-            color: white;
-            font-weight: 600;
-            font-size: 16px;
+            height: 48px;
+            background: linear-gradient(135deg, var(--role-color), var(--neon-pink-dark));
             border: none;
+            border-radius: var(--radius-md);
+            color: var(--text-primary);
+            font-family: var(--font-family);
+            font-size: 16px;
+            font-weight: 700;
             cursor: pointer;
-            transition: all 0.2s ease;
-            margin-top: 10px;
+            transition: all var(--transition-fast);
+            box-shadow: var(--role-glow);
+        }
+
+        .action-button:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 0 30px rgba(255, 45, 149, 0.6);
         }
 
         .action-button:disabled {
-            background-color: #bdbdbd !important;
+            background: var(--bg-elevated);
+            color: var(--text-muted);
+            box-shadow: none;
             cursor: not-allowed;
         }
 
+        /* ============================================
+           Result Container
+           ============================================ */
         .result-container {
-            width: 100%;
-            background-color: #f5f5f5;
-            border-radius: 8px;
-            padding: 15px;
-            margin-top: 20px;
-            text-align: center;
             display: none;
+            padding: var(--space-lg);
+            text-align: center;
+        }
+
+        .result-container.visible {
+            display: block;
         }
 
         .result-title {
-            font-weight: 600;
             font-size: 18px;
-            margin-bottom: 10px;
+            font-weight: 600;
+            color: var(--role-color);
+            margin-bottom: var(--space-md);
         }
 
         .result-content {
-            font-size: 16px;
-            color: #333;
-        }
-
-        .close-button {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            width: 30px;
-            height: 30px;
-            border-radius: 50%;
-            background-color: #f5f5f5;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            font-size: 18px;
-            color: #555;
-        }
-
-        /* 역할별 스타일 */
-        .mafia .action-title {
-            color: #d32f2f;
-        }
-
-        .mafia .action-button {
-            background-color: #d32f2f;
-        }
-
-        .mafia .action-button:hover {
-            background-color: #b71c1c;
-        }
-
-        .police .action-title {
-            color: #1976d2;
-        }
-
-        .police .action-button {
-            background-color: #1976d2;
-        }
-
-        .police .action-button:hover {
-            background-color: #1565c0;
-        }
-
-        .doctor .action-title {
-            color: #388e3c;
-        }
-
-        .doctor .action-button {
-            background-color: #388e3c;
-        }
-
-        .doctor .action-button:hover {
-            background-color: #2e7d32;
-        }
-
-        .spy .action-title {
-            color: #7b1fa2;
-        }
-
-        .spy .action-button {
-            background-color: #7b1fa2;
-        }
-
-        .spy .action-button:hover {
-            background-color: #6a1b9a;
-        }
-
-        .medium .action-title {
-            color: #6d4c41;
-        }
-
-        .medium .action-button {
-            background-color: #6d4c41;
-        }
-
-        .medium .action-button:hover {
-            background-color: #5d4037;
-        }
-
-        .soldier .action-title {
-            color: #546e7a;
-        }
-
-        .soldier .action-button {
-            background-color: #546e7a;
-        }
-
-        .soldier .action-button:hover {
-            background-color: #455a64;
-        }
-
-        .politician .action-title {
-            color: #f57c00;
-        }
-
-        .politician .action-button {
-            background-color: #f57c00;
-        }
-
-        .politician .action-button:hover {
-            background-color: #ef6c00;
-        }
-
-        .lover .action-title {
-            color: #e91e63;
-        }
-
-        .lover .action-button {
-            background-color: #e91e63;
-        }
-
-        .lover .action-button:hover {
-            background-color: #d81b60;
-        }
-
-        .journalist .action-title {
-            color: #00acc1;
-        }
-
-        .journalist .action-button {
-            background-color: #00acc1;
-        }
-
-        .journalist .action-button:hover {
-            background-color: #0097a7;
-        }
-
-        .werewolf .action-title {
-            color: #5d4037;
-        }
-
-        .werewolf .action-button {
-            background-color: #5d4037;
-        }
-
-        .werewolf .action-button:hover {
-            background-color: #4e342e;
-        }
-
-        .gangster .action-title {
-            color: #455a64;
-        }
-
-        .gangster .action-button {
-            background-color: #455a64;
-        }
-
-        .gangster .action-button:hover {
-            background-color: #37474f;
-        }
-
-        .detective .action-title {
-            color: #0288d1;
-        }
-
-        .detective .action-button {
-            background-color: #0288d1;
-        }
-
-        .detective .action-button:hover {
-            background-color: #0277bd;
-        }
-
-        .gravedigger .action-title {
-            color: #616161;
-        }
-
-        .gravedigger .action-button {
-            background-color: #616161;
-        }
-
-        .gravedigger .action-button:hover {
-            background-color: #424242;
-        }
-
-        .terrorist .action-title {
-            color: #d84315;
-        }
-
-        .terrorist .action-button {
-            background-color: #d84315;
-        }
-
-        .terrorist .action-button:hover {
-            background-color: #bf360c;
-        }
-
-        .madam .action-title {
-            color: #c2185b;
-        }
-
-        .madam .action-button {
-            background-color: #c2185b;
-        }
-
-        .madam .action-button:hover {
-            background-color: #ad1457;
-        }
-
-        .dead .action-title {
-            color: #9e9e9e;
-        }
-
-        .dead .action-button {
-            background-color: #9e9e9e;
-        }
-
-        .dead .action-button:hover {
-            background-color: #757575;
-        }
-
-        /* 모바일 스타일 */
-        .mobile {
-            width: 100%;
-            padding: 15px;
-        }
-
-        .mobile .action-container {
-            width: 100%;
-            padding: 15px;
-        }
-
-        .mobile .player-item {
-            padding: 8px 10px;
-        }
-
-        .mobile .player-avatar {
-            width: 30px;
-            height: 30px;
-            font-size: 16px;
-            margin-right: 10px;
-        }
-
-        .mobile .player-name {
             font-size: 14px;
+            color: var(--text-secondary);
+            line-height: 1.6;
+            background: var(--bg-elevated);
+            padding: var(--space-lg);
+            border-radius: var(--radius-md);
+            border: 1px solid var(--border-subtle);
         }
 
-        /* 채팅 영역 스타일 */
+        .result-content strong {
+            color: var(--neon-cyan);
+        }
+
+        .result-content .mafia-indicator {
+            color: var(--role-mafia);
+        }
+
+        .result-content .citizen-indicator {
+            color: var(--neon-cyan);
+        }
+
+        .action-again-btn {
+            margin-top: var(--space-lg);
+            padding: var(--space-md) var(--space-xl);
+            background: var(--bg-elevated);
+            border: 1px solid var(--neon-cyan);
+            border-radius: var(--radius-md);
+            color: var(--neon-cyan);
+            font-family: var(--font-family);
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all var(--transition-fast);
+        }
+
+        .action-again-btn:hover {
+            background: rgba(0, 240, 255, 0.1);
+        }
+
+        /* ============================================
+           Chat Container
+           ============================================ */
         .chat-container {
             display: none;
             flex-direction: column;
-            width: 100%;
-            margin-top: 15px;
-            border-top: 1px solid #ddd;
-            padding-top: 15px;
+            padding: var(--space-lg);
+            padding-top: 0;
+            border-top: 1px solid var(--border-subtle);
+        }
+
+        .chat-container.visible {
+            display: flex;
         }
 
         .chat-messages {
-            width: 100%;
             height: 200px;
             overflow-y: auto;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            padding: 10px;
-            margin-bottom: 10px;
-            background-color: #f9f9f9;
-            scrollbar-width: thin;
-            scrollbar-color: #999 transparent;
+            background: var(--bg-base);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-md);
+            padding: var(--space-md);
+            margin-bottom: var(--space-md);
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-sm);
         }
 
         .chat-messages::-webkit-scrollbar {
-            width: 6px;
-        }
-
-        .chat-messages::-webkit-scrollbar-track {
-            background: transparent;
+            width: 4px;
         }
 
         .chat-messages::-webkit-scrollbar-thumb {
-            background-color: #999;
-            border-radius: 3px;
+            background: var(--bg-elevated);
+            border-radius: var(--radius-full);
         }
 
         .chat-message {
-            margin-bottom: 8px;
-            padding: 8px 10px;
-            border-radius: 8px;
-            word-break: break-word;
-            animation: fadeIn 0.3s ease;
             max-width: 80%;
+            padding: var(--space-sm) var(--space-md);
+            border-radius: var(--radius-md);
+            animation: fadeIn 0.2s ease-out;
         }
 
         @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
+            from { opacity: 0; transform: translateY(8px); }
             to { opacity: 1; transform: translateY(0); }
         }
 
         .chat-message.my-message {
-            background-color: #e3f2fd;
-            margin-left: auto;
-            border: 1px solid #bbdefb;
+            align-self: flex-end;
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-default);
         }
 
         .chat-message.other-message {
-            background-color: #f1f1f1;
-            margin-right: auto;
-            border: 1px solid #e0e0e0;
+            align-self: flex-start;
+            background: rgba(255, 45, 149, 0.1);
+            border: 1px solid rgba(255, 45, 149, 0.2);
         }
 
         .chat-message.system-message {
-            background-color: rgba(255, 193, 7, 0.1);
-            margin: 8px auto;
-            color: #f57f17;
+            align-self: center;
+            max-width: 100%;
+            background: rgba(255, 170, 0, 0.1);
+            border: 1px solid rgba(255, 170, 0, 0.3);
+            color: #ffaa00;
             font-style: italic;
             text-align: center;
-            max-width: 100%;
-            border: 1px solid rgba(255, 193, 7, 0.3);
         }
 
         .chat-message .sender {
+            font-size: 11px;
             font-weight: 600;
-            margin-bottom: 3px;
-            font-size: 12px;
-            color: #666;
+            color: var(--neon-pink);
+            margin-bottom: 2px;
         }
 
         .chat-message .content {
-            word-break: break-word;
             font-size: 14px;
+            color: var(--text-secondary);
             line-height: 1.4;
         }
 
         .chat-message .timestamp {
             font-size: 10px;
-            margin-top: 3px;
-            color: rgba(0, 0, 0, 0.5);
+            color: var(--text-muted);
             text-align: right;
+            margin-top: 2px;
         }
 
         .chat-input-container {
             display: flex;
-            width: 100%;
-            border-radius: 8px;
-            overflow: hidden;
-            border: 1px solid #ddd;
+            gap: var(--space-sm);
         }
 
         .chat-input {
             flex: 1;
-            padding: 10px 12px;
-            border: none;
-            outline: none;
+            height: 40px;
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-default);
+            border-radius: var(--radius-md);
+            padding: 0 var(--space-md);
+            color: var(--text-primary);
+            font-family: var(--font-family);
             font-size: 14px;
-            background-color: white;
+            outline: none;
         }
 
-        .chat-input::placeholder {
-            color: #999;
+        .chat-input:focus {
+            border-color: var(--neon-pink);
         }
 
         .chat-send-button {
-            padding: 10px 15px;
-            background-color: #4caf50;
-            color: white;
+            height: 40px;
+            padding: 0 var(--space-lg);
+            background: linear-gradient(135deg, var(--neon-pink), var(--neon-pink-dark));
             border: none;
+            border-radius: var(--radius-md);
+            color: var(--text-primary);
+            font-family: var(--font-family);
+            font-weight: 600;
             cursor: pointer;
-            font-weight: 500;
-            transition: background-color 0.2s;
+            transition: all var(--transition-fast);
         }
 
         .chat-send-button:hover {
-            background-color: #3d8b40;
+            box-shadow: var(--glow-pink);
         }
 
-        .chat-send-button:active {
-            background-color: #2e7d32;
+        /* ============================================
+           Scrollbar
+           ============================================ */
+        .players-list::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .players-list::-webkit-scrollbar-track {
+            background: var(--bg-base);
+            border-radius: var(--radius-full);
+        }
+
+        .players-list::-webkit-scrollbar-thumb {
+            background: var(--bg-elevated);
+            border-radius: var(--radius-full);
+        }
+
+        /* ============================================
+           Role-specific Colors
+           ============================================ */
+        .action-container.mafia { --role-color: var(--role-mafia); --role-glow: 0 0 20px rgba(255, 51, 102, 0.5); }
+        .action-container.police { --role-color: var(--role-police); --role-glow: 0 0 20px rgba(0, 170, 255, 0.5); }
+        .action-container.doctor { --role-color: var(--role-doctor); --role-glow: 0 0 20px rgba(0, 255, 136, 0.5); }
+        .action-container.spy { --role-color: var(--role-spy); --role-glow: 0 0 20px rgba(176, 38, 255, 0.5); }
+        .action-container.medium { --role-color: var(--role-medium); --role-glow: 0 0 20px rgba(139, 92, 246, 0.5); }
+        .action-container.soldier { --role-color: var(--role-soldier); --role-glow: 0 0 20px rgba(100, 116, 139, 0.5); }
+        .action-container.politician { --role-color: var(--role-politician); --role-glow: 0 0 20px rgba(245, 158, 11, 0.5); }
+        .action-container.lover { --role-color: var(--role-lover); --role-glow: 0 0 20px rgba(236, 72, 153, 0.5); }
+        .action-container.journalist { --role-color: var(--role-journalist); --role-glow: 0 0 20px rgba(6, 182, 212, 0.5); }
+        .action-container.werewolf { --role-color: var(--role-werewolf); --role-glow: 0 0 20px rgba(120, 53, 15, 0.5); }
+        .action-container.gangster { --role-color: var(--role-gangster); --role-glow: 0 0 20px rgba(71, 85, 105, 0.5); }
+        .action-container.detective { --role-color: var(--role-detective); --role-glow: 0 0 20px rgba(2, 132, 199, 0.5); }
+        .action-container.gravedigger { --role-color: var(--role-gravedigger); --role-glow: 0 0 20px rgba(107, 114, 128, 0.5); }
+        .action-container.terrorist { --role-color: var(--role-terrorist); --role-glow: 0 0 20px rgba(220, 38, 38, 0.5); }
+        .action-container.madam { --role-color: var(--role-madam); --role-glow: 0 0 20px rgba(219, 39, 119, 0.5); }
+
+        /* ============================================
+           Mobile Styles
+           ============================================ */
+        body.mobile .action-container {
+            width: 100%;
+            max-width: 100%;
+            height: 100%;
+            max-height: 100%;
+            border-radius: 0;
+            border: none;
+        }
+
+        body.mobile .action-header {
+            padding-top: calc(var(--space-xl) + var(--sat));
+        }
+
+        body.mobile .close-button {
+            top: calc(var(--space-md) + var(--sat));
+        }
+
+        body.mobile .action-button-container {
+            padding-bottom: calc(var(--space-lg) + var(--sab));
+        }
+
+        body.mobile .players-list {
+            max-height: none;
+            flex: 1;
         }
     </style>
 </head>
-
 <body>
     <div class="action-container" id="action-container">
         <div class="close-button" onclick="closeWidget()">×</div>
+
         <div class="action-header">
             <div class="action-title" id="action-title">밤 행동</div>
             <div class="action-subtitle" id="action-subtitle">당신의 역할에 맞는 행동을 선택하세요</div>
         </div>
+
         <div class="timer" id="timer">남은 시간: 30초</div>
 
-        <div class="players-list" id="players-list">
-            <!-- 플레이어 목록이 여기에 동적으로 추가됩니다 -->
+        <div class="players-list" id="players-list"></div>
+
+        <div class="action-button-container">
+            <button class="action-button" id="action-button" disabled>선택 완료</button>
         </div>
 
-        <button class="action-button" id="action-button" disabled>선택 완료</button>
-
-        <div id="result-container" class="result-container" style="display: none;">
+        <div class="result-container" id="result-container">
             <div class="result-title" id="result-title">능력 사용 결과</div>
             <div class="result-content" id="result-content"></div>
-            <button id="action-again-btn"
-                style="display: none; margin-top: 20px; padding: 10px 20px; background-color: #4a6cc3; color: white; border: none; border-radius: 5px; cursor: pointer;">
-                능력 다시 사용하기
-            </button>
+            <button class="action-again-btn" id="action-again-btn" style="display: none;">능력 다시 사용하기</button>
         </div>
 
-        <!-- 채팅 컨테이너 -->
         <div class="chat-container" id="chat-container">
-            <div class="chat-messages" id="chat-messages">
-                <!-- 메시지가 여기에 추가됩니다 -->
-            </div>
+            <div class="chat-messages" id="chat-messages"></div>
             <div class="chat-input-container">
                 <input type="text" class="chat-input" id="chat-input" placeholder="메시지 입력...">
                 <button class="chat-send-button" id="chat-send-button">전송</button>
@@ -598,195 +629,53 @@
         let remainingTime = 30;
         let timerInterval;
         let chatEnabled = false;
-        let chatTarget = ""; // "lover" 또는 "dead"
+        let chatTarget = "";
+
+        let _isMobile = false;
+        let _isTablet = false;
 
         const roleActions = {
-            "mafia": {
-                title: "마피아 행동",
-                subtitle: "죽일 플레이어를 선택하세요",
-                buttonText: "살해하기",
-                actionType: "kill",
-                containerClass: "mafia",
-                showTargetSelector: true,
-                showChat: false,
-                chatTarget: "mafia"
-            },
-            "police": {
-                title: "경찰 행동",
-                subtitle: "조사할 플레이어를 선택하세요",
-                buttonText: "조사하기",
-                actionType: "investigate",
-                containerClass: "police",
-                showTargetSelector: true,
-                showChat: false
-            },
-            "doctor": {
-                title: "의사 행동",
-                subtitle: "살릴 플레이어를 선택하세요",
-                buttonText: "치료하기",
-                actionType: "heal",
-                containerClass: "doctor",
-                showTargetSelector: true,
-                showChat: false
-            },
-            "citizen": {
-                title: "시민",
-                subtitle: "당신은 밤에 특별한 행동을 할 수 없습니다",
-                buttonText: "확인",
-                actionType: "none",
-                containerClass: "",
-                showTargetSelector: false,
-                showChat: false
-            },
-            "spy": {
-                title: "스파이 행동",
-                subtitle: "마피아인지 확인할 플레이어를 선택하세요",
-                buttonText: "정보 수집하기",
-                actionType: "contact",
-                containerClass: "spy",
-                showTargetSelector: true,
-                showChat: false,
-                chatTarget: "mafia"
-            },
-            "medium": {
-                title: "영매 능력",
-                subtitle: "당신은 죽은 자들의 대화를 들을 수 있습니다",
-                buttonText: "확인",
-                actionType: "listen",
-                containerClass: "medium",
-                showTargetSelector: false,
-                showChat: false,
-            },
-            "soldier": {
-                title: "군인",
-                subtitle: "당신은 마피아의 공격을 한 번 방어할 수 있습니다",
-                buttonText: "확인",
-                actionType: "none",
-                containerClass: "soldier",
-                showTargetSelector: false,
-                showChat: false
-            },
-            "politician": {
-                title: "정치인",
-                subtitle: "당신은 투표로 처형되지 않습니다",
-                buttonText: "확인",
-                actionType: "none",
-                containerClass: "politician",
-                showTargetSelector: false,
-                showChat: false
-            },
-            "lover": {
-                title: "연인 행동",
-                subtitle: "당신은 다른 연인과 대화할 수 있습니다",
-                buttonText: "확인",
-                actionType: "chat",
-                containerClass: "lover",
-                showTargetSelector: false,
-                showChat: true,
-                chatTarget: "lover"
-            },
-            "journalist": {
-                title: "기자 행동",
-                subtitle: "직업을 조사하여 공개할 플레이어를 선택하세요",
-                buttonText: "특종 보도하기",
-                actionType: "announce",
-                containerClass: "journalist",
-                showTargetSelector: true,
-                showChat: false
-            },
-            "werewolf": {
-                title: "짐승인간 행동",
-                subtitle: "갈망 대상을 선택하세요",
-                buttonText: "선택하기",
-                actionType: "convert",
-                containerClass: "werewolf",
-                showTargetSelector: true,
-                showChat: false
-            },
-            "werewolf_tamed": {
-                title: "길들여진 짐승인간",
-                subtitle: "제거할 플레이어를 선택하세요",
-                buttonText: "제거하기",
-                actionType: "convert",
-                containerClass: "werewolf",
-                showTargetSelector: true,
-                showChat: false
-            },
-            "gangster": {
-                title: "건달 행동",
-                subtitle: "투표를 방해할 플레이어를 선택하세요",
-                buttonText: "공갈하기",
-                actionType: "block",
-                containerClass: "gangster",
-                showTargetSelector: true,
-                showChat: false
-            },
-            "detective": {
-                title: "사립탐정 행동",
-                subtitle: "능력 사용을 추적할 플레이어를 선택하세요",
-                buttonText: "추적하기",
-                actionType: "track",
-                containerClass: "detective",
-                showTargetSelector: true,
-                showChat: false
-            },
-            "gravedigger": {
-                title: "도굴꾼",
-                subtitle: "첫날 마피아에게 살해당한 플레이어의 직업을 얻습니다",
-                buttonText: "확인",
-                actionType: "none",
-                containerClass: "gravedigger",
-                showTargetSelector: false,
-                showChat: false
-            },
-            "terrorist": {
-                title: "테러리스트 행동",
-                subtitle: "처형될 때 함께 죽일 플레이어를 미리 선택하세요",
-                buttonText: "자폭 대상 선택",
-                actionType: "suicide",
-                containerClass: "terrorist",
-                showTargetSelector: true,
-                showChat: false
-            },
-            "madam": {
-                title: "마담 행동",
-                subtitle: "투표로 능력을 무력화할 플레이어를 선택하세요",
-                buttonText: "유혹하기",
-                actionType: "seduce",
-                containerClass: "madam",
-                showTargetSelector: true,
-                showChat: false,
-                chatTarget: "mafia"
-            },
+            "mafia": { title: "마피아 행동", subtitle: "죽일 플레이어를 선택하세요", buttonText: "살해하기", actionType: "kill", containerClass: "mafia", showTargetSelector: true, showChat: false, chatTarget: "mafia" },
+            "police": { title: "경찰 행동", subtitle: "조사할 플레이어를 선택하세요", buttonText: "조사하기", actionType: "investigate", containerClass: "police", showTargetSelector: true, showChat: false },
+            "doctor": { title: "의사 행동", subtitle: "살릴 플레이어를 선택하세요", buttonText: "치료하기", actionType: "heal", containerClass: "doctor", showTargetSelector: true, showChat: false },
+            "citizen": { title: "시민", subtitle: "당신은 밤에 특별한 행동을 할 수 없습니다", buttonText: "확인", actionType: "none", containerClass: "", showTargetSelector: false, showChat: false },
+            "spy": { title: "스파이 행동", subtitle: "마피아인지 확인할 플레이어를 선택하세요", buttonText: "정보 수집하기", actionType: "contact", containerClass: "spy", showTargetSelector: true, showChat: false, chatTarget: "mafia" },
+            "medium": { title: "영매 능력", subtitle: "당신은 죽은 자들의 대화를 들을 수 있습니다", buttonText: "확인", actionType: "listen", containerClass: "medium", showTargetSelector: false, showChat: false },
+            "soldier": { title: "군인", subtitle: "당신은 마피아의 공격을 한 번 방어할 수 있습니다", buttonText: "확인", actionType: "none", containerClass: "soldier", showTargetSelector: false, showChat: false },
+            "politician": { title: "정치인", subtitle: "당신은 투표로 처형되지 않습니다", buttonText: "확인", actionType: "none", containerClass: "politician", showTargetSelector: false, showChat: false },
+            "lover": { title: "연인 행동", subtitle: "당신은 다른 연인과 대화할 수 있습니다", buttonText: "확인", actionType: "chat", containerClass: "lover", showTargetSelector: false, showChat: true, chatTarget: "lover" },
+            "journalist": { title: "기자 행동", subtitle: "직업을 조사하여 공개할 플레이어를 선택하세요", buttonText: "특종 보도하기", actionType: "announce", containerClass: "journalist", showTargetSelector: true, showChat: false },
+            "werewolf": { title: "짐승인간 행동", subtitle: "갈망 대상을 선택하세요", buttonText: "선택하기", actionType: "convert", containerClass: "werewolf", showTargetSelector: true, showChat: false },
+            "werewolf_tamed": { title: "길들여진 짐승인간", subtitle: "제거할 플레이어를 선택하세요", buttonText: "제거하기", actionType: "convert", containerClass: "werewolf", showTargetSelector: true, showChat: false },
+            "gangster": { title: "건달 행동", subtitle: "투표를 방해할 플레이어를 선택하세요", buttonText: "공갈하기", actionType: "block", containerClass: "gangster", showTargetSelector: true, showChat: false },
+            "detective": { title: "사립탐정 행동", subtitle: "능력 사용을 추적할 플레이어를 선택하세요", buttonText: "추적하기", actionType: "track", containerClass: "detective", showTargetSelector: true, showChat: false },
+            "gravedigger": { title: "도굴꾼", subtitle: "첫날 마피아에게 살해당한 플레이어의 직업을 얻습니다", buttonText: "확인", actionType: "none", containerClass: "gravedigger", showTargetSelector: false, showChat: false },
+            "terrorist": { title: "테러리스트 행동", subtitle: "처형될 때 함께 죽일 플레이어를 미리 선택하세요", buttonText: "자폭 대상 선택", actionType: "suicide", containerClass: "terrorist", showTargetSelector: true, showChat: false },
+            "madam": { title: "마담 행동", subtitle: "투표로 능력을 무력화할 플레이어를 선택하세요", buttonText: "유혹하기", actionType: "seduce", containerClass: "madam", showTargetSelector: true, showChat: false, chatTarget: "mafia" },
         };
 
-        function closeWidget() {
-            // 서버에서 hideWidget 메시지로 위젯을 닫음
-        }
+        function closeWidget() {}
 
         function renderPlayers() {
             const playersList = document.getElementById('players-list');
             playersList.innerHTML = '';
 
-            // 현재 역할에 대한 정보 가져오기
             const roleAction = roleActions[myRoleId] || roleActions.citizen;
 
-            // 대상 선택기가 필요 없는 경우 (시민 등)
             if (!roleAction.showTargetSelector) {
-                playersList.innerHTML = `<div style="text-align: center; padding: 20px;">${roleAction.subtitle}</div>`;
+                playersList.innerHTML = `<div style="text-align: center; padding: 40px 20px; color: var(--text-secondary);">${roleAction.subtitle}</div>`;
                 document.getElementById('action-button').disabled = false;
                 document.getElementById('action-button').textContent = roleAction.buttonText;
                 return;
             }
 
             players.forEach(player => {
-                if (!player.isAlive) return; // 죽은 플레이어는 표시하지 않음
-                if (player.id === myPlayerId && myRoleId !== "doctor") return; // 의사만 자기 자신을 선택할 수 있음
+                if (!player.isAlive) return;
+                if (player.id === myPlayerId && myRoleId !== "doctor") return;
 
                 const playerItem = document.createElement('div');
                 playerItem.className = `player-item ${selectedPlayerId === player.id ? 'selected' : ''}`;
                 playerItem.dataset.id = player.id;
-
                 playerItem.addEventListener('click', () => selectPlayer(player.id));
 
                 playerItem.innerHTML = `
@@ -800,14 +689,12 @@
                 playersList.appendChild(playerItem);
             });
 
-            // 액션 버튼 활성화/비활성화
             const actionButton = document.getElementById('action-button');
             actionButton.disabled = !selectedPlayerId && roleAction.showTargetSelector;
         }
 
         function selectPlayer(playerId) {
             if (hasActed) return;
-
             selectedPlayerId = playerId;
             renderPlayers();
         }
@@ -819,8 +706,7 @@
                 if (!roleAction.showChat) {
                     closeWidget();
                 } else {
-                    // 채팅 기능이 있는 직업은 위젯을 닫지 않고 채팅 UI 표시
-                    document.getElementById('action-button').style.display = 'none';
+                    document.getElementById('action-button').parentElement.style.display = 'none';
                     document.getElementById('players-list').style.display = 'none';
                     initializeChat(roleAction.chatTarget);
                 }
@@ -832,198 +718,138 @@
             hasActed = true;
             document.getElementById('action-button').disabled = true;
 
-            // 서버에 액션 결과 전송
-            window.parent.postMessage({
-                type: roleAction.actionType,
-                targetId: selectedPlayerId
-            }, "*");
+            window.parent.postMessage({ type: roleAction.actionType, targetId: selectedPlayerId }, "*");
 
-            // 액션 완료 메시지 표시
             document.getElementById('players-list').style.display = 'none';
-            document.getElementById('action-button').style.display = 'none';
+            document.getElementById('action-button').parentElement.style.display = 'none';
 
             const resultContainer = document.getElementById('result-container');
-            resultContainer.style.display = 'block';
-
+            resultContainer.classList.add('visible');
             document.getElementById('result-title').textContent = "행동 완료";
 
             let resultMessage = "";
             switch (myRoleId) {
-                case "mafia":
-                    resultMessage = "살해 대상이 선택되었습니다. 낮이 될 때까지 기다려주세요.";
-                    break;
-                case "police":
-                    resultMessage = "조사 대상이 선택되었습니다. 결과는 곧 알려드립니다.";
-                    break;
-                case "doctor":
-                    resultMessage = "치료 대상이 선택되었습니다. 낮이 될 때까지 기다려주세요.";
-                    break;
-                case "spy":
-                    resultMessage = "정보 수집 대상이 선택되었습니다. 결과는 곧 알려드립니다.";
-                    break;
-                case "journalist":
-                    resultMessage = "직업 조사 대상이 선택되었습니다. 결과는 다음 날 아침에 공개됩니다.";
-                    break;
-                case "werewolf":
-                    resultMessage = "대상이 선택되었습니다. 낮이 될 때까지 기다려주세요.";
-                    break;
-                case "gangster":
-                    resultMessage = "공갈 대상이 선택되었습니다. 해당 플레이어는 다음 날 투표할 수 없게 됩니다.";
-                    break;
-                case "detective":
-                    resultMessage = "추적 대상이 선택되었습니다. 결과는 곧 알려드립니다.";
-                    break;
-                case "madam":
-                    resultMessage = "유혹 대상이 선택되었습니다. 마피아인 경우 서로 대화할 수 있게 됩니다.";
-                    break;
-                case "terrorist":
-                    resultMessage = "자폭 대상이 선택되었습니다. 처형될 때 해당 플레이어도 함께 죽게 됩니다.";
-                    break;
-                default:
-                    resultMessage = "행동이 완료되었습니다. 낮이 될 때까지 기다려주세요.";
+                case "mafia": resultMessage = "살해 대상이 선택되었습니다. 낮이 될 때까지 기다려주세요."; break;
+                case "police": resultMessage = "조사 대상이 선택되었습니다. 결과는 곧 알려드립니다."; break;
+                case "doctor": resultMessage = "치료 대상이 선택되었습니다. 낮이 될 때까지 기다려주세요."; break;
+                case "spy": resultMessage = "정보 수집 대상이 선택되었습니다. 결과는 곧 알려드립니다."; break;
+                case "journalist": resultMessage = "직업 조사 대상이 선택되었습니다. 결과는 다음 날 아침에 공개됩니다."; break;
+                case "werewolf": resultMessage = "대상이 선택되었습니다. 낮이 될 때까지 기다려주세요."; break;
+                case "gangster": resultMessage = "공갈 대상이 선택되었습니다. 해당 플레이어는 다음 날 투표할 수 없게 됩니다."; break;
+                case "detective": resultMessage = "추적 대상이 선택되었습니다. 결과는 곧 알려드립니다."; break;
+                case "madam": resultMessage = "유혹 대상이 선택되었습니다. 마피아인 경우 서로 대화할 수 있게 됩니다."; break;
+                case "terrorist": resultMessage = "자폭 대상이 선택되었습니다. 처형될 때 해당 플레이어도 함께 죽게 됩니다."; break;
+                default: resultMessage = "행동이 완료되었습니다. 낮이 될 때까지 기다려주세요.";
             }
 
             document.getElementById('result-content').textContent = resultMessage;
 
-            // 채팅 기능이 있는 직업은 채팅 UI 표시
             if (roleAction.showChat) {
                 initializeChat(roleAction.chatTarget);
             }
-
-            // 타이머는 계속 실행되도록 유지
-            // clearInterval(timerInterval);
         }
 
         function initializeChat(target) {
             chatEnabled = true;
             chatTarget = target;
 
-            // 채팅 컨테이너 표시
-            document.getElementById('chat-container').style.display = 'flex';
+            document.getElementById('chat-container').classList.add('visible');
 
-            // 채팅 초기 메시지 표시
             const chatMessages = document.getElementById('chat-messages');
-
-            let welcomeMessage = "";
-            if (target === "lover") {
-                welcomeMessage = "다른 연인들과의 채팅이 시작되었습니다. 대화는 낮이 될 때까지 계속됩니다.";
-            } else if (target === "mafia") {
-                welcomeMessage = "마피아 채팅이 활성화되었습니다. 마피아 팀원들과 소통할 수 있습니다.";
-            }
+            let welcomeMessage = target === "lover" ? "다른 연인들과의 채팅이 시작되었습니다." : "마피아 채팅이 활성화되었습니다.";
 
             const systemMessage = document.createElement('div');
             systemMessage.className = 'chat-message system-message';
             systemMessage.innerHTML = `<div class="content">${welcomeMessage}</div>`;
             chatMessages.appendChild(systemMessage);
 
-            // 서버에 채팅 초기화 알림
-            window.parent.postMessage({
-                type: "initChat",
-                chatTarget: target
-            }, "*");
+            window.parent.postMessage({ type: "initChat", chatTarget: target }, "*");
 
-            // 채팅 입력 이벤트 처리
             const chatInput = document.getElementById('chat-input');
             const chatSendButton = document.getElementById('chat-send-button');
 
             const sendMessage = () => {
                 const message = chatInput.value.trim();
                 if (message) {
-                    // 서버에 메시지 전송
-                    window.parent.postMessage({
-                        type: "chatMessage",
-                        chatTarget: target,
-                        message: message
-                    }, "*");
-
+                    window.parent.postMessage({ type: "chatMessage", chatTarget: target, message: message }, "*");
                     addChatMessage('나', message, true);
-
-
-                    // 입력 필드 초기화
                     chatInput.value = '';
                 }
             };
 
             chatSendButton.addEventListener('click', sendMessage);
             chatInput.addEventListener('keypress', (e) => {
-                if (e.key === 'Enter') {
-                    sendMessage();
-                }
+                if (e.key === 'Enter') sendMessage();
             });
-
         }
 
         function addChatMessage(sender, content, isMyMessage = false) {
             const chatMessages = document.getElementById('chat-messages');
-
             const messageDiv = document.createElement('div');
             messageDiv.className = `chat-message ${isMyMessage ? 'my-message' : 'other-message'}`;
 
             let html = '';
-            if (!isMyMessage) {
-                html += `<div class="sender">${sender}</div>`;
-            }
-            html += `<div class="content">${content}</div>`;
-            
-            // 타임스탬프 추가
+            if (!isMyMessage) html += `<div class="sender">${sender}</div>`;
+            html += `<div class="content">${escapeHtml(content)}</div>`;
+
             const now = new Date();
-            const hours = now.getHours().toString().padStart(2, '0');
-            const minutes = now.getMinutes().toString().padStart(2, '0');
-            html += `<div class="timestamp">${hours}:${minutes}</div>`;
+            html += `<div class="timestamp">${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}</div>`;
 
             messageDiv.innerHTML = html;
-
             chatMessages.appendChild(messageDiv);
             chatMessages.scrollTop = chatMessages.scrollHeight;
         }
 
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
         function showInvestigationResult(isMafia) {
             const resultContainer = document.getElementById('result-container');
-            resultContainer.style.display = 'block';
-
+            resultContainer.classList.add('visible');
             document.getElementById('result-title').textContent = "조사 결과";
 
             const targetPlayer = players.find(p => p.id === selectedPlayerId);
             const targetName = targetPlayer ? targetPlayer.name : "선택한 플레이어";
-
             const resultMessage = isMafia
-                ? `${targetName}님은 마피아입니다!`
-                : `${targetName}님은 마피아가 아닙니다.`;
+                ? `<strong>${targetName}</strong>님은 <span class="mafia-indicator">마피아</span>입니다!`
+                : `<strong>${targetName}</strong>님은 마피아가 아닙니다.`;
 
-            document.getElementById('result-content').textContent = resultMessage;
+            document.getElementById('result-content').innerHTML = resultMessage;
         }
 
         function showAbilityBlocked(message) {
-            // 액션 컨테이너 숨기기
-            document.getElementById('action-container').style.display = 'none';
+            document.getElementById('players-list').style.display = 'none';
+            document.getElementById('action-button').parentElement.style.display = 'none';
+            document.getElementById('timer').style.display = 'none';
 
-            // 결과 컨테이너 표시
             const resultContainer = document.getElementById('result-container');
-            resultContainer.style.display = 'block';
-
-            // 결과 타이틀 설정
+            resultContainer.classList.add('visible');
             document.getElementById('result-title').textContent = "능력 사용 불가";
-
-            // 결과 메시지 설정
             document.getElementById('result-content').textContent = message || "당신은 능력을 사용할 수 없습니다.";
         }
 
         function updateTimer() {
             remainingTime--;
-            document.getElementById('timer').textContent = `남은 시간: ${remainingTime}초`;
+            const timerEl = document.getElementById('timer');
+            timerEl.textContent = `남은 시간: ${remainingTime}초`;
+
+            if (remainingTime <= 10) {
+                timerEl.classList.add('urgent');
+            }
 
             if (remainingTime <= 0) {
                 clearInterval(timerInterval);
-                if (!hasActed) {
-                    submitAction();
-                }
+                if (!hasActed) submitAction();
             }
         }
 
         function startTimer(seconds) {
             remainingTime = seconds;
             document.getElementById('timer').textContent = `남은 시간: ${remainingTime}초`;
-
+            document.getElementById('timer').classList.remove('urgent');
             clearInterval(timerInterval);
             timerInterval = setInterval(updateTimer, 1000);
         }
@@ -1039,62 +865,64 @@
             const container = document.getElementById('action-container');
             container.className = `action-container ${roleAction.containerClass}`;
 
-            // 대상 선택이 필요 없는 역할인 경우 타이머 숨기기
-            if (!roleAction.showTargetSelector) {
-                document.getElementById('timer').style.display = 'none';
-            } else {
-                document.getElementById('timer').style.display = 'block';
-            }
-
-            // 채팅 기능이 있지만 확인 버튼 클릭 전에는 숨김
-            document.getElementById('chat-container').style.display = 'none';
+            document.getElementById('timer').style.display = roleAction.showTargetSelector ? 'block' : 'none';
+            document.getElementById('chat-container').classList.remove('visible');
         }
 
-        let _isMobile = false;
-        let _isTablet = false;
-        let $contentWrapper;
-
         function hideWidget() {
-            window.parent.postMessage({
-                type: "WidgetRearrange",
-                width: "0px",
-                height: "0px",
-            }, "*")
+            window.parent.postMessage({ type: "WidgetRearrange", width: "0px", height: "0px" }, "*");
             window.parent.focus();
         }
 
-        function revealWidget(moveScrollToBottom = false) {
-            if (moveScrollToBottom && $contentWrapper) {
-                $contentWrapper.scrollTop = $contentWrapper.scrollHeight;
-            }
+        function revealWidget() {
             if (_isMobile) {
-                const rtcAndNotchHeight = 160 + parseInt(getComputedStyle(document.documentElement,).getPropertyValue("--sat"));
-                window.parent.postMessage({
-                    type: 'WidgetRearrange',
-                    anchor: 'middle',
-                    height: '100%',
-                    width: '100%',
-                    top: `-${parseInt(0)}px`
-                }, '*')
+                window.parent.postMessage({ type: 'WidgetRearrange', anchor: 'middle', height: '100%', width: '100%' }, '*');
             } else {
-                window.parent.postMessage({
-                    type: "WidgetRearrange",
-                    anchor: "middle",
-                    width: `100%`,
-                    height: `100%`,
-                }, "*")
+                window.parent.postMessage({ type: "WidgetRearrange", anchor: "middle", width: "100%", height: "100%" }, "*");
             }
         }
 
-        function fitTheSize() {
-            window.parent.postMessage({
-                type: "WidgetRearrange",
-                width: document.body.offsetWidth + 10,
-                height: document.body.offsetHeight + 10,
-            }, "*")
+        function showSpyResult(targetName, targetJob, isMafia, canUseAgain, enableMafiaChat) {
+            document.getElementById('players-list').style.display = 'none';
+            document.getElementById('action-button').parentElement.style.display = 'none';
+
+            const resultContainer = document.getElementById('result-container');
+            resultContainer.classList.add('visible');
+            document.getElementById('result-title').textContent = "스파이 정보 수집 결과";
+
+            let resultMessage = `<strong>${targetName}</strong>님의 직업은 <strong>${targetJob}</strong>입니다.<br>`;
+            resultMessage += isMafia
+                ? '<span class="mafia-indicator">마피아 팀</span>입니다.'
+                : '<span class="citizen-indicator">시민 팀</span>입니다.';
+
+            if (canUseAgain) {
+                resultMessage += '<br><br><span style="color: #ffaa00;">마피아와 접선에 성공했습니다! 능력을 한 번 더 사용할 수 있습니다.</span>';
+
+                document.getElementById('action-again-btn').style.display = 'inline-block';
+                document.getElementById('action-again-btn').onclick = function() {
+                    selectedPlayerId = null;
+                    hasActed = false;
+                    document.querySelectorAll('.player-item').forEach(item => item.classList.remove('selected'));
+                    document.getElementById('players-list').style.display = 'block';
+                    document.getElementById('action-button').parentElement.style.display = 'block';
+                    document.getElementById('action-button').disabled = true;
+                    resultContainer.classList.remove('visible');
+                };
+
+                if (enableMafiaChat) {
+                    resultMessage += '<br><span style="color: #ffaa00;">마피아와 채팅할 수 있습니다!</span>';
+                    roleActions["spy"].showChat = true;
+                    window.parent.postMessage({ type: "initChat", chatTarget: "mafia" }, "*");
+                }
+            } else {
+                document.getElementById('action-again-btn').style.display = 'none';
+            }
+
+            document.getElementById('result-content').innerHTML = resultMessage;
         }
 
-        window.addEventListener('message', function (e) {
+        // Message Handler
+        window.addEventListener('message', function(e) {
             const data = e.data;
 
             if (data.type === "setWidget") {
@@ -1107,49 +935,27 @@
                 }
                 hideWidget();
             } else if (data.type === 'init') {
-                try {
-                    document.body.classList.remove("hidden");
-                    revealWidget();
-                } catch (error) {
-                    alert("An error occurred:", error);
-                }
+                document.body.classList.remove("hidden");
+                revealWidget();
 
-                // 기존 상태 초기화
                 players = data.players;
                 myPlayerId = data.myPlayerId;
                 myRoleId = data.role;
                 hasActed = false;
                 selectedPlayerId = null;
 
-                // UI 초기화
                 initializeRoleUI(myRoleId);
                 renderPlayers();
 
-                // 결과 컨테이너 초기화
-                const resultContainer = document.getElementById('result-container');
-                if (resultContainer) {
-                    resultContainer.style.display = 'none';
-                }
-
-                // 채팅 컨테이너 초기화
-                const chatContainer = document.getElementById('chat-container');
-                if (chatContainer) {
-                    chatContainer.style.display = 'none';
-                }
-
-                // 액션 버튼과 플레이어 목록 재표시
-                document.getElementById('action-button').style.display = 'block';
+                document.getElementById('result-container').classList.remove('visible');
+                document.getElementById('chat-container').classList.remove('visible');
+                document.getElementById('action-button').parentElement.style.display = 'block';
                 document.getElementById('players-list').style.display = 'block';
                 document.getElementById('action-button').disabled = myRoleId !== 'citizen';
 
-                // 타이머 초기화
-                if (data.timeLimit) {
-                    startTimer(data.timeLimit);
-                }
+                if (data.timeLimit) startTimer(data.timeLimit);
 
-                // 액션 버튼 이벤트 리스너 설정
                 const actionButton = document.getElementById('action-button');
-                // 이전 이벤트 리스너 제거
                 const newActionButton = actionButton.cloneNode(true);
                 actionButton.parentNode.replaceChild(newActionButton, actionButton);
                 newActionButton.addEventListener('click', submitAction);
@@ -1157,96 +963,64 @@
                 showInvestigationResult(data.isMafia);
             } else if (data.type === 'abilityBlocked') {
                 showAbilityBlocked(data.message);
-            } else if (data.type === "hide") {
+            } else if (data.type === "hide" || data.type === 'hideWidget') {
                 hideWidget();
-            } else if (data.type === "reveal") {
-                revealWidget(true);
+            } else if (data.type === "reveal" || data.type === 'showWidget') {
+                revealWidget();
             } else if (data.type === "chatMessage") {
-                // 채팅 메시지 수신
                 if (chatEnabled && data.chatTarget === chatTarget) {
                     addChatMessage(data.sender, data.message);
                 }
-            } else if (data.type === 'hideWidget') {
-                // WidgetManager에서 보내는 숨김 메시지 처리
-                hideWidget();
-            } else if (data.type === 'showWidget') {
-                // WidgetManager에서 보내는 표시 메시지 처리
-                revealWidget();
             } else if (data.type === 'spyResult') {
                 showSpyResult(data.targetName, data.targetJob, data.isMafia, data.canUseAgain, data.enableMafiaChat);
             } else if (data.type === 'werewolfTamed') {
-                // 짐승인간이 길들여졌을 때 UI 업데이트
-                if (myRoleId === 'werewolf') {
-                    myRoleId = 'werewolf_tamed';
-                    updateUI();
-                }
-                
-                // 길들여짐 메시지 표시
+                if (myRoleId === 'werewolf') myRoleId = 'werewolf_tamed';
                 showAbilityBlocked(data.message || '마피아에게 길들여졌습니다!');
             } else if (data.type === 'abilityResult') {
-                // GANGSTER, WEREWOLF, TERRORIST, MEDIUM, MAFIA, DOCTOR 응답 처리
                 const resultContainer = document.getElementById('result-container');
-                resultContainer.style.display = 'block';
+                resultContainer.classList.add('visible');
                 document.getElementById('result-title').textContent = "능력 사용 완료";
                 document.getElementById('result-content').textContent = data.message;
-
-                // 플레이어 목록과 버튼 숨기기
                 document.getElementById('players-list').style.display = 'none';
-                document.getElementById('action-button').style.display = 'none';
-
+                document.getElementById('action-button').parentElement.style.display = 'none';
             } else if (data.type === 'trackResult') {
-                // DETECTIVE 추적 결과 처리
                 const resultContainer = document.getElementById('result-container');
-                resultContainer.style.display = 'block';
+                resultContainer.classList.add('visible');
                 document.getElementById('result-title').textContent = "추적 결과";
                 document.getElementById('result-content').textContent = data.message;
-
                 document.getElementById('players-list').style.display = 'none';
-                document.getElementById('action-button').style.display = 'none';
-
+                document.getElementById('action-button').parentElement.style.display = 'none';
             } else if (data.type === 'investigateResult') {
-                // JOURNALIST 조사 결과 처리
                 const resultContainer = document.getElementById('result-container');
-                resultContainer.style.display = 'block';
+                resultContainer.classList.add('visible');
                 document.getElementById('result-title').textContent = "조사 결과";
-
-                const resultMessage = `<strong>${data.targetName}</strong>님의 직업은 <strong>${data.targetJob}</strong>입니다.<br>${data.message}`;
-                document.getElementById('result-content').innerHTML = resultMessage;
-
+                document.getElementById('result-content').innerHTML = `<strong>${data.targetName}</strong>님의 직업은 <strong>${data.targetJob}</strong>입니다.<br>${data.message}`;
                 document.getElementById('players-list').style.display = 'none';
-                document.getElementById('action-button').style.display = 'none';
-
+                document.getElementById('action-button').parentElement.style.display = 'none';
             } else if (data.type === 'seduceResult') {
-                // MADAM 유혹 결과 처리
                 const resultContainer = document.getElementById('result-container');
-                resultContainer.style.display = 'block';
+                resultContainer.classList.add('visible');
                 document.getElementById('result-title').textContent = "유혹 결과";
 
                 let resultMessage = `<strong>${data.targetName}</strong>님을 유혹했습니다.<br>직업: <strong>${data.targetJob}</strong>`;
-
                 if (data.isMafia) {
-                    resultMessage += '<br><span style="color: #ff4d4d;">마피아입니다! 마피아와 대화할 수 있습니다.</span>';
+                    resultMessage += '<br><span class="mafia-indicator">마피아입니다! 마피아와 대화할 수 있습니다.</span>';
                 }
-
                 document.getElementById('result-content').innerHTML = resultMessage;
-
                 document.getElementById('players-list').style.display = 'none';
-                document.getElementById('action-button').style.display = 'none';
+                document.getElementById('action-button').parentElement.style.display = 'none';
 
-                // 마피아 채팅 활성화
                 if (data.enableMafiaChat) {
-                    const roleAction = roleActions["madam"];
-                    roleAction.showChat = true;
+                    roleActions["madam"].showChat = true;
                     initializeChat("mafia");
                 }
             }
         });
 
-        window.addEventListener('unload', function () {
+        window.addEventListener('unload', function() {
             window.parent.focus();
         });
 
-        // 모바일 환경 감지
         function checkMobile() {
             if (window.innerWidth <= 768) {
                 document.body.classList.add('mobile');
@@ -1257,69 +1031,6 @@
 
         window.addEventListener('resize', checkMobile);
         checkMobile();
-
-        // 스파이 결과 표시 함수
-        function showSpyResult(targetName, targetJob, isMafia, canUseAgain, enableMafiaChat) {
-            document.getElementById('players-list').style.display = 'none';
-            document.getElementById('action-button').style.display = 'none';
-
-            // 결과창 표시
-            document.getElementById('result-container').style.display = 'block';
-
-            // 결과 타이틀 설정
-            document.getElementById('result-title').textContent = "스파이 정보 수집 결과";
-
-            // 결과 메시지 구성
-            let resultMessage = `<strong>${targetName}</strong>님의 직업은 <strong>${targetJob}</strong>입니다.`;
-
-            if (isMafia) {
-                resultMessage += '<br><span style="color: #ff4d4d;">마피아 팀</span>입니다.';
-            } else {
-                resultMessage += '<br><span style="color: #4da6ff;">시민 팀</span>입니다.';
-            }
-
-            if (canUseAgain) {
-                resultMessage += '<br><br><span style="color: #ffcc00;">마피아와 접선에 성공했습니다! 능력을 한 번 더 사용할 수 있습니다.</span>';
-
-                // 능력 재사용 버튼 표시
-                document.getElementById('action-again-btn').style.display = 'block';
-                document.getElementById('action-again-btn').onclick = function () {
-                    // 선택 상태 초기화
-                    selectedPlayerId = null;
-                    hasActed = false;
-                    document.querySelectorAll('.player-item').forEach(item => {
-                        item.classList.remove('selected');
-                    });
-                    
-                    // UI 표시
-                    document.getElementById('players-list').style.display = 'block';
-                    document.getElementById('action-button').style.display = 'block';
-                    document.getElementById('action-button').disabled = true;
-                    document.getElementById('result-container').style.display = 'none';
-                };
-
-                // 마피아 채팅 활성화
-                if (enableMafiaChat) {
-                    resultMessage += '<br><span style="color: #ffcc00;">마피아와 채팅할 수 있습니다!</span>';
-
-                    // 마피아 채팅 초기화 (나중에 채팅 UI가 자동으로 표시됨)
-                    const roleAction = roleActions["spy"];
-                    roleAction.showChat = true;
-
-                    // 서버에 채팅 초기화 메시지 전송
-                    window.parent.postMessage({
-                        type: "initChat",
-                        chatTarget: "mafia"
-                    }, "*");
-                }
-            } else {
-                document.getElementById('action-again-btn').style.display = 'none';
-            }
-
-            // 결과 표시
-            document.getElementById('result-content').innerHTML = resultMessage;
-        }
     </script>
 </body>
-
 </html>

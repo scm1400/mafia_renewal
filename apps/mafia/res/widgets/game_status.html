@@ -1,498 +1,536 @@
 <!DOCTYPE html>
-<html style="overflow: hidden">
-
+<html lang="ko">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script>
-        /* create style sheet */
-        const newFontStylePath = document.URL.includes('https://zep.us') ? "https://cdn-static.zep.us/static/zep-script/css/typography.css" : "https://cdn-static-stage.zep.us/static/zep-script/css/typography.css";
-
+        const fontPath = document.URL.includes('https://zep.us')
+            ? "https://cdn-static.zep.us/static/zep-script/css/typography.css"
+            : "https://cdn-static-stage.zep.us/static/zep-script/css/typography.css";
         document.head.appendChild(Object.assign(document.createElement("link"), {
             rel: "stylesheet",
             type: "text/css",
-            href: newFontStylePath
+            href: fontPath
         }));
     </script>
-    <style type="text/css">
+    <style>
+        /* ============================================
+           Design System Variables
+           ============================================ */
         :root {
             --sat: env(safe-area-inset-top);
             --sar: env(safe-area-inset-right);
             --sab: env(safe-area-inset-bottom);
             --sal: env(safe-area-inset-left);
+
+            /* Neon Colors */
+            --neon-cyan: #00f0ff;
+            --neon-pink: #ff2d95;
+            --neon-purple: #b026ff;
+
+            /* Role Colors */
+            --role-mafia: #ff3366;
+            --role-police: #00aaff;
+            --role-doctor: #00ff88;
+            --role-citizen: #ffdd00;
+            --role-spy: #b026ff;
+            --role-medium: #8b5cf6;
+            --role-soldier: #64748b;
+            --role-politician: #f59e0b;
+            --role-lover: #ec4899;
+            --role-journalist: #06b6d4;
+            --role-werewolf: #a16207;
+            --role-gangster: #475569;
+            --role-detective: #0284c7;
+            --role-gravedigger: #6b7280;
+            --role-terrorist: #dc2626;
+            --role-madam: #db2777;
+
+            /* Phase Colors */
+            --phase-night: #5b21b6;
+            --phase-day: #f59e0b;
+            --phase-voting: #8b5cf6;
+            --phase-defense: #64748b;
+            --phase-approval: #dc2626;
+
+            /* Background */
+            --bg-base: #0a0a0f;
+            --bg-surface: #12121a;
+            --bg-elevated: #1a1a25;
+
+            /* Text */
+            --text-primary: #ffffff;
+            --text-secondary: #a0a0b0;
+            --text-muted: #606070;
+
+            /* Border */
+            --border-subtle: rgba(255, 255, 255, 0.05);
+            --border-default: rgba(255, 255, 255, 0.1);
+
+            /* Semantic */
+            --success: #00ff88;
+            --danger: #ff3366;
+            --warning: #ffaa00;
+
+            /* Shadow */
+            --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.5);
+            --glow-cyan: 0 0 20px rgba(0, 240, 255, 0.5);
+
+            /* Spacing */
+            --space-xs: 4px;
+            --space-sm: 8px;
+            --space-md: 12px;
+            --space-lg: 16px;
+            --space-xl: 24px;
+
+            /* Radius */
+            --radius-sm: 6px;
+            --radius-md: 10px;
+            --radius-lg: 14px;
+            --radius-full: 9999px;
+
+            /* Typography */
+            --font-family: 'Pretendard', 'Pretendard JP', -apple-system, BlinkMacSystemFont, sans-serif;
+
+            /* Transition */
+            --transition-fast: 0.15s ease;
         }
 
+        /* ============================================
+           Base Reset
+           ============================================ */
         * {
-            padding: 0;
             margin: 0;
+            padding: 0;
             box-sizing: border-box;
-            user-select: none !important;
-            font-family: 'Pretendard JP', 'Pretendard', sans-serif, Arial;
-            color: #27262E;
         }
 
         html {
             width: 100%;
             height: 100%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            overflow: hidden;
         }
 
         body {
+            width: 100%;
+            height: 100%;
+            font-family: var(--font-family);
+            font-size: 14px;
+            color: var(--text-primary);
+            background: transparent;
             display: flex;
-            flex-direction: column;
-            justify-content: center;
-            width: 300px;
-            max-width: 100%;
-            align-items: center;
-            height: max-content;
+            align-items: flex-start;
+            justify-content: flex-end;
+            user-select: none;
+            -webkit-user-select: none;
+            -webkit-font-smoothing: antialiased;
+            padding: var(--space-lg);
+            padding-right: calc(var(--space-lg) + var(--sar));
         }
 
+        /* ============================================
+           Status Container
+           ============================================ */
         .status-container {
-            width: 100%;
-            background-color: rgba(255, 255, 255, 0.9);
-            border-radius: 12px;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+            width: 280px;
+            max-width: 100%;
+            background: var(--bg-surface);
+            border: 1px solid var(--neon-cyan);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-lg), var(--glow-cyan);
             overflow: hidden;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            padding: 15px;
+            animation: containerAppear 0.3s ease-out;
         }
 
+        @keyframes containerAppear {
+            from {
+                opacity: 0;
+                transform: translateX(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        /* ============================================
+           Header
+           ============================================ */
         .status-header {
-            width: 100%;
+            padding: var(--space-lg);
+            background: linear-gradient(135deg, rgba(0, 240, 255, 0.1), transparent);
+            border-bottom: 1px solid var(--border-subtle);
             text-align: center;
-            margin-bottom: 15px;
-            padding-bottom: 10px;
-            border-bottom: 1px solid #eee;
+            position: relative;
+        }
+
+        .status-header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, var(--neon-cyan), transparent);
         }
 
         .game-phase {
-            font-size: 20px;
+            font-size: 18px;
             font-weight: 700;
-            margin-bottom: 5px;
-            color: #333;
+            color: var(--neon-cyan);
+            text-shadow: var(--glow-cyan);
+            margin-bottom: var(--space-xs);
+        }
+
+        .game-phase.phase-night {
+            color: var(--phase-night);
+            text-shadow: 0 0 20px rgba(91, 33, 182, 0.5);
+        }
+
+        .game-phase.phase-day {
+            color: var(--phase-day);
+            text-shadow: 0 0 20px rgba(245, 158, 11, 0.5);
+        }
+
+        .game-phase.phase-voting {
+            color: var(--phase-voting);
+            text-shadow: 0 0 20px rgba(139, 92, 246, 0.5);
+        }
+
+        .game-phase.phase-defense {
+            color: var(--phase-defense);
+            text-shadow: 0 0 20px rgba(100, 116, 139, 0.5);
+        }
+
+        .game-phase.phase-approval {
+            color: var(--phase-approval);
+            text-shadow: 0 0 20px rgba(220, 38, 38, 0.5);
         }
 
         .day-count {
-            font-size: 14px;
-            color: #666;
+            font-size: 12px;
+            color: var(--text-secondary);
         }
 
+        /* Timer */
         .timer {
-            font-size: 16px;
+            display: none;
+            padding: var(--space-sm) var(--space-lg);
+            background: var(--bg-base);
+            border-bottom: 1px solid var(--border-subtle);
+            text-align: center;
+            font-size: 14px;
             font-weight: 600;
-            color: #d32f2f;
-            margin-bottom: 15px;
+            font-variant-numeric: tabular-nums;
+            color: var(--danger);
+            text-shadow: 0 0 15px rgba(255, 51, 102, 0.5);
         }
 
+        .timer.warning {
+            color: var(--warning);
+            text-shadow: 0 0 15px rgba(255, 170, 0, 0.5);
+            animation: timerPulse 1s ease-in-out infinite;
+        }
+
+        @keyframes timerPulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
+        /* ============================================
+           Content Sections
+           ============================================ */
+        .content {
+            padding: var(--space-md);
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-md);
+        }
+
+        /* Players Status */
         .players-status {
-            width: 100%;
-            margin-bottom: 15px;
+            background: var(--bg-elevated);
+            border-radius: var(--radius-md);
+            padding: var(--space-md);
         }
 
         .status-title {
+            font-size: 11px;
             font-weight: 600;
-            font-size: 16px;
-            margin-bottom: 10px;
-            color: #333;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: var(--space-sm);
         }
 
         .players-grid {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
-            gap: 8px;
-            width: 100%;
+            gap: var(--space-xs);
         }
 
         .player-status-item {
             display: flex;
             align-items: center;
-            padding: 8px;
-            border-radius: 6px;
-            background-color: #f5f5f5;
+            gap: var(--space-xs);
+            padding: var(--space-xs) var(--space-sm);
+            background: var(--bg-base);
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--border-subtle);
         }
 
         .player-status-item.dead {
-            opacity: 0.6;
+            opacity: 0.4;
+        }
+
+        .player-status-item.dead .player-name {
             text-decoration: line-through;
         }
 
         .player-avatar {
-            width: 30px;
-            height: 30px;
-            border-radius: 50%;
-            background-color: #ddd;
+            width: 22px;
+            height: 22px;
+            border-radius: var(--radius-full);
+            background: var(--bg-elevated);
             display: flex;
             align-items: center;
             justify-content: center;
-            margin-right: 8px;
-            font-size: 16px;
+            font-size: 12px;
+            flex-shrink: 0;
         }
 
         .player-name {
-            font-size: 14px;
-            font-weight: 500;
+            font-size: 11px;
+            color: var(--text-secondary);
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
         }
 
+        .player-status-item.me .player-name {
+            color: var(--neon-cyan);
+        }
+
+        /* Game Info */
         .game-info {
-            width: 100%;
-            background-color: #f5f5f5;
-            border-radius: 8px;
-            padding: 12px;
-            margin-bottom: 15px;
+            background: var(--bg-elevated);
+            border-radius: var(--radius-md);
+            padding: var(--space-md);
         }
 
         .info-title {
+            font-size: 11px;
             font-weight: 600;
-            font-size: 16px;
-            margin-bottom: 5px;
-            color: #333;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: var(--space-xs);
         }
 
         .info-content {
-            font-size: 14px;
-            color: #555;
-            line-height: 1.4;
+            font-size: 12px;
+            line-height: 1.5;
+            color: var(--text-secondary);
         }
 
+        /* ============================================
+           My Role
+           ============================================ */
         .my-role {
-            width: 100%;
             display: flex;
             align-items: center;
-            padding: 10px;
-            border-radius: 8px;
-            margin-top: 10px;
+            gap: var(--space-md);
+            padding: var(--space-md);
+            background: var(--bg-elevated);
+            border-radius: var(--radius-md);
+            border: 1px solid var(--border-default);
             cursor: pointer;
+            transition: all var(--transition-fast);
+        }
+
+        .my-role:hover {
+            border-color: var(--neon-cyan);
         }
 
         .role-icon {
             width: 40px;
             height: 40px;
-            border-radius: 50%;
+            border-radius: var(--radius-full);
             display: flex;
             align-items: center;
             justify-content: center;
-            margin-right: 12px;
             font-size: 20px;
-            color: white;
+            flex-shrink: 0;
+            background: linear-gradient(135deg, var(--role-color, var(--neon-cyan)), rgba(0, 0, 0, 0.3));
+            border: 2px solid var(--role-color, var(--neon-cyan));
+            box-shadow: 0 0 15px var(--role-glow, rgba(0, 240, 255, 0.3));
         }
 
         .role-info {
             flex: 1;
+            min-width: 0;
         }
 
         .role-name {
+            font-size: 14px;
             font-weight: 600;
-            font-size: 16px;
+            color: var(--role-color, var(--text-primary));
             margin-bottom: 2px;
         }
 
         .role-desc {
-            font-size: 12px;
-            color: #666;
+            font-size: 11px;
+            color: var(--text-muted);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
-        /* 역할별 색상 */
-        .mafia {
-            background-color: #ffebee;
-        }
+        /* Role-specific colors */
+        .my-role.mafia { --role-color: var(--role-mafia); --role-glow: rgba(255, 51, 102, 0.3); }
+        .my-role.police { --role-color: var(--role-police); --role-glow: rgba(0, 170, 255, 0.3); }
+        .my-role.doctor { --role-color: var(--role-doctor); --role-glow: rgba(0, 255, 136, 0.3); }
+        .my-role.citizen { --role-color: var(--role-citizen); --role-glow: rgba(255, 221, 0, 0.3); }
+        .my-role.spy { --role-color: var(--role-spy); --role-glow: rgba(176, 38, 255, 0.3); }
+        .my-role.medium { --role-color: var(--role-medium); --role-glow: rgba(139, 92, 246, 0.3); }
+        .my-role.soldier { --role-color: var(--role-soldier); --role-glow: rgba(100, 116, 139, 0.3); }
+        .my-role.politician { --role-color: var(--role-politician); --role-glow: rgba(245, 158, 11, 0.3); }
+        .my-role.lover { --role-color: var(--role-lover); --role-glow: rgba(236, 72, 153, 0.3); }
+        .my-role.journalist { --role-color: var(--role-journalist); --role-glow: rgba(6, 182, 212, 0.3); }
+        .my-role.werewolf { --role-color: var(--role-werewolf); --role-glow: rgba(161, 98, 7, 0.3); }
+        .my-role.gangster { --role-color: var(--role-gangster); --role-glow: rgba(71, 85, 105, 0.3); }
+        .my-role.detective { --role-color: var(--role-detective); --role-glow: rgba(2, 132, 199, 0.3); }
+        .my-role.gravedigger { --role-color: var(--role-gravedigger); --role-glow: rgba(107, 114, 128, 0.3); }
+        .my-role.terrorist { --role-color: var(--role-terrorist); --role-glow: rgba(220, 38, 38, 0.3); }
+        .my-role.madam { --role-color: var(--role-madam); --role-glow: rgba(219, 39, 119, 0.3); }
 
-        .mafia .role-title, .mafia .ability-title {
-            color: #d32f2f;
-        }
-
-        .mafia .role-icon {
-            background-color: #d32f2f;
-            color: white;
-        }
-
-        .police {
-            background-color: #e3f2fd;
-        }
-
-        .police .role-title, .police .ability-title {
-            color: #1976d2;
-        }
-
-        .police .role-icon {
-            background-color: #1976d2;
-            color: white;
-        }
-
-        .doctor {
-            background-color: #e8f5e9;
-        }
-
-        .doctor .role-title, .doctor .ability-title {
-            color: #388e3c;
-        }
-
-        .doctor .role-icon {
-            background-color: #388e3c;
-            color: white;
-        }
-
-        .citizen {
-            background-color: #fffde7;
-        }
-
-        .citizen .role-title, .citizen .ability-title {
-            color: #fbc02d;
-        }
-
-        .citizen .role-icon {
-            background-color: #fbc02d;
-            color: white;
-        }
-        
-        /* 추가 역할 스타일 */
-        .spy {
-            background-color: #f3e5f5;
-        }
-
-        .spy .role-title, .spy .ability-title {
-            color: #9c27b0;
-        }
-
-        .spy .role-icon {
-            background-color: #9c27b0;
-            color: white;
-        }
-        
-        .medium {
-            background-color: #e0f7fa;
-        }
-
-        .medium .role-title, .medium .ability-title {
-            color: #00acc1;
-        }
-
-        .medium .role-icon {
-            background-color: #00acc1;
-            color: white;
-        }
-        
-        .soldier {
-            background-color: #e8eaf6;
-        }
-
-        .soldier .role-title, .soldier .ability-title {
-            color: #3f51b5;
-        }
-
-        .soldier .role-icon {
-            background-color: #3f51b5;
-            color: white;
-        }
-
+        /* Armor Status */
         .armor-status {
-            margin-top: 8px;
-            padding: 6px 10px;
-            border-radius: 6px;
-            font-size: 12px;
+            display: none;
+            margin-top: var(--space-sm);
+            padding: var(--space-xs) var(--space-sm);
+            border-radius: var(--radius-sm);
+            font-size: 10px;
             font-weight: 500;
         }
 
-        .armor-available {
-            background-color: #e8f5e9;
-            color: #2e7d32;
-            border: 1px solid #4caf50;
+        .armor-status.armor-available {
+            display: block;
+            background: rgba(0, 255, 136, 0.1);
+            border: 1px solid rgba(0, 255, 136, 0.3);
+            color: var(--success);
         }
 
-        .armor-used {
-            background-color: #ffebee;
-            color: #c62828;
-            border: 1px solid #f44336;
-        }
-        
-        .politician {
-            background-color: #efebe9;
+        .armor-status.armor-used {
+            display: block;
+            background: rgba(255, 51, 102, 0.1);
+            border: 1px solid rgba(255, 51, 102, 0.3);
+            color: var(--danger);
         }
 
-        .politician .role-title, .politician .ability-title {
-            color: #795548;
+        /* ============================================
+           Game Result Overlay
+           ============================================ */
+        .game-result-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(10, 10, 15, 0.95);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            animation: resultFadeIn 0.5s ease-out;
         }
 
-        .politician .role-icon {
-            background-color: #795548;
-            color: white;
-        }
-        
-        .lover {
-            background-color: #fce4ec;
+        @keyframes resultFadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
         }
 
-        .lover .role-title, .lover .ability-title {
-            color: #e91e63;
+        .result-title {
+            font-size: 36px;
+            font-weight: 700;
+            margin-bottom: var(--space-lg);
+            animation: resultPulse 2s ease-in-out infinite;
         }
 
-        .lover .role-icon {
-            background-color: #e91e63;
-            color: white;
-        }
-        
-        .journalist {
-            background-color: #fff3e0;
+        .result-title.mafia-win {
+            color: var(--role-mafia);
+            text-shadow: 0 0 30px rgba(255, 51, 102, 0.7);
         }
 
-        .journalist .role-title, .journalist .ability-title {
-            color: #ff9800;
+        .result-title.citizen-win {
+            color: var(--success);
+            text-shadow: 0 0 30px rgba(0, 255, 136, 0.7);
         }
 
-        .journalist .role-icon {
-            background-color: #ff9800;
-            color: white;
-        }
-        
-        .werewolf {
-            background-color: #fafafa;
+        @keyframes resultPulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
         }
 
-        .werewolf .role-title, .werewolf .ability-title {
-            color: #616161;
+        .result-message {
+            font-size: 16px;
+            color: var(--text-secondary);
+            margin-bottom: var(--space-xl);
+            text-align: center;
         }
 
-        .werewolf .role-icon {
-            background-color: #616161;
-            color: white;
-        }
-        
-        .gangster {
-            background-color: #eceff1;
+        .result-info {
+            font-size: 12px;
+            color: var(--text-muted);
         }
 
-        .gangster .role-title, .gangster .ability-title {
-            color: #607d8b;
+        /* ============================================
+           Mobile Styles
+           ============================================ */
+        body.mobile {
+            padding: var(--space-sm);
+            padding-top: calc(var(--space-sm) + var(--sat));
+            padding-right: calc(var(--space-sm) + var(--sar));
         }
 
-        .gangster .role-icon {
-            background-color: #607d8b;
-            color: white;
-        }
-        
-        .detective {
-            background-color: #f1f8e9;
-        }
-
-        .detective .role-title, .detective .ability-title {
-            color: #689f38;
-        }
-
-        .detective .role-icon {
-            background-color: #689f38;
-            color: white;
-        }
-        
-        .gravedigger {
-            background-color: #e0f2f1;
-        }
-
-        .gravedigger .role-title, .gravedigger .ability-title {
-            color: #00897b;
-        }
-
-        .gravedigger .role-icon {
-            background-color: #00897b;
-            color: white;
-        }
-        
-        .terrorist {
-            background-color: #f9fbe7;
-        }
-
-        .terrorist .role-title, .terrorist .ability-title {
-            color: #827717;
-        }
-
-        .terrorist .role-icon {
-            background-color: #827717;
-            color: white;
-        }
-        
-        .madam {
-            background-color: #fff1f1;
-        }
-
-        .madam .role-title, .madam .ability-title {
-            color: #d81b60;
-        }
-
-        .madam .role-icon {
-            background-color: #d81b60;
-            color: white;
-        }
-
-        /* 단계별 색상 */
-        .phase-night {
-            color: #3f51b5;
-        }
-
-        .phase-day {
-            color: #ff9800;
-        }
-
-        .phase-voting {
-            color: #9c27b0;
-        }
-
-        .phase-defense {
-            color: #607d8b;
-        }
-
-        .phase-approval {
-            color: #795548;
-        }
-
-        /* 모바일 스타일 */
-        .mobile {
+        body.mobile .status-container {
             width: 100%;
-            padding: 10px;
+            max-width: 320px;
         }
 
-        .mobile .status-container {
-            width: 100%;
-            padding: 12px;
-        }
-
-        .mobile .players-grid {
-            grid-template-columns: repeat(2, 1fr);
+        .hidden {
+            display: none !important;
         }
     </style>
 </head>
-
 <body>
     <div class="status-container">
         <div class="status-header">
             <div class="game-phase" id="game-phase">게임 준비 중</div>
             <div class="day-count" id="day-count">참가자를 기다리는 중...</div>
         </div>
-        <div class="timer" id="timer" style="display: none;">남은 시간: 30초</div>
 
-        <div class="players-status">
-            <div class="status-title">플레이어 상태</div>
-            <div class="players-grid" id="players-grid">
-                <!-- 플레이어 상태가 여기에 동적으로 추가됩니다 -->
+        <div class="timer" id="timer">남은 시간: 30초</div>
+
+        <div class="content">
+            <div class="players-status">
+                <div class="status-title">플레이어 상태</div>
+                <div class="players-grid" id="players-grid">
+                    <!-- Players will be added dynamically -->
+                </div>
             </div>
-        </div>
 
-        <div class="game-info">
-            <div class="info-title">게임 정보</div>
-            <div class="info-content" id="game-info-content">
-                게임이 시작되면 여기에 현재 단계에 대한 정보가 표시됩니다.
+            <div class="game-info">
+                <div class="info-title">게임 정보</div>
+                <div class="info-content" id="game-info-content">
+                    게임이 시작되면 여기에 현재 단계에 대한 정보가 표시됩니다.
+                </div>
             </div>
-        </div>
 
-        <div class="my-role" id="my-role">
-            <div class="role-icon" id="role-icon">?</div>
-            <div class="role-info">
-                <div class="role-name" id="role-name">역할 미정</div>
-                <div class="role-desc" id="role-desc">게임이 시작되면 역할이 배정됩니다</div>
-                <div class="armor-status" id="armor-status" style="display: none;">
-                    <!-- 군인의 방탄복 상태가 여기에 표시됩니다 -->
+            <div class="my-role" id="my-role">
+                <div class="role-icon" id="role-icon">?</div>
+                <div class="role-info">
+                    <div class="role-name" id="role-name">역할 미정</div>
+                    <div class="role-desc" id="role-desc">게임이 시작되면 역할이 배정됩니다</div>
+                    <div class="armor-status" id="armor-status"></div>
                 </div>
             </div>
         </div>
@@ -508,79 +546,36 @@
         let timerInterval;
         let serverTime = 0;
         let timeDiff = 0;
-        let armorUsed = false; // 군인의 방탄복 사용 여부
+        let armorUsed = false;
+        let _isMobile = false;
+        let _isTablet = false;
 
-        // 역할 데이터 객체 선언
         let roleData = {
-            "mafia": {
-                name: "마피아",
-                icon: "🔪",
-                description: "밤에 시민을 죽이는 역할입니다.",
-                className: "mafia"
-            },
-            "police": {
-                name: "경찰",
-                icon: "🔍",
-                description: "밤에 플레이어의 역할을 조사할 수 있습니다.",
-                className: "police"
-            },
-            "doctor": {
-                name: "의사",
-                icon: "💉",
-                description: "밤에 플레이어를 치료해 마피아의 공격으로부터 보호합니다.",
-                className: "doctor"
-            },
-            "citizen": {
-                name: "시민",
-                icon: "👤",
-                description: "낮에 토론을 통해 마피아를 찾아내는 역할입니다.",
-                className: "citizen"
-            }
+            "mafia": { name: "마피아", icon: "🔪", description: "밤에 시민을 죽이는 역할입니다.", className: "mafia" },
+            "police": { name: "경찰", icon: "🔍", description: "밤에 플레이어의 역할을 조사할 수 있습니다.", className: "police" },
+            "doctor": { name: "의사", icon: "💉", description: "밤에 플레이어를 치료해 마피아의 공격으로부터 보호합니다.", className: "doctor" },
+            "citizen": { name: "시민", icon: "👤", description: "낮에 토론을 통해 마피아를 찾아내는 역할입니다.", className: "citizen" }
         };
 
         const phaseData = {
-            "WAITING": {
-                name: "게임 준비 중",
-                description: "참가자를 기다리는 중입니다. 최소 4명이 모이면 게임이 시작됩니다.",
-                className: ""
-            },
-            "NIGHT": {
-                name: "밤 시간",
-                description: "마피아는 죽일 사람을, 경찰은 조사할 사람을, 의사는 살릴 사람을 선택하세요.",
-                className: "phase-night"
-            },
-            "DAY": {
-                name: "낮 시간",
-                description: "마피아를 찾기 위해 토론하세요. 곧 투표가 시작됩니다.",
-                className: "phase-day"
-            },
-            "VOTING": {
-                name: "투표 시간",
-                description: "마피아로 의심되는 사람에게 투표하세요.",
-                className: "phase-voting"
-            },
-            "FINAL_DEFENSE": {
-                name: "최후 변론",
-                description: "가장 많은 표를 받은 플레이어가 최후 변론을 합니다.",
-                className: "phase-defense"
-            },
-            "APPROVAL_VOTING": {
-                name: "찬반 투표",
-                description: "최후 변론을 들은 후, 처형에 대한 찬반 투표를 진행합니다.",
-                className: "phase-approval"
-            }
+            "WAITING": { name: "게임 준비 중", description: "참가자를 기다리는 중입니다. 최소 4명이 모이면 게임이 시작됩니다.", className: "" },
+            "NIGHT": { name: "밤 시간", description: "마피아는 죽일 사람을, 경찰은 조사할 사람을, 의사는 살릴 사람을 선택하세요.", className: "phase-night" },
+            "DAY": { name: "낮 시간", description: "마피아를 찾기 위해 토론하세요. 곧 투표가 시작됩니다.", className: "phase-day" },
+            "VOTING": { name: "투표 시간", description: "마피아로 의심되는 사람에게 투표하세요.", className: "phase-voting" },
+            "FINAL_DEFENSE": { name: "최후 변론", description: "가장 많은 표를 받은 플레이어가 최후 변론을 합니다.", className: "phase-defense" },
+            "APPROVAL_VOTING": { name: "찬반 투표", description: "최후 변론을 들은 후, 처형에 대한 찬반 투표를 진행합니다.", className: "phase-approval" }
         };
 
         function updateGamePhase(phase, day) {
             gamePhase = phase;
             dayCount = day;
-            
+
             const phaseInfo = phaseData[phase] || phaseData["WAITING"];
-            
+
             const phaseElement = document.getElementById('game-phase');
             phaseElement.textContent = phaseInfo.name;
             phaseElement.className = `game-phase ${phaseInfo.className}`;
-            
+
             document.getElementById('day-count').textContent = day > 0 ? `${day}일차` : "게임 준비 중";
             document.getElementById('game-info-content').textContent = phaseInfo.description;
         }
@@ -589,220 +584,211 @@
             players = playersList;
             const playersGrid = document.getElementById('players-grid');
             playersGrid.innerHTML = '';
-            
+
             players.forEach(player => {
                 const playerItem = document.createElement('div');
-                playerItem.className = `player-status-item ${!player.isAlive ? 'dead' : ''}`;
-                
+                playerItem.className = 'player-status-item';
+                if (!player.isAlive) playerItem.classList.add('dead');
+                if (player.id === myPlayerId) playerItem.classList.add('me');
+
                 playerItem.innerHTML = `
                     <div class="player-avatar">${player.emoji || '👤'}</div>
                     <div class="player-name">${player.name}${player.id === myPlayerId ? ' (나)' : ''}</div>
                 `;
-                
+
                 playersGrid.appendChild(playerItem);
             });
         }
 
         function updateMyRole(role) {
-            console.log("역할 업데이트:", role);
             myRole = role;
-            
+
             if (!role) {
                 document.getElementById('role-name').textContent = "역할 미정";
                 document.getElementById('role-icon').textContent = "?";
                 document.getElementById('role-desc').textContent = "게임이 시작되면 역할이 배정됩니다";
                 document.getElementById('my-role').className = "my-role";
-                document.getElementById('armor-status').style.display = 'none';
+                document.getElementById('armor-status').className = 'armor-status';
                 return;
             }
-            
+
             document.getElementById('role-name').textContent = role.name;
             document.getElementById('role-icon').textContent = role.icon;
             document.getElementById('role-desc').textContent = role.description;
             document.getElementById('my-role').className = `my-role ${role.id}`;
-            
-            // 군인인 경우 방탄복 상태 표시
+
             if (role.id === 'soldier') {
                 updateArmorStatus();
             } else {
-                document.getElementById('armor-status').style.display = 'none';
+                document.getElementById('armor-status').className = 'armor-status';
             }
         }
 
         function updateArmorStatus() {
             const armorStatusElement = document.getElementById('armor-status');
-            
+
             if (myRole && myRole.id === 'soldier') {
-                armorStatusElement.style.display = 'block';
-                
                 if (armorUsed) {
                     armorStatusElement.className = 'armor-status armor-used';
-                    armorStatusElement.textContent = '🛡️ 방탄복 사용됨 - 공격을 막았습니다!';
+                    armorStatusElement.textContent = '🛡️ 방탄복 사용됨';
                 } else {
                     armorStatusElement.className = 'armor-status armor-available';
-                    armorStatusElement.textContent = '🛡️ 방탄복 보유 - 한 번의 공격을 막을 수 있습니다';
+                    armorStatusElement.textContent = '🛡️ 방탄복 보유';
                 }
             } else {
-                armorStatusElement.style.display = 'none';
+                armorStatusElement.className = 'armor-status';
             }
         }
 
         function updateTimer(seconds, serverTimestamp) {
+            const timerElement = document.getElementById('timer');
+
             if (seconds <= 0) {
-                document.getElementById('timer').style.display = 'none';
+                timerElement.style.display = 'none';
                 clearInterval(timerInterval);
                 return;
             }
-            
-            // 서버 시간과 클라이언트 시간의 차이 계산
+
             if (serverTimestamp) {
                 const clientTime = Date.now();
                 serverTime = serverTimestamp;
                 timeDiff = clientTime - serverTime;
-                console.log("서버 시간:", serverTime, "클라이언트 시간:", clientTime, "시간 차이:", timeDiff);
             }
-            
+
             remainingTime = seconds;
-            document.getElementById('timer').style.display = 'block';
-            document.getElementById('timer').textContent = `남은 시간: ${Math.floor(remainingTime)}초`;
-            
+            timerElement.style.display = 'block';
+            timerElement.textContent = `남은 시간: ${Math.floor(remainingTime)}초`;
+            timerElement.classList.toggle('warning', remainingTime <= 10);
+
             clearInterval(timerInterval);
             timerInterval = setInterval(() => {
-                // 서버 시간 기준으로 남은 시간 계산
                 const elapsedTime = Math.floor((Date.now() - serverTime - timeDiff) / 1000);
                 const newRemainingTime = Math.max(0, seconds - elapsedTime);
-                
+
                 if (newRemainingTime !== remainingTime) {
                     remainingTime = newRemainingTime;
-                    document.getElementById('timer').textContent = `남은 시간: ${Math.floor(remainingTime)}초`;
+                    timerElement.textContent = `남은 시간: ${Math.floor(remainingTime)}초`;
+                    timerElement.classList.toggle('warning', remainingTime <= 10);
                 }
-                
+
                 if (remainingTime <= 0) {
                     clearInterval(timerInterval);
-                    document.getElementById('timer').style.display = 'none';
+                    timerElement.style.display = 'none';
                 }
-            }, 500); // 0.5초마다 업데이트
+            }, 500);
         }
 
-        let _isMobile = false;
-        let _isTablet = false;
-        let $contentWrapper;
+        function showGameResult(winnerTeam) {
+            const overlay = document.createElement('div');
+            overlay.className = 'game-result-overlay';
+
+            const isMafiaWin = winnerTeam === 'MAFIA';
+
+            overlay.innerHTML = `
+                <div class="result-title ${isMafiaWin ? 'mafia-win' : 'citizen-win'}">
+                    ${isMafiaWin ? '마피아 승리!' : '시민 승리!'}
+                </div>
+                <div class="result-message">
+                    ${isMafiaWin ? '마피아가 도시를 장악했습니다!' : '시민들이 모든 마피아를 제거했습니다!'}
+                </div>
+                <div class="result-info">잠시 후 대기실로 돌아갑니다...</div>
+            `;
+
+            document.body.appendChild(overlay);
+
+            setTimeout(() => {
+                if (overlay.parentNode) {
+                    overlay.parentNode.removeChild(overlay);
+                }
+            }, 10000);
+        }
 
         function hideWidget() {
             window.parent.postMessage({
                 type: "WidgetRearrange",
                 width: "0px",
                 height: "0px",
-            }, "*")
+            }, "*");
             window.parent.focus();
         }
 
-        function revealWidget(moveScrollToBottom = false) {
-            if (moveScrollToBottom && $contentWrapper) {
-                $contentWrapper.scrollTop = $contentWrapper.scrollHeight;
-            }
+        function revealWidget() {
             if (_isMobile) {
-                const rtcAndNotchHeight = 160 + parseInt(getComputedStyle(document.documentElement,).getPropertyValue("--sat"));
                 window.parent.postMessage({
                     type: 'WidgetRearrange',
                     anchor: 'middleright',
                     height: '100%',
                     width: '100%',
-                    top: `-${parseInt(0)}px`
-                }, '*')
+                }, '*');
             } else {
+                const container = document.querySelector('.status-container');
                 window.parent.postMessage({
                     type: "WidgetRearrange",
-                    anchor: "middleright",
-                    width: `300px`,
-                    height: `${document.querySelector('.status-container').offsetHeight+10}px`,
-                }, "*")
+                    anchor: "topright",
+                    width: "320px",
+                    height: `${container.offsetHeight + 40}px`,
+                }, "*");
             }
-        }
-
-        function fitTheSize() {
-            window.parent.postMessage({
-                type: "WidgetRearrange",
-                width: document.body.offsetWidth + 10,
-                height: document.body.offsetHeight + 10,
-            }, "*")
         }
 
         window.addEventListener('message', function(e) {
             const data = e.data;
-            
-            if(data.type === "setWidget"){
+
+            if (data.type === "setWidget") {
                 _isMobile = data.isMobile;
                 _isTablet = data.isTablet;
-                if(data.isMobile && !data.isTablet){
+                if (data.isMobile && !data.isTablet) {
                     document.body.classList.add('mobile');
-                }else{
+                } else {
                     document.body.classList.remove('mobile');
                 }
                 hideWidget();
             } else if (data.type === 'init') {
-                try {
-                    document.body.classList.remove("hidden");
-                    revealWidget();
-                } catch (error) {
-                    alert("An error occurred:", error);
-                }
+                document.body.classList.remove("hidden");
+                revealWidget();
             } else if (data.type === 'initRoleData') {
-                // 서버에서 전송한 역할 데이터로 초기화
                 if (data.roleData) {
                     roleData = data.roleData;
-                    console.log("서버에서 역할 데이터 수신 완료:", Object.keys(roleData).length);
                 }
             } else if (data.type === 'updateGameStatus') {
-                console.log("게임 상태 업데이트:", data);
                 updateGamePhase(data.phase, data.day);
-                
+
                 if (data.players) {
                     updatePlayers(data.players);
                 }
-                
+
                 if (data.myPlayerId) {
                     myPlayerId = data.myPlayerId;
                 }
-                
+
                 if (data.myRole !== undefined) {
                     updateMyRole(data.myRole);
                 }
-                
+
                 if (data.timeRemaining) {
                     updateTimer(data.timeRemaining, data.serverTime);
                 }
-                
+
                 if (data.armorUsed !== undefined) {
                     armorUsed = data.armorUsed;
                     updateArmorStatus();
                 }
             } else if (data.type === "armorUsed") {
-                // 방탄복 사용 알림
                 armorUsed = true;
                 updateArmorStatus();
             } else if (data.type === "gameResult") {
-                // 게임 결과 처리
-                console.log("게임 결과 수신:", data);
                 showGameResult(data.winnerTeam);
-            } else if (data.type === "hide") {
+            } else if (data.type === "hide" || data.type === "hideWidget") {
                 hideWidget();
-            } else if (data.type === "reveal") {
-                revealWidget(true);
-            } else if (data.type === "hideWidget") {
-                // WidgetManager에서 보내는 숨김 메시지 처리
-                hideWidget();
-            } else if (data.type === "showWidget") {
-                // WidgetManager에서 보내는 표시 메시지 처리
+            } else if (data.type === "reveal" || data.type === "showWidget") {
                 revealWidget();
             }
         });
 
-        window.addEventListener('unload', function () {
+        window.addEventListener('unload', function() {
             window.parent.focus();
         });
 
-        // 모바일 환경 감지
         function checkMobile() {
             if (window.innerWidth <= 768) {
                 document.body.classList.add('mobile');
@@ -811,55 +797,8 @@
             }
         }
 
-        // 게임 결과 표시 함수 추가
-        function showGameResult(winnerTeam) {
-            const resultElement = document.createElement('div');
-            resultElement.style.position = 'fixed';
-            resultElement.style.top = '0';
-            resultElement.style.left = '0';
-            resultElement.style.width = '100%';
-            resultElement.style.height = '100%';
-            resultElement.style.backgroundColor = 'rgba(0, 0, 0, 0.8)';
-            resultElement.style.display = 'flex';
-            resultElement.style.flexDirection = 'column';
-            resultElement.style.justifyContent = 'center';
-            resultElement.style.alignItems = 'center';
-            resultElement.style.zIndex = '9999';
-            resultElement.style.color = '#ffffff';
-            resultElement.style.textAlign = 'center';
-            resultElement.style.padding = '20px';
-            
-            const resultTitle = document.createElement('h1');
-            resultTitle.textContent = winnerTeam === 'MAFIA' ? '마피아 승리!' : '시민 승리!';
-            resultTitle.style.fontSize = '36px';
-            resultTitle.style.marginBottom = '20px';
-            resultTitle.style.color = winnerTeam === 'MAFIA' ? '#ff5252' : '#4caf50';
-            
-            const resultMessage = document.createElement('p');
-            resultMessage.textContent = winnerTeam === 'MAFIA' ? '마피아가 도시를 장악했습니다!' : '시민들이 모든 마피아를 제거했습니다!';
-            resultMessage.style.fontSize = '18px';
-            resultMessage.style.marginBottom = '30px';
-            
-            const infoMessage = document.createElement('p');
-            infoMessage.textContent = '잠시 후 대기실로 돌아갑니다...';
-            infoMessage.style.fontSize = '14px';
-            infoMessage.style.opacity = '0.8';
-            
-            resultElement.appendChild(resultTitle);
-            resultElement.appendChild(resultMessage);
-            resultElement.appendChild(infoMessage);
-            
-            document.body.appendChild(resultElement);
-            
-            // 10초 후에 자동으로 결과 화면 제거
-            setTimeout(() => {
-                document.body.removeChild(resultElement);
-            }, 10000);
-        }
-
         window.addEventListener('resize', checkMobile);
         checkMobile();
     </script>
 </body>
-
-</html> 
+</html>

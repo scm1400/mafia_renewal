@@ -1,41 +1,94 @@
 <!DOCTYPE html>
-<html style="overflow: hidden">
-
+<html lang="ko">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script>
-        /* create style sheet */
-        const newFontStylePath = document.URL.includes('https://zep.us') ? "https://cdn-static.zep.us/static/zep-script/css/typography.css" : "https://cdn-static-stage.zep.us/static/zep-script/css/typography.css";
-
+        const fontPath = document.URL.includes('https://zep.us')
+            ? "https://cdn-static.zep.us/static/zep-script/css/typography.css"
+            : "https://cdn-static-stage.zep.us/static/zep-script/css/typography.css";
         document.head.appendChild(Object.assign(document.createElement("link"), {
             rel: "stylesheet",
             type: "text/css",
-            href: newFontStylePath
+            href: fontPath
         }));
     </script>
-    <style type="text/css">
+    <style>
+        /* ============================================
+           Design System Variables
+           ============================================ */
         :root {
             --sat: env(safe-area-inset-top);
             --sar: env(safe-area-inset-right);
             --sab: env(safe-area-inset-bottom);
             --sal: env(safe-area-inset-left);
-            --primary-color: #00bcd4;
-            --primary-dark: #008ba3;
-            --secondary-color: #e91e63;
-            --text-color: #27262E;
-            --bg-color: #f5f5f5;
-            --card-color: #ffffff;
-            --card-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-            --approve-color: #4caf50;
-            --reject-color: #f44336;
+
+            /* Neon Colors */
+            --neon-cyan: #00f0ff;
+            --neon-cyan-dark: #00b8cc;
+            --neon-pink: #ff2d95;
+            --neon-pink-dark: #cc0055;
+            --neon-purple: #b026ff;
+
+            /* Background */
+            --bg-base: #0a0a0f;
+            --bg-surface: #12121a;
+            --bg-elevated: #1a1a25;
+            --bg-overlay: rgba(10, 10, 15, 0.92);
+
+            /* Text */
+            --text-primary: #ffffff;
+            --text-secondary: #a0a0b0;
+            --text-muted: #606070;
+
+            /* Semantic */
+            --success: #00ff88;
+            --success-dark: #00cc6a;
+            --danger: #ff3366;
+            --danger-dark: #cc0033;
+
+            /* Border */
+            --border-subtle: rgba(255, 255, 255, 0.05);
+            --border-default: rgba(255, 255, 255, 0.1);
+            --border-cyan: rgba(0, 240, 255, 0.3);
+
+            /* Glow */
+            --glow-cyan: 0 0 20px rgba(0, 240, 255, 0.5);
+            --glow-pink: 0 0 20px rgba(255, 45, 149, 0.5);
+            --glow-success: 0 0 20px rgba(0, 255, 136, 0.5);
+            --glow-danger: 0 0 20px rgba(255, 51, 102, 0.5);
+
+            /* Shadow */
+            --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.5);
+
+            /* Spacing */
+            --space-xs: 4px;
+            --space-sm: 8px;
+            --space-md: 12px;
+            --space-lg: 16px;
+            --space-xl: 24px;
+
+            /* Radius */
+            --radius-sm: 6px;
+            --radius-md: 10px;
+            --radius-lg: 14px;
+            --radius-full: 9999px;
+
+            /* Typography */
+            --font-family: 'Pretendard', 'Pretendard JP', -apple-system, BlinkMacSystemFont, sans-serif;
+
+            /* Transition */
+            --transition-fast: 0.15s ease;
+            --transition-normal: 0.25s ease;
         }
 
+        /* ============================================
+           Base Reset
+           ============================================ */
         * {
-            padding: 0;
             margin: 0;
+            padding: 0;
             box-sizing: border-box;
-            user-select: none !important;
-            font-family: 'Pretendard JP', 'Pretendard', sans-serif, Arial;
-            color: var(--text-color);
         }
 
         html {
@@ -46,70 +99,102 @@
         body {
             width: 100%;
             height: 100%;
+            font-family: var(--font-family);
+            font-size: 14px;
+            color: var(--text-primary);
+            background: var(--bg-overlay);
             display: flex;
-            flex-direction: column;
             align-items: center;
             justify-content: center;
-            background-color: rgba(0, 0, 0, 0.7);
+            user-select: none;
+            -webkit-user-select: none;
+            -webkit-font-smoothing: antialiased;
         }
 
-        .approval-vote-container {
-            width: 90%;
-            max-width: 500px;
-            background-color: var(--card-color);
-            border-radius: 12px;
-            box-shadow: var(--card-shadow);
+        /* ============================================
+           Container
+           ============================================ */
+        .approval-container {
+            width: 480px;
+            max-width: calc(100% - 32px);
+            background: var(--bg-surface);
+            border: 1px solid var(--neon-pink);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-lg), var(--glow-pink);
             display: flex;
             flex-direction: column;
+            overflow: hidden;
+            animation: scaleIn 0.3s ease-out;
         }
 
+        @keyframes scaleIn {
+            from {
+                opacity: 0;
+                transform: scale(0.95);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        /* ============================================
+           Header
+           ============================================ */
         .header {
-            background-color: var(--primary-color);
-            color: white;
-            padding: 15px 20px;
+            padding: var(--space-xl);
             text-align: center;
+            background: linear-gradient(180deg, rgba(255, 45, 149, 0.1) 0%, transparent 100%);
+            border-bottom: 1px solid var(--border-subtle);
         }
 
-        .header h1 {
-            color: white;
+        .header-title {
             font-size: 24px;
             font-weight: 700;
-            margin-bottom: 5px;
+            color: var(--neon-pink);
+            text-shadow: var(--glow-pink);
+            margin-bottom: var(--space-xs);
         }
 
-        .header p {
-            color: rgba(255, 255, 255, 0.9);
-            font-size: 14px;
+        .header-subtitle {
+            font-size: 13px;
+            color: var(--text-secondary);
         }
 
+        /* ============================================
+           Content
+           ============================================ */
         .content {
-            padding: 20px;
-            flex: 1;
+            padding: var(--space-xl);
             display: flex;
             flex-direction: column;
-            gap: 20px;
+            gap: var(--space-lg);
         }
 
+        /* Player Info */
         .player-info {
             display: flex;
             align-items: center;
-            gap: 15px;
-            padding: 15px;
-            background-color: #f8f8f8;
-            border-radius: 8px;
+            gap: var(--space-lg);
+            padding: var(--space-lg);
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-default);
+            border-radius: var(--radius-md);
         }
 
         .player-avatar {
-            width: 60px;
-            height: 60px;
-            border-radius: 50%;
-            background-color: #e0e0e0;
+            width: 56px;
+            height: 56px;
+            background: linear-gradient(135deg, var(--neon-pink), var(--neon-purple));
+            border-radius: var(--radius-full);
             display: flex;
             align-items: center;
             justify-content: center;
-            font-weight: bold;
-            color: #555;
             font-size: 24px;
+            font-weight: 700;
+            color: var(--text-primary);
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+            flex-shrink: 0;
         }
 
         .player-details {
@@ -119,126 +204,189 @@
         .player-name {
             font-size: 18px;
             font-weight: 600;
-            margin-bottom: 5px;
+            color: var(--text-primary);
+            margin-bottom: var(--space-xs);
         }
 
         .player-status {
-            font-size: 14px;
-            color: #666;
+            font-size: 13px;
+            color: var(--neon-pink);
         }
 
-        .timer-container {
+        /* Timer */
+        .timer-section {
             text-align: center;
-            margin-bottom: 10px;
         }
 
         .timer {
-            font-size: 24px;
-            font-weight: 600;
-            color: var(--primary-color);
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--text-primary);
+            font-variant-numeric: tabular-nums;
         }
 
-        .defense-message {
-            width: 100%;
-            padding: 15px;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-            background-color: #f9f9f9;
-            font-size: 14px;
+        .timer.urgent {
+            color: var(--neon-pink);
+            animation: urgentPulse 1s ease-in-out infinite;
+        }
+
+        @keyframes urgentPulse {
+            0%, 100% {
+                color: var(--neon-pink);
+                text-shadow: 0 0 20px rgba(255, 45, 149, 0.5);
+            }
+            50% {
+                color: #ff6b9d;
+                text-shadow: 0 0 35px rgba(255, 45, 149, 0.8);
+            }
+        }
+
+        /* Defense Message */
+        .defense-section {
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-default);
+            border-radius: var(--radius-md);
+            padding: var(--space-lg);
+            max-height: 120px;
             overflow-y: auto;
-            white-space: pre-wrap;
-            margin-bottom: 20px;
         }
 
+        .defense-label {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: var(--space-sm);
+        }
+
+        .defense-text {
+            font-size: 14px;
+            color: var(--text-secondary);
+            line-height: 1.5;
+            white-space: pre-wrap;
+        }
+
+        /* ============================================
+           Vote Options
+           ============================================ */
         .vote-options {
             display: flex;
-            gap: 15px;
-            margin-bottom: 20px;
+            gap: var(--space-md);
         }
 
         .vote-option {
             flex: 1;
-            padding: 15px;
-            border-radius: 8px;
+            padding: var(--space-lg);
+            background: var(--bg-elevated);
+            border: 2px solid var(--border-default);
+            border-radius: var(--radius-md);
             text-align: center;
             cursor: pointer;
-            transition: all 0.2s ease;
-            border: 2px solid transparent;
+            transition: all var(--transition-fast);
+        }
+
+        .vote-option:hover:not(.disabled) {
+            transform: translateY(-2px);
         }
 
         .vote-option.approve {
-            background-color: rgba(76, 175, 80, 0.1);
-            border-color: var(--approve-color);
+            border-color: rgba(0, 255, 136, 0.3);
         }
 
-        .vote-option.reject {
-            background-color: rgba(244, 67, 54, 0.1);
-            border-color: var(--reject-color);
-        }
-
-        .vote-option:hover {
-            transform: translateY(-2px);
-        }
-
-        .vote-option.selected {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        .vote-option.approve:hover:not(.disabled) {
+            background: rgba(0, 255, 136, 0.1);
+            border-color: var(--success);
         }
 
         .vote-option.approve.selected {
-            background-color: rgba(76, 175, 80, 0.2);
+            background: rgba(0, 255, 136, 0.15);
+            border-color: var(--success);
+            box-shadow: var(--glow-success);
+        }
+
+        .vote-option.reject {
+            border-color: rgba(255, 51, 102, 0.3);
+        }
+
+        .vote-option.reject:hover:not(.disabled) {
+            background: rgba(255, 51, 102, 0.1);
+            border-color: var(--danger);
         }
 
         .vote-option.reject.selected {
-            background-color: rgba(244, 67, 54, 0.2);
+            background: rgba(255, 51, 102, 0.15);
+            border-color: var(--danger);
+            box-shadow: var(--glow-danger);
+        }
+
+        .vote-option.disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
         }
 
         .vote-icon {
-            font-size: 32px;
-            margin-bottom: 10px;
+            font-size: 36px;
+            margin-bottom: var(--space-sm);
         }
 
         .vote-label {
-            font-weight: 600;
             font-size: 16px;
+            font-weight: 600;
+            margin-bottom: var(--space-xs);
+        }
+
+        .vote-option.approve .vote-label {
+            color: var(--success);
+        }
+
+        .vote-option.reject .vote-label {
+            color: var(--danger);
         }
 
         .vote-description {
             font-size: 12px;
-            color: #666;
-            margin-top: 5px;
+            color: var(--text-muted);
         }
 
+        /* ============================================
+           Vote Results
+           ============================================ */
         .vote-results {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            margin-top: 20px;
+            display: none;
+        }
+
+        .vote-results.visible {
+            display: block;
         }
 
         .result-bar-container {
-            width: 100%;
-            height: 30px;
-            background-color: #f0f0f0;
-            border-radius: 15px;
+            height: 32px;
+            background: var(--bg-elevated);
+            border-radius: var(--radius-full);
             overflow: hidden;
-            position: relative;
+            display: flex;
+            margin-bottom: var(--space-md);
         }
 
         .result-bar {
             height: 100%;
-            position: absolute;
-            left: 0;
-            top: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: 600;
             transition: width 0.5s ease;
         }
 
         .result-bar.approve {
-            background-color: var(--approve-color);
+            background: linear-gradient(90deg, var(--success), var(--success-dark));
+            color: var(--bg-base);
         }
 
         .result-bar.reject {
-            background-color: var(--reject-color);
+            background: linear-gradient(90deg, var(--danger-dark), var(--danger));
+            color: var(--text-primary);
         }
 
         .result-labels {
@@ -252,65 +400,125 @@
         }
 
         .result-label.approve {
-            color: var(--approve-color);
+            color: var(--success);
         }
 
         .result-label.reject {
-            color: var(--reject-color);
+            color: var(--danger);
         }
 
+        /* ============================================
+           Footer
+           ============================================ */
         .footer {
-            padding: 15px 20px;
             display: flex;
-            justify-content: flex-end;
-            gap: 10px;
-            border-top: 1px solid #eee;
+            gap: var(--space-md);
+            padding: var(--space-lg) var(--space-xl);
+            border-top: 1px solid var(--border-subtle);
         }
 
-        .button {
-            padding: 10px 20px;
-            border-radius: 5px;
+        .btn {
+            flex: 1;
+            height: 48px;
             border: none;
+            border-radius: var(--radius-md);
+            font-family: var(--font-family);
+            font-size: 15px;
             font-weight: 600;
-            font-size: 14px;
             cursor: pointer;
-            transition: all 0.2s ease;
+            transition: all var(--transition-fast);
         }
 
-        .button.primary {
-            background-color: var(--primary-color);
-            color: white;
+        .btn-secondary {
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-default);
+            color: var(--text-secondary);
         }
 
-        .button.primary:hover {
-            background-color: var(--primary-dark);
+        .btn-secondary:hover {
+            background: var(--bg-base);
+            border-color: var(--border-cyan);
+            color: var(--neon-cyan);
         }
 
-        .button.secondary {
-            background-color: #e0e0e0;
-            color: #333;
+        .btn-primary {
+            background: linear-gradient(135deg, var(--neon-cyan), var(--neon-cyan-dark));
+            color: var(--bg-base);
+            box-shadow: var(--glow-cyan);
         }
 
-        .button.secondary:hover {
-            background-color: #d5d5d5;
+        .btn-primary:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 0 30px rgba(0, 240, 255, 0.6);
         }
 
-        .button:disabled {
-            opacity: 0.5;
+        .btn-primary:disabled {
+            background: var(--bg-elevated);
+            color: var(--text-muted);
+            box-shadow: none;
             cursor: not-allowed;
         }
 
+        /* ============================================
+           Scrollbar
+           ============================================ */
+        .defense-section::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .defense-section::-webkit-scrollbar-track {
+            background: var(--bg-base);
+            border-radius: var(--radius-full);
+        }
+
+        .defense-section::-webkit-scrollbar-thumb {
+            background: var(--bg-surface);
+            border-radius: var(--radius-full);
+        }
+
+        /* ============================================
+           Mobile Styles
+           ============================================ */
+        body.mobile .approval-container {
+            width: 100%;
+            max-width: 100%;
+            height: 100%;
+            border-radius: 0;
+            border: none;
+        }
+
+        body.mobile .header {
+            padding-top: calc(var(--space-xl) + var(--sat));
+        }
+
+        body.mobile .footer {
+            padding-bottom: calc(var(--space-lg) + var(--sab));
+        }
+
+        body.mobile .vote-options {
+            flex-direction: column;
+        }
+
+        body.mobile .player-avatar {
+            width: 48px;
+            height: 48px;
+            font-size: 20px;
+        }
+
+        body.mobile .player-name {
+            font-size: 16px;
+        }
+
         .hidden {
-            display: none;
+            display: none !important;
         }
     </style>
 </head>
-
 <body>
-    <div class="approval-vote-container">
+    <div class="approval-container">
         <div class="header">
-            <h1>찬반 투표</h1>
-            <p>최후 변론을 들은 후, 처형에 대한 찬반 투표를 진행합니다.</p>
+            <h1 class="header-title">찬반 투표</h1>
+            <p class="header-subtitle">최후 변론을 들은 후, 처형에 대한 찬반 투표를 진행합니다.</p>
         </div>
 
         <div class="content">
@@ -322,12 +530,13 @@
                 </div>
             </div>
 
-            <div class="timer-container">
+            <div class="timer-section">
                 <div class="timer" id="timer">00:30</div>
             </div>
 
-            <div class="defense-message" id="defenseMessage">
-                최후 변론 내용이 여기에 표시됩니다.
+            <div class="defense-section">
+                <div class="defense-label">최후 변론</div>
+                <div class="defense-text" id="defenseMessage">최후 변론 내용이 여기에 표시됩니다.</div>
             </div>
 
             <div class="vote-options" id="voteOptions">
@@ -343,7 +552,7 @@
                 </div>
             </div>
 
-            <div class="vote-results hidden" id="voteResults">
+            <div class="vote-results" id="voteResults">
                 <div class="result-bar-container">
                     <div class="result-bar approve" id="approveBar" style="width: 0%"></div>
                     <div class="result-bar reject" id="rejectBar" style="width: 0%"></div>
@@ -356,15 +565,15 @@
         </div>
 
         <div class="footer">
-            <button class="button secondary" id="closeBtn">닫기</button>
-            <button class="button primary" id="submitVoteBtn">투표 제출</button>
+            <button class="btn btn-secondary" id="closeBtn">닫기</button>
+            <button class="btn btn-primary" id="submitVoteBtn">투표 제출</button>
         </div>
     </div>
 
     <script>
-        // 전역 변수
-        let timeLeft = 30; // 기본 30초
-        let timerInterval;
+        // State
+        let timeLeft = 30;
+        let timerInterval = null;
         let selectedVote = null;
         let voteSubmitted = false;
         let defendantId = null;
@@ -372,269 +581,247 @@
         let defenseText = "";
         let isAlive = true;
         let isDefendant = false;
-        
-        // 이벤트 리스너 저장
+
+        let _isMobile = false;
+        let _isTablet = false;
+
+        // Event listener references
         let approveListener = null;
         let rejectListener = null;
         let submitListener = null;
         let closeListener = null;
 
-        // DOM 요소
-        const timerElement = document.getElementById('timer');
-        const playerNameElement = document.getElementById('playerName');
-        const playerAvatarElement = document.getElementById('playerAvatar');
-        const defenseMessageElement = document.getElementById('defenseMessage');
-        const voteOptionsElement = document.getElementById('voteOptions');
-        const approveOptionElement = document.getElementById('approveOption');
-        const rejectOptionElement = document.getElementById('rejectOption');
-        const voteResultsElement = document.getElementById('voteResults');
-        const approveBarElement = document.getElementById('approveBar');
-        const rejectBarElement = document.getElementById('rejectBar');
-        const approveCountElement = document.getElementById('approveCount');
-        const rejectCountElement = document.getElementById('rejectCount');
+        // DOM Elements
+        const timerEl = document.getElementById('timer');
+        const playerNameEl = document.getElementById('playerName');
+        const playerAvatarEl = document.getElementById('playerAvatar');
+        const defenseMessageEl = document.getElementById('defenseMessage');
+        const voteOptionsEl = document.getElementById('voteOptions');
+        const approveOptionEl = document.getElementById('approveOption');
+        const rejectOptionEl = document.getElementById('rejectOption');
+        const voteResultsEl = document.getElementById('voteResults');
+        const approveBarEl = document.getElementById('approveBar');
+        const rejectBarEl = document.getElementById('rejectBar');
+        const approveCountEl = document.getElementById('approveCount');
+        const rejectCountEl = document.getElementById('rejectCount');
         const submitVoteBtn = document.getElementById('submitVoteBtn');
         const closeBtn = document.getElementById('closeBtn');
 
-        // 이벤트 리스너 설정 함수
         function setupEventListeners() {
-            // 기존 리스너 제거
+            // Remove existing listeners
             if (approveListener) {
-                approveOptionElement.removeEventListener('click', approveListener);
-                rejectOptionElement.removeEventListener('click', rejectListener);
+                approveOptionEl.removeEventListener('click', approveListener);
+                rejectOptionEl.removeEventListener('click', rejectListener);
                 submitVoteBtn.removeEventListener('click', submitListener);
                 closeBtn.removeEventListener('click', closeListener);
             }
-            
-            // 새 리스너 생성 및 등록
+
+            // Create new listeners
             approveListener = () => selectVote('approve');
             rejectListener = () => selectVote('reject');
             submitListener = submitVote;
             closeListener = closeWidget;
-            
-            approveOptionElement.addEventListener('click', approveListener);
-            rejectOptionElement.addEventListener('click', rejectListener);
+
+            approveOptionEl.addEventListener('click', approveListener);
+            rejectOptionEl.addEventListener('click', rejectListener);
             submitVoteBtn.addEventListener('click', submitListener);
             closeBtn.addEventListener('click', closeListener);
         }
 
-        // 초기화 함수
         function initialize(data) {
-            // 기존 타이머 정리
+            // Clear existing timer
             if (timerInterval) {
                 clearInterval(timerInterval);
             }
-            
-            // 기존 상태 초기화
+
+            // Reset state
             voteSubmitted = false;
             selectedVote = null;
-            
-            // 플레이어 정보 설정
+
+            // Set data
             defendantId = data.defendantId;
             myPlayerId = data.myPlayerId;
             defenseText = data.defenseText || "변론이 제출되지 않았습니다.";
             isAlive = data.isAlive !== false;
-            
-            // 자신이 피고인인지 확인
             isDefendant = defendantId === myPlayerId;
 
-            // 플레이어 이름과 아바타 설정
-            playerNameElement.textContent = data.defendantName;
-            playerAvatarElement.textContent = data.defendantName.charAt(0).toUpperCase();
-            defenseMessageElement.textContent = defenseText;
+            // Update UI
+            playerNameEl.textContent = data.defendantName;
+            playerAvatarEl.textContent = data.defendantName.charAt(0).toUpperCase();
+            defenseMessageEl.textContent = defenseText;
 
-            // 타이머 설정
+            // Timer
             timeLeft = data.timeLimit || 30;
             updateTimerDisplay();
             startTimer();
 
-            // UI 초기화 - 결과 화면 숨기고 투표 옵션 표시
-            voteResultsElement.classList.add('hidden');
-            voteOptionsElement.classList.remove('hidden');
+            // Reset vote options
+            voteResultsEl.classList.remove('visible');
+            voteOptionsEl.classList.remove('hidden');
             submitVoteBtn.disabled = false;
-            
-            // 옵션 선택 초기화
-            approveOptionElement.classList.remove('selected');
-            rejectOptionElement.classList.remove('selected');
+            approveOptionEl.classList.remove('selected', 'disabled');
+            rejectOptionEl.classList.remove('selected', 'disabled');
 
-            // 죽은 플레이어거나 자신이 피고인인 경우 투표할 수 없음
+            // Dead or defendant cannot vote
             if (!isAlive || isDefendant) {
-                voteOptionsElement.classList.add('hidden');
+                voteOptionsEl.classList.add('hidden');
                 submitVoteBtn.disabled = true;
             }
 
-            // 위젯 표시
             revealWidget();
         }
 
-        // 타이머 시작
         function startTimer() {
             timerInterval = setInterval(() => {
                 timeLeft--;
                 updateTimerDisplay();
 
+                if (timeLeft <= 10) {
+                    timerEl.classList.add('urgent');
+                }
+
                 if (timeLeft <= 0) {
                     clearInterval(timerInterval);
-                    
-                    // 시간이 다 되었을 때 자동 제출
-                    if (isAlive && !voteSubmitted) {
+                    if (isAlive && !voteSubmitted && !isDefendant) {
                         submitVote();
                     }
                 }
             }, 1000);
         }
 
-        // 타이머 표시 업데이트
         function updateTimerDisplay() {
             const minutes = Math.floor(timeLeft / 60);
             const seconds = timeLeft % 60;
-            timerElement.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            timerEl.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
         }
 
-        // 투표 선택
         function selectVote(vote) {
-            if (voteSubmitted) return;
-            
+            if (voteSubmitted || !isAlive || isDefendant) return;
+
             selectedVote = vote;
-            
-            // UI 업데이트
-            approveOptionElement.classList.remove('selected');
-            rejectOptionElement.classList.remove('selected');
-            
+
+            approveOptionEl.classList.remove('selected');
+            rejectOptionEl.classList.remove('selected');
+
             if (vote === 'approve') {
-                approveOptionElement.classList.add('selected');
+                approveOptionEl.classList.add('selected');
             } else {
-                rejectOptionElement.classList.add('selected');
+                rejectOptionEl.classList.add('selected');
             }
         }
 
-        // 투표 제출
         function submitVote() {
-            if (voteSubmitted || !isAlive) return;
-            
-            // 선택하지 않은 경우 기본값은 반대
+            if (voteSubmitted || !isAlive || isDefendant) return;
+
+            // Default to reject if no selection
             if (!selectedVote) {
                 selectedVote = 'reject';
             }
-            
+
             voteSubmitted = true;
             submitVoteBtn.disabled = true;
-            
-            // 투표 옵션 UI를 숨기고 결과 UI 표시
-            voteOptionsElement.classList.add('hidden');
-            
-            // 부모 창에 투표 결과 전송
+            voteOptionsEl.classList.add('hidden');
+
+            // Disable options
+            approveOptionEl.classList.add('disabled');
+            rejectOptionEl.classList.add('disabled');
+
             window.parent.postMessage({
                 type: 'submitApprovalVote',
                 vote: selectedVote
             }, '*');
         }
 
-        // 투표 결과 표시
         function showResults(results, isFinalResult) {
             const approveCount = results.approve || 0;
             const rejectCount = results.reject || 0;
             const total = approveCount + rejectCount;
-            
+
             if (total === 0) return;
-            
+
             const approvePercentage = (approveCount / total) * 100;
             const rejectPercentage = (rejectCount / total) * 100;
-            
-            // 결과 업데이트
-            approveBarElement.style.width = `${approvePercentage}%`;
-            rejectBarElement.style.width = `${rejectPercentage}%`;
-            approveCountElement.textContent = approveCount;
-            rejectCountElement.textContent = rejectCount;
-            
-            // 결과 화면 표시
-            voteResultsElement.classList.remove('hidden');
-            
-            // 최종 결과이거나 이미 투표한 사용자는 투표 옵션을 숨김
+
+            approveBarEl.style.width = `${approvePercentage}%`;
+            rejectBarEl.style.width = `${rejectPercentage}%`;
+            approveCountEl.textContent = approveCount;
+            rejectCountEl.textContent = rejectCount;
+
+            voteResultsEl.classList.add('visible');
+
             if (isFinalResult || voteSubmitted) {
-                voteOptionsElement.classList.add('hidden');
+                voteOptionsEl.classList.add('hidden');
                 submitVoteBtn.disabled = true;
             }
         }
 
-        // 위젯 닫기
         function closeWidget() {
             hideWidget();
-
-            // 서버에서 hideWidget 메시지로 위젯을 닫음
         }
-
-        let _isMobile = false;
-        let _isTablet = false;
-        let $contentWrapper;
 
         function hideWidget() {
             window.parent.postMessage({
                 type: "WidgetRearrange",
                 width: "0px",
                 height: "0px",
-            }, "*")
+            }, "*");
             window.parent.focus();
         }
 
-        function revealWidget(moveScrollToBottom = false) {
-            if (moveScrollToBottom && $contentWrapper) {
-                $contentWrapper.scrollTop = $contentWrapper.scrollHeight;
-            }
+        function revealWidget() {
             if (_isMobile) {
-                const rtcAndNotchHeight = 160 + parseInt(getComputedStyle(document.documentElement,).getPropertyValue("--sat"));
                 window.parent.postMessage({
                     type: 'WidgetRearrange',
                     anchor: 'middle',
                     height: '100%',
                     width: '100%',
-                    top: `-${parseInt(0)}px`
-                }, '*')
+                }, '*');
             } else {
+                const containerHeight = document.querySelector('.approval-container').offsetHeight;
                 window.parent.postMessage({
                     type: "WidgetRearrange",
                     anchor: "middle",
-                    width: `100%`,
-                    height: `${document.querySelector('.approval-vote-container').offsetHeight+10}px`,
-                }, "*")
+                    width: "100%",
+                    height: `${containerHeight + 20}px`,
+                }, "*");
             }
         }
 
-        function fitTheSize() {
-            window.parent.postMessage({
-                type: "WidgetRearrange",
-                width: document.body.offsetWidth + 10,
-                height: document.body.offsetHeight + 10,
-            }, "*")
-        }
-
-        // 메시지 수신 처리
-        window.addEventListener('message', function (e) {
+        // Message handler
+        window.addEventListener('message', function(e) {
             const data = e.data;
 
-            if(data.type === "setWidget"){
+            if (data.type === "setWidget") {
                 _isMobile = data.isMobile;
                 _isTablet = data.isTablet;
-                
-                if(data.isMobile && !data.isTablet){
+
+                if (data.isMobile && !data.isTablet) {
                     document.body.classList.add('mobile');
-                }else{
+                } else {
                     document.body.classList.remove('mobile');
                 }
                 hideWidget();
             } else if (data.type === 'init') {
-                setupEventListeners(); // 이벤트 리스너 설정
+                setupEventListeners();
                 initialize(data);
             } else if (data.type === 'showResults') {
                 showResults(data.results, data.isFinalResult);
             } else if (data.type === 'hideWidget') {
-                // WidgetManager에서 보내는 숨김 메시지 처리
+                if (timerInterval) {
+                    clearInterval(timerInterval);
+                }
                 hideWidget();
             } else if (data.type === 'showWidget') {
-                // WidgetManager에서 보내는 표시 메시지 처리
                 revealWidget();
             }
         });
+
+        window.addEventListener('unload', function() {
+            if (timerInterval) {
+                clearInterval(timerInterval);
+            }
+            window.parent.focus();
+        });
     </script>
 </body>
-
-</html> 
+</html>

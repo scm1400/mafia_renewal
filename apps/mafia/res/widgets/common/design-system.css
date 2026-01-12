@@ -1,0 +1,257 @@
+/* ============================================
+   Mafia Game - Cyberpunk Design System
+   ============================================ */
+
+:root {
+    /* Safe Area Insets */
+    --sat: env(safe-area-inset-top);
+    --sar: env(safe-area-inset-right);
+    --sab: env(safe-area-inset-bottom);
+    --sal: env(safe-area-inset-left);
+
+    /* ========== Primary Neon Colors ========== */
+    --neon-cyan: #00f0ff;
+    --neon-cyan-dark: #00b8cc;
+    --neon-pink: #ff2d95;
+    --neon-pink-dark: #cc0055;
+    --neon-purple: #b026ff;
+    --neon-purple-dark: #8b1acc;
+
+    /* ========== Background Layers ========== */
+    --bg-base: #0a0a0f;
+    --bg-surface: #12121a;
+    --bg-elevated: #1a1a25;
+    --bg-overlay: rgba(10, 10, 15, 0.85);
+    --bg-overlay-heavy: rgba(10, 10, 15, 0.95);
+
+    /* ========== Text Hierarchy ========== */
+    --text-primary: #ffffff;
+    --text-secondary: #a0a0b0;
+    --text-muted: #606070;
+    --text-disabled: #404050;
+
+    /* ========== Semantic Colors ========== */
+    --success: #00ff88;
+    --success-dark: #00cc6a;
+    --danger: #ff3366;
+    --danger-dark: #cc0033;
+    --warning: #ffaa00;
+    --warning-dark: #cc8800;
+
+    /* ========== Border Colors ========== */
+    --border-subtle: rgba(255, 255, 255, 0.05);
+    --border-default: rgba(255, 255, 255, 0.1);
+    --border-strong: rgba(255, 255, 255, 0.2);
+    --border-cyan: rgba(0, 240, 255, 0.3);
+    --border-pink: rgba(255, 45, 149, 0.3);
+    --border-purple: rgba(176, 38, 255, 0.3);
+
+    /* ========== Glow Effects ========== */
+    --glow-cyan: 0 0 20px rgba(0, 240, 255, 0.5);
+    --glow-cyan-strong: 0 0 35px rgba(0, 240, 255, 0.6);
+    --glow-cyan-subtle: 0 0 10px rgba(0, 240, 255, 0.2);
+    --glow-pink: 0 0 20px rgba(255, 45, 149, 0.5);
+    --glow-pink-strong: 0 0 35px rgba(255, 45, 149, 0.6);
+    --glow-pink-subtle: 0 0 10px rgba(255, 45, 149, 0.2);
+    --glow-purple: 0 0 20px rgba(176, 38, 255, 0.5);
+    --glow-purple-strong: 0 0 35px rgba(176, 38, 255, 0.6);
+    --glow-purple-subtle: 0 0 10px rgba(176, 38, 255, 0.2);
+    --glow-success: 0 0 20px rgba(0, 255, 136, 0.5);
+
+    /* ========== Shadows ========== */
+    --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.3);
+    --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.4);
+    --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.5);
+    --shadow-xl: 0 16px 48px rgba(0, 0, 0, 0.6);
+
+    /* ========== Spacing ========== */
+    --space-xs: 4px;
+    --space-sm: 8px;
+    --space-md: 12px;
+    --space-lg: 16px;
+    --space-xl: 24px;
+    --space-2xl: 32px;
+
+    /* ========== Border Radius ========== */
+    --radius-sm: 6px;
+    --radius-md: 10px;
+    --radius-lg: 14px;
+    --radius-xl: 20px;
+    --radius-full: 9999px;
+
+    /* ========== Typography ========== */
+    --font-family: 'Pretendard', 'Pretendard JP', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    --font-size-xs: 10px;
+    --font-size-sm: 12px;
+    --font-size-md: 14px;
+    --font-size-lg: 16px;
+    --font-size-xl: 20px;
+    --font-size-2xl: 24px;
+    --font-size-3xl: 32px;
+    --font-weight-normal: 400;
+    --font-weight-medium: 500;
+    --font-weight-semibold: 600;
+    --font-weight-bold: 700;
+    --line-height-tight: 1.2;
+    --line-height-normal: 1.5;
+    --line-height-relaxed: 1.7;
+
+    /* ========== Transitions ========== */
+    --transition-fast: 0.15s ease;
+    --transition-normal: 0.25s ease;
+    --transition-slow: 0.4s ease;
+
+    /* ========== Z-Index Scale ========== */
+    --z-base: 0;
+    --z-dropdown: 100;
+    --z-sticky: 200;
+    --z-modal: 1000;
+    --z-toast: 1100;
+    --z-tooltip: 1200;
+
+    /* ========== Container Padding (responsive) ========== */
+    --container-padding: 12px;
+    --card-padding: 12px;
+    --button-height: 44px;
+}
+
+/* ========== Tablet and up ========== */
+@media (min-width: 768px) {
+    :root {
+        --container-padding: 20px;
+        --card-padding: 16px;
+        --button-height: 48px;
+    }
+}
+
+/* ========== Desktop ========== */
+@media (min-width: 1024px) {
+    :root {
+        --container-padding: 24px;
+        --card-padding: 20px;
+    }
+}
+
+/* ============================================
+   Base Reset & Defaults
+   ============================================ */
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+
+html {
+    width: 100%;
+    height: 100%;
+    font-size: 16px;
+    -webkit-text-size-adjust: 100%;
+}
+
+body {
+    width: 100%;
+    height: 100%;
+    font-family: var(--font-family);
+    font-size: var(--font-size-md);
+    font-weight: var(--font-weight-normal);
+    line-height: var(--line-height-normal);
+    color: var(--text-primary);
+    background-color: var(--bg-base);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    user-select: none;
+    -webkit-user-select: none;
+    overflow: hidden;
+}
+
+/* ========== Scrollbar Styling ========== */
+
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+::-webkit-scrollbar-track {
+    background: var(--bg-base);
+    border-radius: var(--radius-full);
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--bg-elevated);
+    border-radius: var(--radius-full);
+    border: 1px solid var(--border-subtle);
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: rgba(0, 240, 255, 0.3);
+}
+
+/* ========== Selection ========== */
+
+::selection {
+    background: rgba(0, 240, 255, 0.3);
+    color: var(--text-primary);
+}
+
+/* ========== Focus States ========== */
+
+:focus {
+    outline: none;
+}
+
+:focus-visible {
+    outline: 2px solid var(--neon-cyan);
+    outline-offset: 2px;
+}
+
+/* ============================================
+   Typography
+   ============================================ */
+
+h1, h2, h3, h4, h5, h6 {
+    font-weight: var(--font-weight-bold);
+    line-height: var(--line-height-tight);
+    color: var(--text-primary);
+}
+
+h1 { font-size: var(--font-size-3xl); }
+h2 { font-size: var(--font-size-2xl); }
+h3 { font-size: var(--font-size-xl); }
+h4 { font-size: var(--font-size-lg); }
+h5 { font-size: var(--font-size-md); }
+h6 { font-size: var(--font-size-sm); }
+
+p {
+    margin-bottom: var(--space-md);
+    color: var(--text-secondary);
+}
+
+small {
+    font-size: var(--font-size-sm);
+    color: var(--text-muted);
+}
+
+strong, b {
+    font-weight: var(--font-weight-semibold);
+}
+
+/* ============================================
+   Link Styles
+   ============================================ */
+
+a {
+    color: var(--neon-cyan);
+    text-decoration: none;
+    transition: color var(--transition-fast);
+}
+
+a:hover {
+    color: var(--neon-pink);
+    text-shadow: var(--glow-cyan-subtle);
+}

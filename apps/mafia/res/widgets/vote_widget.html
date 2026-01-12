@@ -1,309 +1,534 @@
 <!DOCTYPE html>
-<html style="overflow: hidden">
-
+<html lang="ko">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script>
-        /* create style sheet */
-        const newFontStylePath = document.URL.includes('https://zep.us') ? "https://cdn-static.zep.us/static/zep-script/css/typography.css" : "https://cdn-static-stage.zep.us/static/zep-script/css/typography.css";
-
+        const fontPath = document.URL.includes('https://zep.us')
+            ? "https://cdn-static.zep.us/static/zep-script/css/typography.css"
+            : "https://cdn-static-stage.zep.us/static/zep-script/css/typography.css";
         document.head.appendChild(Object.assign(document.createElement("link"), {
             rel: "stylesheet",
             type: "text/css",
-            href: newFontStylePath
+            href: fontPath
         }));
     </script>
-    <style type="text/css">
+    <style>
+        /* ============================================
+           Design System Variables
+           ============================================ */
         :root {
             --sat: env(safe-area-inset-top);
             --sar: env(safe-area-inset-right);
             --sab: env(safe-area-inset-bottom);
             --sal: env(safe-area-inset-left);
+
+            /* Neon Colors */
+            --neon-cyan: #00f0ff;
+            --neon-cyan-dark: #00b8cc;
+            --neon-pink: #ff2d95;
+            --neon-pink-dark: #cc0055;
+            --neon-purple: #b026ff;
+
+            /* Background */
+            --bg-base: #0a0a0f;
+            --bg-surface: #12121a;
+            --bg-elevated: #1a1a25;
+            --bg-overlay: rgba(10, 10, 15, 0.92);
+
+            /* Text */
+            --text-primary: #ffffff;
+            --text-secondary: #a0a0b0;
+            --text-muted: #606070;
+
+            /* Semantic */
+            --success: #00ff88;
+            --danger: #ff3366;
+            --warning: #ffaa00;
+
+            /* Border */
+            --border-subtle: rgba(255, 255, 255, 0.05);
+            --border-default: rgba(255, 255, 255, 0.1);
+            --border-cyan: rgba(0, 240, 255, 0.3);
+
+            /* Glow */
+            --glow-cyan: 0 0 20px rgba(0, 240, 255, 0.5);
+            --glow-pink: 0 0 20px rgba(255, 45, 149, 0.5);
+
+            /* Shadow */
+            --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.5);
+
+            /* Spacing */
+            --space-xs: 4px;
+            --space-sm: 8px;
+            --space-md: 12px;
+            --space-lg: 16px;
+            --space-xl: 24px;
+
+            /* Radius */
+            --radius-sm: 6px;
+            --radius-md: 10px;
+            --radius-lg: 14px;
+            --radius-full: 9999px;
+
+            /* Typography */
+            --font-family: 'Pretendard', 'Pretendard JP', -apple-system, BlinkMacSystemFont, sans-serif;
+
+            /* Transition */
+            --transition-fast: 0.15s ease;
+            --transition-normal: 0.25s ease;
         }
 
+        /* ============================================
+           Base Reset
+           ============================================ */
         * {
-            padding: 0;
             margin: 0;
+            padding: 0;
             box-sizing: border-box;
-            user-select: none !important;
-            font-family: 'Pretendard JP', 'Pretendard', sans-serif, Arial;
-            color: #27262E;
         }
 
         html {
             width: 100%;
             height: 100%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: rgba(28, 27, 31, 0.80);
-            backdrop-filter: blur(2px);
         }
 
         body {
+            width: 100%;
+            height: 100%;
+            font-family: var(--font-family);
+            font-size: 14px;
+            color: var(--text-primary);
+            background: var(--bg-overlay);
             display: flex;
-            flex-direction: column;
+            align-items: center;
             justify-content: center;
-            width: 400px;
-            max-width: 100%;
-            align-items: center;
-            height: max-content;
+            user-select: none;
+            -webkit-user-select: none;
+            -webkit-font-smoothing: antialiased;
         }
 
+        /* ============================================
+           Vote Container
+           ============================================ */
         .vote-container {
-            width: 100%;
-            background-color: #fff;
-            border-radius: 12px;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
-            overflow: hidden;
+            width: 420px;
+            max-width: calc(100% - 32px);
+            max-height: 90vh;
+            background: var(--bg-surface);
+            border: 1px solid var(--border-cyan);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-lg), var(--glow-cyan);
             display: flex;
             flex-direction: column;
-            align-items: center;
-            padding: 20px;
+            overflow: hidden;
+            animation: scaleIn 0.3s ease-out;
+            position: relative;
         }
 
+        @keyframes scaleIn {
+            from {
+                opacity: 0;
+                transform: scale(0.95);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        /* Close Button */
+        .close-btn {
+            position: absolute;
+            top: var(--space-md);
+            right: var(--space-md);
+            width: 32px;
+            height: 32px;
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-default);
+            border-radius: var(--radius-full);
+            color: var(--text-secondary);
+            font-size: 18px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all var(--transition-fast);
+            z-index: 10;
+        }
+
+        .close-btn:hover {
+            background: var(--bg-surface);
+            border-color: var(--neon-pink);
+            color: var(--neon-pink);
+        }
+
+        /* ============================================
+           Header
+           ============================================ */
         .vote-header {
-            width: 100%;
+            padding: var(--space-xl);
+            padding-right: 50px;
             text-align: center;
-            margin-bottom: 20px;
+            border-bottom: 1px solid var(--border-subtle);
         }
 
         .vote-title {
-            font-size: 24px;
+            font-size: 22px;
             font-weight: 700;
-            margin-bottom: 5px;
-            color: #333;
+            color: var(--neon-cyan);
+            text-shadow: var(--glow-cyan);
+            margin-bottom: var(--space-xs);
         }
 
         .vote-subtitle {
-            font-size: 14px;
-            color: #666;
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+
+        /* ============================================
+           Timer
+           ============================================ */
+        .timer-section {
+            padding: var(--space-md) var(--space-xl);
+            text-align: center;
+            border-bottom: 1px solid var(--border-subtle);
         }
 
         .timer {
             font-size: 18px;
             font-weight: 600;
-            color: #d32f2f;
-            margin-bottom: 15px;
+            color: var(--text-primary);
+            font-variant-numeric: tabular-nums;
+        }
+
+        .timer.urgent {
+            color: var(--neon-pink);
+            animation: urgentPulse 1s ease-in-out infinite;
+        }
+
+        @keyframes urgentPulse {
+            0%, 100% {
+                color: var(--neon-pink);
+                text-shadow: 0 0 20px rgba(255, 45, 149, 0.5);
+            }
+            50% {
+                color: #ff6b9d;
+                text-shadow: 0 0 35px rgba(255, 45, 149, 0.8);
+            }
+        }
+
+        /* ============================================
+           Players List
+           ============================================ */
+        .players-section {
+            flex: 1;
+            overflow-y: auto;
+            padding: var(--space-md);
+            min-height: 0;
         }
 
         .players-list {
-            width: 100%;
-            max-height: 300px;
-            overflow-y: auto;
-            margin-bottom: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-sm);
         }
 
         .player-item {
             display: flex;
             align-items: center;
-            padding: 10px 15px;
-            border-radius: 8px;
-            margin-bottom: 8px;
+            gap: var(--space-md);
+            padding: var(--space-md);
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-md);
             cursor: pointer;
-            transition: all 0.2s ease;
-            background-color: #f5f5f5;
+            transition: all var(--transition-fast);
         }
 
-        .player-item:hover {
-            background-color: #e0e0e0;
+        .player-item:hover:not(.disabled):not(.is-self) {
+            background: rgba(0, 240, 255, 0.05);
+            border-color: var(--border-cyan);
         }
 
         .player-item.selected {
-            background-color: #e3f2fd;
-            border: 1px solid #1976d2;
+            background: rgba(0, 240, 255, 0.1);
+            border-color: var(--neon-cyan);
+            box-shadow: var(--glow-cyan);
         }
 
-        .player-item.dead {
+        .player-item.is-self {
             opacity: 0.5;
             cursor: not-allowed;
-            text-decoration: line-through;
         }
 
         .player-item.vote-blocked {
             opacity: 0.7;
-            background-color: #ffebee;
-            border: 1px solid #f44336;
+            background: rgba(255, 51, 102, 0.1);
+            border-color: rgba(255, 51, 102, 0.3);
             cursor: not-allowed;
         }
 
-        .player-item.vote-blocked .player-name {
-            color: #c62828;
-        }
-
-        .vote-blocked-indicator {
-            background-color: #f44336;
-            color: white;
-            padding: 2px 6px;
-            border-radius: 4px;
-            font-size: 10px;
-            font-weight: 500;
-            margin-left: 8px;
+        .player-item.disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
         }
 
         .player-avatar {
             width: 40px;
             height: 40px;
-            border-radius: 50%;
-            background-color: #ddd;
+            background: var(--bg-base);
+            border: 1px solid var(--border-default);
+            border-radius: var(--radius-full);
             display: flex;
             align-items: center;
             justify-content: center;
-            margin-right: 15px;
             font-size: 20px;
+            flex-shrink: 0;
         }
 
         .player-info {
             flex: 1;
+            min-width: 0;
         }
 
         .player-name {
+            font-size: 15px;
             font-weight: 600;
-            font-size: 16px;
-            margin-bottom: 2px;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: var(--space-sm);
         }
 
         .player-status {
             font-size: 12px;
-            color: #666;
+            color: var(--text-muted);
+            margin-top: 2px;
+        }
+
+        .blocked-tag {
+            font-size: 10px;
+            font-weight: 500;
+            padding: 2px 6px;
+            background: rgba(255, 51, 102, 0.2);
+            color: var(--danger);
+            border-radius: var(--radius-sm);
         }
 
         .vote-count {
-            font-weight: 600;
             font-size: 16px;
-            color: #1976d2;
+            font-weight: 700;
+            color: var(--neon-cyan);
+            text-shadow: var(--glow-cyan);
+            min-width: 24px;
+            text-align: right;
         }
 
-        .vote-button {
+        /* ============================================
+           Vote Button
+           ============================================ */
+        .vote-action {
+            padding: var(--space-lg);
+            border-top: 1px solid var(--border-subtle);
+        }
+
+        .vote-btn {
             width: 100%;
-            padding: 12px;
-            border-radius: 8px;
-            background-color: #1976d2;
-            color: white;
-            font-weight: 600;
-            font-size: 16px;
+            height: 48px;
+            background: linear-gradient(135deg, var(--neon-cyan), var(--neon-cyan-dark));
             border: none;
+            border-radius: var(--radius-md);
+            color: var(--bg-base);
+            font-family: var(--font-family);
+            font-size: 16px;
+            font-weight: 700;
             cursor: pointer;
-            transition: all 0.2s ease;
-            margin-top: 10px;
+            transition: all var(--transition-fast);
+            box-shadow: var(--glow-cyan);
         }
 
-        .vote-button:hover {
-            background-color: #1565c0;
+        .vote-btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 0 30px rgba(0, 240, 255, 0.6);
         }
 
-        .vote-button:disabled {
-            background-color: #bdbdbd;
+        .vote-btn:active:not(:disabled) {
+            transform: scale(0.98);
+        }
+
+        .vote-btn:disabled {
+            background: var(--bg-elevated);
+            color: var(--text-muted);
+            box-shadow: none;
             cursor: not-allowed;
         }
-        
-        .vote-button.voted {
-            background-color: #4caf50;
-            cursor: not-allowed;
-        }
-        
-        .vote-button.voted:hover {
-            background-color: #4caf50;
+
+        .vote-btn.voted {
+            background: linear-gradient(135deg, var(--success), #00cc6a);
+            box-shadow: 0 0 20px rgba(0, 255, 136, 0.5);
         }
 
+        .vote-btn.blocked {
+            background: linear-gradient(135deg, var(--danger), #cc0033);
+            box-shadow: 0 0 20px rgba(255, 51, 102, 0.5);
+        }
+
+        /* ============================================
+           Vote Results
+           ============================================ */
         .vote-results {
-            width: 100%;
-            margin-top: 20px;
+            padding: var(--space-lg);
+            border-top: 1px solid var(--border-subtle);
+            display: none;
         }
 
-        .result-title {
+        .vote-results.visible {
+            display: block;
+        }
+
+        .results-title {
+            font-size: 16px;
             font-weight: 600;
-            font-size: 18px;
-            margin-bottom: 10px;
+            color: var(--neon-pink);
             text-align: center;
+            margin-bottom: var(--space-md);
+        }
+
+        .results-list {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-sm);
         }
 
         .result-item {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 8px 15px;
-            border-radius: 8px;
-            margin-bottom: 8px;
-            background-color: #f5f5f5;
+            padding: var(--space-sm) var(--space-md);
+            background: var(--bg-elevated);
+            border-radius: var(--radius-sm);
         }
 
         .result-name {
             font-weight: 500;
+            color: var(--text-primary);
         }
 
         .result-votes {
-            font-weight: 600;
-            color: #1976d2;
+            font-weight: 700;
+            color: var(--neon-cyan);
         }
 
-        .close-button {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            width: 30px;
-            height: 30px;
-            border-radius: 50%;
-            background-color: #f5f5f5;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            font-size: 18px;
-            color: #555;
+        /* ============================================
+           Seduce Result (Madam ability)
+           ============================================ */
+        .seduce-result {
+            padding: var(--space-lg);
+            background: var(--bg-elevated);
+            border-radius: var(--radius-md);
+            text-align: center;
         }
 
-        /* 모바일 스타일 */
-        .mobile {
+        .seduce-result strong {
+            color: var(--neon-pink);
+        }
+
+        .seduce-mafia {
+            color: var(--neon-pink);
+            margin-top: var(--space-md);
+        }
+
+        /* ============================================
+           Scrollbar
+           ============================================ */
+        .players-section::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .players-section::-webkit-scrollbar-track {
+            background: var(--bg-base);
+            border-radius: var(--radius-full);
+        }
+
+        .players-section::-webkit-scrollbar-thumb {
+            background: var(--bg-elevated);
+            border-radius: var(--radius-full);
+        }
+
+        .players-section::-webkit-scrollbar-thumb:hover {
+            background: rgba(0, 240, 255, 0.3);
+        }
+
+        /* ============================================
+           Mobile Styles
+           ============================================ */
+        body.mobile .vote-container {
             width: 100%;
-            padding: 15px;
+            max-width: 100%;
+            height: 100%;
+            max-height: 100%;
+            border-radius: 0;
+            border: none;
         }
 
-        .mobile .vote-container {
-            width: 100%;
-            padding: 15px;
+        body.mobile .vote-header {
+            padding: var(--space-lg);
+            padding-top: calc(var(--space-lg) + var(--sat));
         }
 
-        .mobile .player-item {
-            padding: 8px 10px;
+        body.mobile .close-btn {
+            top: calc(var(--space-md) + var(--sat));
         }
 
-        .mobile .player-avatar {
-            width: 30px;
-            height: 30px;
+        body.mobile .vote-action {
+            padding-bottom: calc(var(--space-lg) + var(--sab));
+        }
+
+        body.mobile .player-item {
+            padding: var(--space-sm) var(--space-md);
+        }
+
+        body.mobile .player-avatar {
+            width: 34px;
+            height: 34px;
             font-size: 16px;
-            margin-right: 10px;
         }
 
-        .mobile .player-name {
+        body.mobile .player-name {
             font-size: 14px;
         }
     </style>
 </head>
-
 <body>
     <div class="vote-container">
-        <div class="close-button" onclick="closeWidget()">×</div>
+        <button class="close-btn" id="closeBtn">×</button>
+
         <div class="vote-header">
-            <div class="vote-title" id="vote-title">투표</div>
-            <div class="vote-subtitle" id="vote-subtitle">마피아로 의심되는 사람에게 투표하세요</div>
-        </div>
-        <div class="timer" id="timer">남은 시간: 30초</div>
-
-        <div class="players-list" id="players-list">
-            <!-- 플레이어 목록이 여기에 동적으로 추가됩니다 -->
+            <div class="vote-title" id="voteTitle">투표</div>
+            <div class="vote-subtitle" id="voteSubtitle">마피아로 의심되는 사람에게 투표하세요</div>
         </div>
 
-        <button class="vote-button" id="vote-button" disabled>투표하기</button>
+        <div class="timer-section">
+            <div class="timer" id="timer">남은 시간: 30초</div>
+        </div>
 
-        <div class="vote-results" id="vote-results" style="display: none;">
-            <div class="result-title">투표 결과</div>
-            <div id="results-list">
-                <!-- 투표 결과가 여기에 동적으로 추가됩니다 -->
-            </div>
+        <div class="players-section">
+            <div class="players-list" id="playersList"></div>
+        </div>
+
+        <div class="vote-action">
+            <button class="vote-btn" id="voteBtn" disabled>투표하기</button>
+        </div>
+
+        <div class="vote-results" id="voteResults">
+            <div class="results-title">투표 결과</div>
+            <div class="results-list" id="resultsList"></div>
         </div>
     </div>
 
     <script>
+        // State
         let players = [];
         let selectedPlayerId = null;
         let voteResults = {};
@@ -311,157 +536,166 @@
         let isVotePhase = true;
         let hasVoted = false;
         let remainingTime = 30;
-        let timerInterval;
-        let blockedVoters = []; // 투표가 차단된 플레이어들
-        let voteButtonListener = null; // 투표 버튼 이벤트 리스너 저장
+        let timerInterval = null;
+        let blockedVoters = [];
+        let voteButtonListener = null;
 
         let _isMobile = false;
         let _isTablet = false;
-        let $contentWrapper;
+
+        // DOM Elements
+        const closeBtn = document.getElementById('closeBtn');
+        const voteTitle = document.getElementById('voteTitle');
+        const voteSubtitle = document.getElementById('voteSubtitle');
+        const timerEl = document.getElementById('timer');
+        const playersList = document.getElementById('playersList');
+        const voteBtn = document.getElementById('voteBtn');
+        const voteResultsEl = document.getElementById('voteResults');
+        const resultsList = document.getElementById('resultsList');
+
+        // Event Listeners
+        closeBtn.addEventListener('click', closeWidget);
 
         function closeWidget() {
-            // 타이머 정리
             if (timerInterval) {
                 clearInterval(timerInterval);
             }
-
-            // 이벤트 리스너 정리
             if (voteButtonListener) {
-                const voteButton = document.getElementById('vote-button');
-                voteButton.removeEventListener('click', voteButtonListener);
+                voteBtn.removeEventListener('click', voteButtonListener);
                 voteButtonListener = null;
             }
-
-            // 서버에서 hideWidget 메시지로 위젯을 닫음
         }
 
         function renderPlayers() {
-            const playersList = document.getElementById('players-list');
             playersList.innerHTML = '';
 
             players.forEach(player => {
-                if (!player.isAlive) return; // 죽은 플레이어는 표시하지 않음
+                if (!player.isAlive) return;
 
-                const playerItem = document.createElement('div');
-                playerItem.className = `player-item ${selectedPlayerId === player.id ? 'selected' : ''}`;
-                playerItem.dataset.id = player.id;
+                const item = document.createElement('div');
+                item.className = 'player-item';
+                item.dataset.id = player.id;
 
-                // 자기 자신은 선택할 수 없음
-                if (player.id === myPlayerId) {
-                    playerItem.classList.add('dead');
-                } else {
-                    playerItem.addEventListener('click', () => selectPlayer(player.id));
+                const isSelf = player.id === myPlayerId;
+                const isBlocked = blockedVoters.includes(player.id);
+                const isSelected = selectedPlayerId === player.id;
+
+                if (isSelf) item.classList.add('is-self');
+                if (isBlocked) item.classList.add('vote-blocked');
+                if (isSelected) item.classList.add('selected');
+
+                if (!isSelf && !hasVoted && isVotePhase && !blockedVoters.includes(myPlayerId)) {
+                    item.addEventListener('click', () => selectPlayer(player.id));
+                } else if (!isSelf) {
+                    item.classList.add('disabled');
                 }
 
-                // 투표 차단 표시
-                let statusText = player.id === myPlayerId ? '(나)' : '';
-                let nameHtml = player.name;
-                
-                if (blockedVoters.includes(player.id)) {
-                    playerItem.classList.add('vote-blocked');
-                    nameHtml += '<span class="vote-blocked-indicator">투표 차단</span>';
-                    if (player.id === myPlayerId) {
-                        statusText = '(나) - 건달에 의해 투표 차단됨';
-                    }
+                let statusText = isSelf ? '(나)' : '';
+                if (isBlocked && isSelf) {
+                    statusText = '(나) - 건달에 의해 투표 차단됨';
                 }
 
-                playerItem.innerHTML = `
+                const voteCount = voteResults[player.id] || '';
+
+                item.innerHTML = `
                     <div class="player-avatar">${player.emoji || '👤'}</div>
                     <div class="player-info">
-                        <div class="player-name">${nameHtml}</div>
+                        <div class="player-name">
+                            ${player.name}
+                            ${isBlocked ? '<span class="blocked-tag">투표 차단</span>' : ''}
+                        </div>
                         <div class="player-status">${statusText}</div>
                     </div>
-                    <div class="vote-count" id="vote-count-${player.id}">${voteResults[player.id] ? voteResults[player.id] : ''}</div>
+                    <div class="vote-count">${voteCount}</div>
                 `;
 
-                playersList.appendChild(playerItem);
+                playersList.appendChild(item);
             });
 
-            // 투표 버튼 활성화/비활성화
-            const voteButton = document.getElementById('vote-button');
-            const isVoteBlocked = blockedVoters.includes(myPlayerId);
-            voteButton.disabled = !selectedPlayerId || hasVoted || !isVotePhase || selectedPlayerId === myPlayerId || isVoteBlocked;
-            
-            // 투표 차단 시 버튼 텍스트 변경
-            if (isVoteBlocked) {
-                voteButton.textContent = '투표 차단됨 (건달 능력)';
-                voteButton.style.backgroundColor = '#f44336';
+            updateVoteButton();
+        }
+
+        function updateVoteButton() {
+            const isBlocked = blockedVoters.includes(myPlayerId);
+
+            voteBtn.disabled = !selectedPlayerId || hasVoted || !isVotePhase || selectedPlayerId === myPlayerId || isBlocked;
+
+            if (isBlocked) {
+                voteBtn.textContent = '투표 차단됨 (건달 능력)';
+                voteBtn.classList.add('blocked');
+                voteBtn.classList.remove('voted');
+            } else if (hasVoted) {
+                voteBtn.textContent = '투표 완료';
+                voteBtn.classList.add('voted');
+                voteBtn.classList.remove('blocked');
             } else {
-                voteButton.textContent = '투표하기';
-                voteButton.style.backgroundColor = '#1976d2';
+                voteBtn.textContent = '투표하기';
+                voteBtn.classList.remove('voted', 'blocked');
             }
         }
 
         function selectPlayer(playerId) {
             if (hasVoted || !isVotePhase || playerId === myPlayerId || blockedVoters.includes(myPlayerId)) return;
-            
+
             selectedPlayerId = playerId;
             renderPlayers();
         }
 
         function submitVote() {
             if (!selectedPlayerId || hasVoted || !isVotePhase) return;
-            
-            // 투표 차단된 경우 확인
+
             if (blockedVoters.includes(myPlayerId)) {
                 alert('건달에 의해 투표가 차단되었습니다.');
                 return;
             }
-            
+
             hasVoted = true;
-            const voteButton = document.getElementById('vote-button');
-            voteButton.disabled = true;
-            voteButton.classList.add('voted');
-            voteButton.textContent = '투표 완료';
-            
-            // 서버에 투표 결과 전송
+            updateVoteButton();
+
             window.parent.postMessage({
                 type: "vote",
                 targetId: selectedPlayerId
             }, "*");
-            
-            // 서버 응답을 기다리고 로컬 상태는 서버 확인 후 업데이트
         }
 
         function showVoteResults(results) {
             isVotePhase = false;
             voteResults = results;
-            
-            const voteResultsDiv = document.getElementById('vote-results');
-            voteResultsDiv.style.display = 'block';
-            
-            const resultsList = document.getElementById('results-list');
+
+            voteResultsEl.classList.add('visible');
             resultsList.innerHTML = '';
-            
-            // 투표 수 기준으로 내림차순 정렬
+
             const sortedResults = Object.entries(results).sort((a, b) => b[1] - a[1]);
-            
+
             sortedResults.forEach(([playerId, votes]) => {
                 const player = players.find(p => p.id === playerId);
                 if (!player) return;
-                
-                const resultItem = document.createElement('div');
-                resultItem.className = 'result-item';
-                resultItem.innerHTML = `
+
+                const item = document.createElement('div');
+                item.className = 'result-item';
+                item.innerHTML = `
                     <div class="result-name">${player.name}</div>
                     <div class="result-votes">${votes}표</div>
                 `;
-                
-                resultsList.appendChild(resultItem);
+                resultsList.appendChild(item);
             });
-            
-            document.getElementById('vote-button').disabled = true;
-            document.getElementById('vote-title').textContent = '투표 결과';
-            document.getElementById('vote-subtitle').textContent = '가장 많은 표를 받은 플레이어가 처형됩니다';
-            
+
+            voteBtn.disabled = true;
+            voteTitle.textContent = '투표 결과';
+            voteSubtitle.textContent = '가장 많은 표를 받은 플레이어가 처형됩니다';
+
             clearInterval(timerInterval);
-            document.getElementById('timer').style.display = 'none';
+            timerEl.style.display = 'none';
         }
 
         function updateTimer() {
             remainingTime--;
-            document.getElementById('timer').textContent = `남은 시간: ${remainingTime}초`;
-            
+            timerEl.textContent = `남은 시간: ${remainingTime}초`;
+
+            if (remainingTime <= 10) {
+                timerEl.classList.add('urgent');
+            }
+
             if (remainingTime <= 0) {
                 clearInterval(timerInterval);
                 if (!hasVoted && selectedPlayerId) {
@@ -472,8 +706,9 @@
 
         function startTimer(seconds) {
             remainingTime = seconds;
-            document.getElementById('timer').textContent = `남은 시간: ${remainingTime}초`;
-            
+            timerEl.textContent = `남은 시간: ${remainingTime}초`;
+            timerEl.classList.remove('urgent');
+
             clearInterval(timerInterval);
             timerInterval = setInterval(updateTimer, 1000);
         }
@@ -483,104 +718,71 @@
                 type: "WidgetRearrange",
                 width: "0px",
                 height: "0px",
-            }, "*")
+            }, "*");
             window.parent.focus();
         }
 
-        function revealWidget(moveScrollToBottom = false) {
-            if (moveScrollToBottom && $contentWrapper) {
-                $contentWrapper.scrollTop = $contentWrapper.scrollHeight;
-            }
+        function revealWidget() {
             if (_isMobile) {
-                const rtcAndNotchHeight = 160 + parseInt(getComputedStyle(document.documentElement,).getPropertyValue("--sat"));
                 window.parent.postMessage({
                     type: 'WidgetRearrange',
                     anchor: 'middle',
                     height: '100%',
                     width: '100%',
-                    top: `-${parseInt(0)}px`
-                }, '*')
+                }, '*');
             } else {
                 window.parent.postMessage({
                     type: "WidgetRearrange",
                     anchor: "middle",
-                    width: `100%`,
-                    height: `100%`,
-                }, "*")
+                    width: "100%",
+                    height: "100%",
+                }, "*");
             }
         }
 
-        function fitTheSize() {
-            window.parent.postMessage({
-                type: "WidgetRearrange",
-                width: document.body.offsetWidth + 10,
-                height: document.body.offsetHeight + 10,
-            }, "*")
-        }
-
-        // 유혹 결과 표시 함수
         function showSeduceResult(targetName, targetJob, isMafia, enableMafiaChat) {
-            // 결과 메시지 컨테이너 표시
-            const voteResultsDiv = document.getElementById('vote-results');
-            voteResultsDiv.style.display = 'block';
-            
-            // 투표 결과 목록 숨기기
-            const resultsList = document.getElementById('results-list');
+            voteResultsEl.classList.add('visible');
             resultsList.style.display = 'none';
-            
-            // 유혹 결과 메시지 컨테이너 생성
-            const seduceResultDiv = document.createElement('div');
-            seduceResultDiv.className = 'seduce-result';
-            seduceResultDiv.style.padding = '15px';
-            seduceResultDiv.style.backgroundColor = '#f8f8f8';
-            seduceResultDiv.style.borderRadius = '8px';
-            seduceResultDiv.style.marginTop = '10px';
-            
-            // 결과 메시지 생성
-            let resultMessage = `<strong>${targetName}</strong>님을 유혹했습니다!<br>`;
-            resultMessage += `대상의 직업은 <strong>${targetJob}</strong>입니다.<br>`;
-            resultMessage += '다음 밤에 대상은 능력을 사용할 수 없게 됩니다.';
-            
+
+            const seduceDiv = document.createElement('div');
+            seduceDiv.className = 'seduce-result';
+
+            let html = `<strong>${targetName}</strong>님을 유혹했습니다!<br>`;
+            html += `대상의 직업은 <strong>${targetJob}</strong>입니다.<br>`;
+            html += '다음 밤에 대상은 능력을 사용할 수 없게 됩니다.';
+
             if (isMafia) {
-                resultMessage += '<br><br><span style="color: #ff4d4d;">마피아와 접선에 성공했습니다!</span>';
-                resultMessage += '<br><span style="color: #ff4d4d;">다음 밤에 마피아와 대화할 수 있습니다.</span>';
+                html += '<div class="seduce-mafia">마피아와 접선에 성공했습니다!<br>다음 밤에 마피아와 대화할 수 있습니다.</div>';
             }
-            
-            seduceResultDiv.innerHTML = resultMessage;
-            
-            // 결과 컨테이너에 추가
-            voteResultsDiv.appendChild(seduceResultDiv);
-            
-            // 타이틀 변경
-            document.getElementById('vote-title').textContent = '유혹 결과';
-            document.getElementById('vote-subtitle').textContent = '투표 종료까지 기다려주세요';
+
+            seduceDiv.innerHTML = html;
+            voteResultsEl.appendChild(seduceDiv);
+
+            voteTitle.textContent = '유혹 결과';
+            voteSubtitle.textContent = '투표 종료까지 기다려주세요';
         }
 
+        // Message Handler
         window.addEventListener('message', function(e) {
             const data = e.data;
-            
-            if(data.type === "setWidget"){
+
+            if (data.type === "setWidget") {
                 _isMobile = data.isMobile;
                 _isTablet = data.isTablet;
-                if(data.isMobile && !data.isTablet){
+                if (data.isMobile && !data.isTablet) {
                     document.body.classList.add('mobile');
-                }else{
+                } else {
                     document.body.classList.remove('mobile');
                 }
                 hideWidget();
             } else if (data.type === 'init') {
-                try {
-                    document.body.classList.remove("hidden");
-                    revealWidget();
-                } catch (error) {
-                    alert("An error occurred:", error);
-                }
-                
-                // 기존 타이머 정리
+                document.body.classList.remove("hidden");
+                revealWidget();
+
                 if (timerInterval) {
                     clearInterval(timerInterval);
                 }
-                
+
                 players = data.players;
                 myPlayerId = data.myPlayerId;
                 isVotePhase = true;
@@ -588,22 +790,25 @@
                 selectedPlayerId = null;
                 voteResults = {};
                 blockedVoters = data.blockedVoters || [];
-                
+
+                // Reset UI
+                voteResultsEl.classList.remove('visible');
+                resultsList.innerHTML = '';
+                timerEl.style.display = 'block';
+                timerEl.classList.remove('urgent');
+
                 renderPlayers();
-                
+
                 if (data.timeLimit) {
                     startTimer(data.timeLimit);
                 }
-                
-                // 투표 버튼 이벤트 리스너 설정 (중복 방지)
-                const voteButton = document.getElementById('vote-button');
+
                 if (voteButtonListener) {
-                    voteButton.removeEventListener('click', voteButtonListener);
+                    voteBtn.removeEventListener('click', voteButtonListener);
                 }
                 voteButtonListener = submitVote;
-                voteButton.addEventListener('click', voteButtonListener);
+                voteBtn.addEventListener('click', voteButtonListener);
             } else if (data.type === 'voteConfirmed') {
-                // 서버에서 투표 확인을 받은 후에만 로컬 상태 업데이트
                 if (!voteResults[data.targetId]) {
                     voteResults[data.targetId] = 1;
                 } else {
@@ -611,9 +816,8 @@
                 }
                 renderPlayers();
             } else if (data.type === 'voteRejected') {
-                // 투표가 거부된 경우
                 hasVoted = false;
-                document.getElementById('vote-button').disabled = false;
+                updateVoteButton();
                 alert(data.message || '투표에 실패했습니다.');
             } else if (data.type === 'updateVotes') {
                 voteResults = data.votes;
@@ -621,46 +825,29 @@
             } else if (data.type === 'showResults') {
                 showVoteResults(data.results);
             } else if (data.type === 'seduceResult') {
-                // 마담 유혹 결과 표시
                 showSeduceResult(data.targetName, data.targetJob, data.isMafia, data.enableMafiaChat);
             } else if (data.type === 'voteBlocked') {
-                // 투표 차단 메시지 표시
                 alert(data.message || '건달에 의해 투표가 차단되었습니다.');
-            } else if (data.type === "hide") {
-                // 타이머 정리
+            } else if (data.type === "hide" || data.type === 'hideWidget') {
                 if (timerInterval) {
                     clearInterval(timerInterval);
                 }
                 hideWidget();
-            } else if (data.type === "reveal") {
-                revealWidget(true);
-            } else if (data.type === 'hideWidget') {
-                // WidgetManager에서 보내는 숨김 메시지 처리
-                hideWidget();
-            } else if (data.type === 'showWidget') {
-                // WidgetManager에서 보내는 표시 메시지 처리
+            } else if (data.type === "reveal" || data.type === 'showWidget') {
                 revealWidget();
             }
         });
 
-        window.addEventListener('unload', function () {
-            // 타이머 정리
+        window.addEventListener('unload', function() {
             if (timerInterval) {
                 clearInterval(timerInterval);
             }
-            
-            // 이벤트 리스너 정리
-            if (voteButtonListener) {
-                const voteButton = document.getElementById('vote-button');
-                if (voteButton) {
-                    voteButton.removeEventListener('click', voteButtonListener);
-                }
+            if (voteButtonListener && voteBtn) {
+                voteBtn.removeEventListener('click', voteButtonListener);
             }
-            
             window.parent.focus();
         });
 
-        // 모바일 환경 감지
         function checkMobile() {
             if (window.innerWidth <= 768) {
                 document.body.classList.add('mobile');
@@ -673,5 +860,4 @@
         checkMobile();
     </script>
 </body>
-
-</html> 
+</html>

@@ -1,0 +1,624 @@
+/* ============================================
+   Mafia Game - Component Library
+   ============================================ */
+
+/* ============================================
+   Buttons
+   ============================================ */
+
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-sm);
+    padding: var(--space-md) var(--space-lg);
+    min-height: var(--button-height);
+    font-family: var(--font-family);
+    font-size: var(--font-size-md);
+    font-weight: var(--font-weight-semibold);
+    line-height: 1;
+    text-decoration: none;
+    border: none;
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    transition: all var(--transition-normal);
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+.btn:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+}
+
+.btn:active:not(:disabled) {
+    transform: scale(0.97);
+}
+
+/* Primary Button - Cyan */
+.btn-primary {
+    background: linear-gradient(135deg, var(--neon-cyan) 0%, var(--neon-cyan-dark) 100%);
+    color: var(--bg-base);
+    box-shadow: var(--glow-cyan);
+}
+
+.btn-primary:hover:not(:disabled) {
+    box-shadow: var(--glow-cyan-strong);
+    transform: translateY(-2px);
+}
+
+.btn-primary:disabled {
+    background: var(--bg-elevated);
+    color: var(--text-muted);
+    box-shadow: none;
+}
+
+/* Secondary Button - Outlined */
+.btn-secondary {
+    background: transparent;
+    color: var(--neon-cyan);
+    border: 1px solid var(--neon-cyan);
+}
+
+.btn-secondary:hover:not(:disabled) {
+    background: rgba(0, 240, 255, 0.1);
+    box-shadow: var(--glow-cyan-subtle);
+}
+
+.btn-secondary:disabled {
+    border-color: var(--text-muted);
+    color: var(--text-muted);
+}
+
+/* Danger Button - Pink */
+.btn-danger {
+    background: linear-gradient(135deg, var(--neon-pink) 0%, var(--neon-pink-dark) 100%);
+    color: var(--text-primary);
+    box-shadow: var(--glow-pink);
+}
+
+.btn-danger:hover:not(:disabled) {
+    box-shadow: var(--glow-pink-strong);
+    transform: translateY(-2px);
+}
+
+/* Success Button - Green */
+.btn-success {
+    background: linear-gradient(135deg, var(--success) 0%, var(--success-dark) 100%);
+    color: var(--bg-base);
+    box-shadow: var(--glow-success);
+}
+
+.btn-success:hover:not(:disabled) {
+    box-shadow: 0 0 35px rgba(0, 255, 136, 0.6);
+    transform: translateY(-2px);
+}
+
+/* Ghost Button */
+.btn-ghost {
+    background: transparent;
+    color: var(--text-secondary);
+    border: 1px solid var(--border-default);
+}
+
+.btn-ghost:hover:not(:disabled) {
+    background: var(--bg-elevated);
+    color: var(--text-primary);
+    border-color: var(--border-strong);
+}
+
+/* Purple Button - For night actions */
+.btn-purple {
+    background: linear-gradient(135deg, var(--neon-purple) 0%, var(--neon-purple-dark) 100%);
+    color: var(--text-primary);
+    box-shadow: var(--glow-purple);
+}
+
+.btn-purple:hover:not(:disabled) {
+    box-shadow: var(--glow-purple-strong);
+    transform: translateY(-2px);
+}
+
+/* Button Sizes */
+.btn-sm {
+    padding: var(--space-sm) var(--space-md);
+    min-height: 32px;
+    font-size: var(--font-size-sm);
+}
+
+.btn-lg {
+    padding: var(--space-lg) var(--space-xl);
+    min-height: 56px;
+    font-size: var(--font-size-lg);
+}
+
+.btn-full {
+    width: 100%;
+}
+
+/* Icon Button */
+.btn-icon {
+    width: var(--button-height);
+    height: var(--button-height);
+    padding: 0;
+    border-radius: var(--radius-full);
+}
+
+.btn-icon.btn-sm {
+    width: 32px;
+    height: 32px;
+}
+
+.btn-icon.btn-lg {
+    width: 56px;
+    height: 56px;
+}
+
+/* ============================================
+   Cards
+   ============================================ */
+
+.card {
+    background: var(--bg-surface);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-lg);
+    padding: var(--card-padding);
+    box-shadow: var(--shadow-md);
+}
+
+.card-elevated {
+    background: var(--bg-elevated);
+    border-color: var(--border-default);
+    box-shadow: var(--shadow-lg);
+}
+
+.card-highlighted {
+    border-color: var(--neon-cyan);
+    box-shadow: var(--shadow-lg), var(--glow-cyan-subtle);
+}
+
+.card-highlighted-pink {
+    border-color: var(--neon-pink);
+    box-shadow: var(--shadow-lg), var(--glow-pink-subtle);
+}
+
+.card-highlighted-purple {
+    border-color: var(--neon-purple);
+    box-shadow: var(--shadow-lg), var(--glow-purple-subtle);
+}
+
+.card-interactive {
+    cursor: pointer;
+    transition: all var(--transition-normal);
+}
+
+.card-interactive:hover {
+    background: var(--bg-elevated);
+    border-color: var(--border-cyan);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-lg);
+}
+
+/* ============================================
+   Inputs
+   ============================================ */
+
+.input {
+    width: 100%;
+    padding: var(--space-md) var(--space-lg);
+    min-height: var(--button-height);
+    font-family: var(--font-family);
+    font-size: var(--font-size-md);
+    color: var(--text-primary);
+    background: var(--bg-base);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-md);
+    transition: all var(--transition-fast);
+}
+
+.input::placeholder {
+    color: var(--text-muted);
+}
+
+.input:hover:not(:disabled) {
+    border-color: var(--border-strong);
+}
+
+.input:focus {
+    border-color: var(--neon-cyan);
+    box-shadow: var(--glow-cyan-subtle);
+}
+
+.input:disabled {
+    background: var(--bg-surface);
+    color: var(--text-disabled);
+    cursor: not-allowed;
+}
+
+.input-error {
+    border-color: var(--neon-pink);
+    box-shadow: var(--glow-pink-subtle);
+}
+
+/* Rounded Input (for chat) */
+.input-rounded {
+    border-radius: var(--radius-full);
+    padding-left: var(--space-xl);
+    padding-right: var(--space-xl);
+}
+
+/* ============================================
+   Tags / Badges
+   ============================================ */
+
+.tag {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--space-xs) var(--space-md);
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-semibold);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border-radius: var(--radius-full);
+    white-space: nowrap;
+}
+
+.tag-cyan {
+    background: rgba(0, 240, 255, 0.15);
+    color: var(--neon-cyan);
+    border: 1px solid var(--border-cyan);
+}
+
+.tag-pink {
+    background: rgba(255, 45, 149, 0.15);
+    color: var(--neon-pink);
+    border: 1px solid var(--border-pink);
+}
+
+.tag-purple {
+    background: rgba(176, 38, 255, 0.15);
+    color: var(--neon-purple);
+    border: 1px solid var(--border-purple);
+}
+
+.tag-success {
+    background: rgba(0, 255, 136, 0.15);
+    color: var(--success);
+    border: 1px solid rgba(0, 255, 136, 0.3);
+}
+
+.tag-warning {
+    background: rgba(255, 170, 0, 0.15);
+    color: var(--warning);
+    border: 1px solid rgba(255, 170, 0, 0.3);
+}
+
+.tag-danger {
+    background: rgba(255, 51, 102, 0.15);
+    color: var(--danger);
+    border: 1px solid rgba(255, 51, 102, 0.3);
+}
+
+/* Status Tags */
+.tag-waiting {
+    background: rgba(0, 240, 255, 0.15);
+    color: var(--neon-cyan);
+    border: 1px solid var(--border-cyan);
+}
+
+.tag-playing {
+    background: rgba(0, 255, 136, 0.15);
+    color: var(--success);
+    border: 1px solid rgba(0, 255, 136, 0.3);
+}
+
+.tag-full {
+    background: rgba(255, 45, 149, 0.15);
+    color: var(--neon-pink);
+    border: 1px solid var(--border-pink);
+}
+
+/* Team Tags */
+.tag-citizen {
+    background: rgba(0, 240, 255, 0.15);
+    color: var(--neon-cyan);
+    border: 1px solid var(--border-cyan);
+}
+
+.tag-mafia {
+    background: rgba(255, 45, 149, 0.15);
+    color: var(--neon-pink);
+    border: 1px solid var(--border-pink);
+}
+
+.tag-neutral {
+    background: rgba(176, 38, 255, 0.15);
+    color: var(--neon-purple);
+    border: 1px solid var(--border-purple);
+}
+
+/* Vote Count Badge */
+.badge-count {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 28px;
+    height: 28px;
+    padding: 0 var(--space-sm);
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-bold);
+    color: var(--bg-base);
+    background: linear-gradient(135deg, var(--neon-cyan) 0%, var(--neon-cyan-dark) 100%);
+    border-radius: var(--radius-full);
+    box-shadow: var(--glow-cyan-subtle);
+}
+
+.badge-count.high {
+    background: linear-gradient(135deg, var(--neon-pink) 0%, var(--neon-pink-dark) 100%);
+    box-shadow: var(--glow-pink-subtle);
+}
+
+/* ============================================
+   Player Items
+   ============================================ */
+
+.player-item {
+    display: flex;
+    align-items: center;
+    gap: var(--space-md);
+    padding: var(--space-md) var(--space-lg);
+    background: var(--bg-surface);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    transition: all var(--transition-normal);
+}
+
+.player-item:hover {
+    background: var(--bg-elevated);
+    border-color: var(--border-cyan);
+}
+
+.player-item.selected {
+    background: rgba(0, 240, 255, 0.08);
+    border-color: var(--neon-cyan);
+    box-shadow: var(--glow-cyan-subtle);
+}
+
+.player-item.dead {
+    opacity: 0.4;
+    filter: grayscale(0.5);
+    cursor: not-allowed;
+}
+
+.player-item.mafia {
+    border-color: var(--neon-pink);
+    box-shadow: var(--glow-pink-subtle);
+}
+
+.player-item.vote-blocked {
+    background: rgba(255, 45, 149, 0.05);
+    border-color: var(--border-pink);
+    cursor: not-allowed;
+    opacity: 0.7;
+}
+
+.player-avatar {
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    background: var(--bg-base);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-full);
+    flex-shrink: 0;
+}
+
+.player-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.player-name {
+    font-size: var(--font-size-md);
+    font-weight: var(--font-weight-semibold);
+    color: var(--text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.player-status {
+    font-size: var(--font-size-xs);
+    color: var(--text-muted);
+    margin-top: 2px;
+}
+
+/* ============================================
+   Timer
+   ============================================ */
+
+.timer {
+    font-size: var(--font-size-2xl);
+    font-weight: var(--font-weight-bold);
+    font-variant-numeric: tabular-nums;
+    color: var(--neon-cyan);
+    text-shadow: var(--glow-cyan);
+    text-align: center;
+}
+
+.timer.urgent {
+    color: var(--neon-pink);
+    text-shadow: var(--glow-pink);
+    animation: urgentPulse 1s infinite;
+}
+
+/* ============================================
+   Dividers
+   ============================================ */
+
+.divider {
+    height: 1px;
+    background: var(--border-subtle);
+    margin: var(--space-lg) 0;
+}
+
+.divider-vertical {
+    width: 1px;
+    height: 100%;
+    background: var(--border-subtle);
+    margin: 0 var(--space-md);
+}
+
+.divider-glow {
+    background: linear-gradient(90deg,
+        transparent,
+        var(--neon-cyan),
+        transparent
+    );
+    opacity: 0.3;
+}
+
+/* ============================================
+   Loading States
+   ============================================ */
+
+.skeleton {
+    background: linear-gradient(90deg,
+        var(--bg-surface) 25%,
+        var(--bg-elevated) 50%,
+        var(--bg-surface) 75%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+    border-radius: var(--radius-md);
+}
+
+.spinner {
+    width: 40px;
+    height: 40px;
+    border: 3px solid var(--bg-elevated);
+    border-top-color: var(--neon-cyan);
+    border-radius: var(--radius-full);
+    animation: spin 1s linear infinite;
+}
+
+.spinner-sm {
+    width: 24px;
+    height: 24px;
+    border-width: 2px;
+}
+
+/* ============================================
+   Empty State
+   ============================================ */
+
+.empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: var(--space-2xl);
+    text-align: center;
+}
+
+.empty-state-icon {
+    font-size: 48px;
+    margin-bottom: var(--space-lg);
+    opacity: 0.5;
+}
+
+.empty-state-title {
+    font-size: var(--font-size-lg);
+    font-weight: var(--font-weight-semibold);
+    color: var(--text-primary);
+    margin-bottom: var(--space-sm);
+}
+
+.empty-state-description {
+    font-size: var(--font-size-md);
+    color: var(--text-muted);
+}
+
+/* ============================================
+   Close Button
+   ============================================ */
+
+.close-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    font-size: 18px;
+    color: var(--text-secondary);
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-full);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.close-btn:hover {
+    color: var(--text-primary);
+    background: var(--bg-base);
+    border-color: var(--border-strong);
+}
+
+/* ============================================
+   Modal / Overlay
+   ============================================ */
+
+.modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: var(--bg-overlay-heavy);
+    backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: var(--z-modal);
+    animation: fadeIn 0.2s ease-out;
+}
+
+.modal-content {
+    background: var(--bg-surface);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-xl);
+    padding: var(--space-xl);
+    max-width: 90%;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: var(--shadow-xl);
+    animation: scaleIn 0.25s ease-out;
+}
+
+.modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: var(--space-lg);
+    padding-bottom: var(--space-md);
+    border-bottom: 1px solid var(--border-subtle);
+}
+
+.modal-title {
+    font-size: var(--font-size-xl);
+    font-weight: var(--font-weight-bold);
+    color: var(--text-primary);
+}
+
+.modal-body {
+    margin-bottom: var(--space-lg);
+}
+
+.modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: var(--space-md);
+    padding-top: var(--space-md);
+    border-top: 1px solid var(--border-subtle);
+}

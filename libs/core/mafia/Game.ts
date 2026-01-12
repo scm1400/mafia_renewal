@@ -35,8 +35,8 @@ export class Game extends GameBase {
 
 		// ScriptApp.cameraEffect = 1; // 1 = 비네팅 효과
 		// ScriptApp.cameraEffectParam1 = 2000;
-		ScriptApp.showName = false;
-		ScriptApp.sendUpdated();
+		// ScriptApp.showName = false;
+		// ScriptApp.sendUpdated();
 		SpriteManager.getInstance();
 
 		this.addOnStartCallback(this.onStart.bind(this));
@@ -77,12 +77,12 @@ export class Game extends GameBase {
 			profile: this.getDefaultProfile(player),
 		};
 
-		const color = Math.floor(Math.random() * 12);
-		//@ts-ignore
-		player.setAvatarParts({
-			hairId: 61 + color,
-			clothesId: 61 + color,
-		})
+		// const color = Math.floor(Math.random() * 12);
+		// //@ts-ignore
+		// player.setAvatarParts({
+		// 	hairId: 61 + color,
+		// 	clothesId: 61 + color,
+		// })
 
 		// player.sprite = SpriteManager.getInstance().getSprite(SpriteType.CHARACTER_BASIC);
 
@@ -1046,7 +1046,8 @@ export class Game extends GameBase {
 	 */
 	private sendLobbyChatMessage(sender: GamePlayer, content: string) {
 		const widgetManager = WidgetManager.instance;
-
+		//@ts-ignore
+		sender.sendMessageBubbleOnly(content);
 		// 메시지 객체 생성
 		const chatMessage = {
 			type: "chatMessage",

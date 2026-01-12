@@ -1,18 +1,32 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ko">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+    <title>System Widget</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html, body {
+            width: 100%;
+            height: 100%;
+            background: transparent;
+        }
+    </style>
 </head>
 <body>
     <script>
+        // System widget for background operations and message handling
         window.addEventListener("message", (event) => {
             const data = event.data;
             if (data.type === "message") {
-                console.log(data.message);
+                // Handle system messages
             }
-        });     
+        });
     </script>
 </body>
 </html>

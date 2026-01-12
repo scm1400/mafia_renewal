@@ -1,467 +1,689 @@
 <!DOCTYPE html>
-<html style="overflow: hidden">
-
+<html lang="ko">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script>
-        /* create style sheet */
-        const newFontStylePath = document.URL.includes('https://zep.us') ? "https://cdn-static.zep.us/static/zep-script/css/typography.css" : "https://cdn-static-stage.zep.us/static/zep-script/css/typography.css";
-
+        const fontPath = document.URL.includes('https://zep.us')
+            ? "https://cdn-static.zep.us/static/zep-script/css/typography.css"
+            : "https://cdn-static-stage.zep.us/static/zep-script/css/typography.css";
         document.head.appendChild(Object.assign(document.createElement("link"), {
             rel: "stylesheet",
             type: "text/css",
-            href: newFontStylePath
+            href: fontPath
         }));
     </script>
-    <style type="text/css">
+    <style>
+        /* ============================================
+           Design System Variables
+           ============================================ */
         :root {
             --sat: env(safe-area-inset-top);
             --sar: env(safe-area-inset-right);
             --sab: env(safe-area-inset-bottom);
             --sal: env(safe-area-inset-left);
-            --primary-color: #00bcd4;
-            --primary-dark: #008ba3;
-            --secondary-color: #e91e63;
-            --text-color: #27262E;
-            --bg-color: #f5f5f5;
-            --card-color: #ffffff;
-            --card-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+
+            /* Neon Colors */
+            --neon-cyan: #00f0ff;
+            --neon-pink: #ff2d95;
+            --neon-purple: #b026ff;
+
+            /* Background */
+            --bg-base: #0a0a0f;
+            --bg-surface: #12121a;
+            --bg-elevated: #1a1a25;
+
+            /* Text */
+            --text-primary: #ffffff;
+            --text-secondary: #a0a0b0;
+            --text-muted: #606070;
+
+            /* Border */
+            --border-subtle: rgba(255, 255, 255, 0.05);
+            --border-default: rgba(255, 255, 255, 0.1);
+
+            /* Semantic */
+            --success: #00ff88;
+            --danger: #ff3366;
+            --warning: #ffaa00;
+
+            /* Shadow & Glow */
+            --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.5);
+            --glow-cyan: 0 0 20px rgba(0, 240, 255, 0.5);
+            --glow-pink: 0 0 20px rgba(255, 45, 149, 0.5);
+
+            /* Spacing */
+            --space-xs: 4px;
+            --space-sm: 8px;
+            --space-md: 12px;
+            --space-lg: 16px;
+            --space-xl: 24px;
+
+            /* Radius */
+            --radius-sm: 6px;
+            --radius-md: 10px;
+            --radius-lg: 14px;
+            --radius-full: 9999px;
+
+            /* Typography */
+            --font-family: 'Pretendard', 'Pretendard JP', -apple-system, BlinkMacSystemFont, sans-serif;
+
+            /* Transition */
+            --transition-fast: 0.15s ease;
         }
 
+        /* ============================================
+           Base Reset
+           ============================================ */
         * {
-            padding: 0;
             margin: 0;
+            padding: 0;
             box-sizing: border-box;
-            user-select: none !important;
-            font-family: 'Pretendard JP', 'Pretendard', sans-serif, Arial;
-            color: var(--text-color);
         }
 
         html {
             width: 100%;
             height: 100%;
+            overflow: hidden;
         }
 
         body {
             width: 100%;
             height: 100%;
+            font-family: var(--font-family);
+            font-size: 14px;
+            color: var(--text-primary);
+            background: transparent;
+            user-select: none;
+            -webkit-user-select: none;
+            -webkit-font-smoothing: antialiased;
             display: flex;
-            flex-direction: column;
             align-items: center;
             justify-content: center;
         }
 
+        /* Blur overlay for Center Card mode */
+        .blur-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(10, 10, 15, 0.6);
+            backdrop-filter: blur(6px);
+            -webkit-backdrop-filter: blur(6px);
+            z-index: 1;
+            opacity: 1;
+            transition: opacity 0.25s ease;
+            cursor: pointer;
+        }
+
+        body.compact .blur-overlay {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        body.mobile {
+            background: var(--bg-base);
+        }
+
+        body.mobile .blur-overlay {
+            display: none;
+        }
+
+        /* ============================================
+           Main Container
+           ============================================ */
+        #room-widget-container {
+            display: flex;
+            flex-direction: column;
+            width: 70%;
+            max-width: 900px;
+            height: 80%;
+            max-height: 700px;
+            background: var(--bg-base);
+            border: 1px solid rgba(0, 240, 255, 0.2);
+            border-radius: var(--radius-lg);
+            overflow: hidden;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5), 0 0 60px rgba(0, 240, 255, 0.1);
+            z-index: 2;
+            position: relative;
+        }
+
+        body.mobile #room-widget-container {
+            width: 100%;
+            height: 100%;
+            max-width: none;
+            max-height: none;
+            border-radius: 0;
+            border: none;
+        }
+
+        body.compact #room-widget-container {
+            display: none !important;
+        }
+
+        /* ========== Compact Mode Button ========== */
+        .compact-button {
+            display: none;
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            width: 56px;
+            height: 56px;
+            background: linear-gradient(135deg, var(--neon-pink) 0%, #cc0055 100%);
+            border: none;
+            border-radius: var(--radius-lg);
+            color: white;
+            font-size: 20px;
+            cursor: pointer;
+            z-index: 1000;
+            box-shadow: 0 0 20px rgba(255, 45, 149, 0.5), 0 4px 16px rgba(0, 0, 0, 0.4);
+            transition: all 0.25s ease;
+            animation: compactPulse 2s ease-in-out infinite;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 2px;
+        }
+
+        .compact-button:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 30px rgba(255, 45, 149, 0.6), 0 8px 32px rgba(0, 0, 0, 0.5);
+        }
+
+        .compact-button .badge {
+            font-size: 10px;
+            font-weight: 700;
+        }
+
+        @keyframes compactPulse {
+            0%, 100% { box-shadow: 0 0 20px rgba(255, 45, 149, 0.4), 0 4px 16px rgba(0, 0, 0, 0.4); }
+            50% { box-shadow: 0 0 30px rgba(255, 45, 149, 0.6), 0 4px 16px rgba(0, 0, 0, 0.4); }
+        }
+
+        body.compact .compact-button {
+            display: flex;
+        }
+
+        /* ============================================
+           Header
+           ============================================ */
         .room-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 15px 20px;
-            background-color: var(--primary-color);
-            color: white;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-        }
-
-        .room-title {
-            color: white;
-            font-size: 22px;
-            font-weight: 700;
+            padding: var(--space-md) var(--space-lg);
+            background: var(--bg-surface);
+            border-bottom: 1px solid var(--neon-cyan);
+            box-shadow: 0 0 15px rgba(0, 240, 255, 0.2);
         }
 
         .room-details {
             display: flex;
-            align-items: center;
-            gap: 15px;
+            flex-direction: column;
+            gap: var(--space-xs);
+        }
+
+        .room-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--neon-cyan);
+            text-shadow: var(--glow-cyan);
         }
 
         .room-info {
             display: flex;
-            flex-direction: column;
-            font-size: 14px;
-        }
-
-        .room-info span {
-            color: white;
-            opacity: 0.9;
+            gap: var(--space-md);
+            font-size: 12px;
+            color: var(--text-secondary);
         }
 
         .header-controls {
             display: flex;
-            gap: 10px;
+            gap: var(--space-sm);
+            align-items: center;
         }
 
-        .button {
-            padding: 8px 15px;
-            border-radius: 5px;
-            border: none;
-            font-weight: 600;
+        /* Header action buttons */
+        .header-btn {
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-default);
+            border-radius: var(--radius-sm);
+            color: var(--text-secondary);
             font-size: 14px;
             cursor: pointer;
-            transition: all 0.2s ease;
+            transition: all var(--transition-fast);
+        }
+
+        .header-btn:hover {
+            border-color: var(--neon-cyan);
+            color: var(--neon-cyan);
+        }
+
+        .header-btn.close:hover {
+            border-color: var(--neon-pink);
+            color: var(--neon-pink);
+        }
+
+        body.mobile .header-btn.minimize {
+            display: none;
+        }
+
+        /* ============================================
+           Buttons
+           ============================================ */
+        .button {
+            padding: var(--space-sm) var(--space-lg);
+            border-radius: var(--radius-md);
+            border: none;
+            font-family: var(--font-family);
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all var(--transition-fast);
         }
 
         .button.primary {
-            background-color: white;
-            color: var(--primary-color);
+            background: linear-gradient(135deg, var(--neon-cyan), #00b8cc);
+            color: var(--bg-base);
+            box-shadow: 0 0 15px rgba(0, 240, 255, 0.3);
         }
 
-        .button.primary:hover {
-            background-color: #f0f0f0;
+        .button.primary:hover:not(:disabled) {
+            box-shadow: 0 0 25px rgba(0, 240, 255, 0.5);
+            transform: translateY(-1px);
         }
 
         .button.secondary {
-            background-color: rgba(255, 255, 255, 0.2);
-            color: white;
+            background: var(--bg-elevated);
+            color: var(--text-secondary);
+            border: 1px solid var(--border-default);
         }
 
         .button.secondary:hover {
-            background-color: rgba(255, 255, 255, 0.3);
+            border-color: var(--neon-pink);
+            color: var(--neon-pink);
         }
 
         .button.danger {
-            background-color: var(--secondary-color);
+            background: linear-gradient(135deg, var(--danger), #cc0033);
             color: white;
         }
 
         .button.danger:hover {
-            background-color: #c2185b;
+            box-shadow: 0 0 20px rgba(255, 51, 102, 0.5);
         }
 
+        .button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .ready-btn {
+            background: linear-gradient(135deg, var(--success), #00cc6a);
+            color: var(--bg-base);
+        }
+
+        .ready-btn:hover {
+            box-shadow: 0 0 20px rgba(0, 255, 136, 0.5);
+        }
+
+        .not-ready-btn {
+            background: linear-gradient(135deg, var(--danger), #cc0033);
+            color: white;
+        }
+
+        /* ============================================
+           Main Content
+           ============================================ */
         .main-content {
             display: flex;
             flex: 1;
             overflow: hidden;
         }
 
+        /* Players Container */
         .players-container {
             flex: 1;
-            padding: 20px;
+            padding: var(--space-lg);
             overflow-y: auto;
-        }
-
-        .chat-sidebar {
-            width: 300px;
             display: flex;
             flex-direction: column;
-            border-left: 1px solid #e0e0e0;
-            background-color: white;
+            gap: var(--space-lg);
         }
 
         .section-title {
-            font-size: 18px;
-            font-weight: 600;
-            margin-bottom: 15px;
-        }
-
-        .players-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-            gap: 15px;
-            margin-top: 20px;
-        }
-
-        .player-card {
-            background-color: white;
-            border-radius: 8px;
-            padding: 15px;
-            box-shadow: var(--card-shadow);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            transition: all 0.2s;
-        }
-
-        .player-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-        }
-
-        .player-avatar {
-            width: 64px;
-            height: 64px;
-            border-radius: 50%;
-            background-color: #e0e0e0;
-            margin-bottom: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: bold;
-            font-size: 24px;
-            color: #555;
-        }
-
-        .player-info {
-            width: 100%;
-            text-align: center;
-        }
-
-        .player-name {
-            font-weight: 600;
-            font-size: 16px;
-            margin-bottom: 5px;
-        }
-
-        .player-level {
             font-size: 12px;
-            color: #666;
-            margin-bottom: 10px;
-        }
-
-        .player-actions {
-            display: flex;
-            gap: 5px;
-            margin-top: 10px;
-        }
-
-        .player-status {
-            padding: 3px 8px;
-            border-radius: 12px;
-            font-size: 12px;
-            font-weight: 500;
-        }
-
-        .player-status.host {
-            background-color: #fce4ec;
-            color: var(--secondary-color);
-        }
-
-        .player-status.ready {
-            background-color: #e8f5e9;
-            color: #388e3c;
-        }
-
-        .player-status.not-ready {
-            background-color: #ffebee;
-            color: #d32f2f;
-        }
-
-        .chat-header {
-            padding: 15px;
-            border-bottom: 1px solid #e0e0e0;
             font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
         }
 
-        .chat-messages {
-            flex: 1;
-            padding: 15px;
-            overflow-y: auto;
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-        }
-
-        .message {
-            padding: 8px 12px;
-            border-radius: 8px;
-            max-width: 80%;
-            word-break: break-word;
-        }
-
-        .message.system {
-            background-color: #f5f5f5;
-            color: #666;
-            font-size: 12px;
-            text-align: center;
-            margin: 5px auto;
-        }
-
-        .message.mine {
-            background-color: #e3f2fd;
-            align-self: flex-end;
-        }
-
-        .message.others {
-            background-color: #f5f5f5;
-            align-self: flex-start;
-        }
-
-        .sender-name {
-            font-weight: 600;
-            font-size: 12px;
-            margin-bottom: 3px;
-        }
-
-        .chat-input {
-            display: flex;
-            padding: 10px;
-            border-top: 1px solid #e0e0e0;
-        }
-
-        .chat-input input {
-            flex: 1;
-            padding: 8px 12px;
-            border: 1px solid #ddd;
-            border-radius: 20px;
-            font-size: 14px;
-        }
-
-        .chat-input button {
-            margin-left: 5px;
-            background-color: var(--primary-color);
-            color: white;
-            border: none;
-            border-radius: 50%;
-            width: 36px;
-            height: 36px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-        }
-
-        .action-buttons {
-            display: flex;
-            gap: 10px;
-            margin-top: 20px;
-        }
-
-        .action-buttons .button {
-            flex: 1;
-            padding: 12px;
-            font-size: 16px;
-            text-align: center;
-        }
-
-        .ready-btn {
-            background-color: #4caf50;
-            color: white;
-        }
-
-        .ready-btn:hover {
-            background-color: #388e3c;
-        }
-
-        .not-ready-btn {
-            background-color: #f44336;
-            color: white;
-        }
-
-        .not-ready-btn:hover {
-            background-color: #d32f2f;
-        }
-
-        .kick-btn,
-        .dropdown-btn {
-            padding: 5px;
-            background: none;
-            border: none;
-            cursor: pointer;
-            font-size: 16px;
-            color: #666;
-            border-radius: 4px;
-            transition: all 0.2s;
-        }
-
-        .kick-btn:hover,
-        .dropdown-btn:hover {
-            background-color: #f0f0f0;
-        }
-
-        .dropdown {
-            position: relative;
-        }
-
-        .dropdown-content {
-            position: absolute;
-            top: 100%;
-            right: 0;
-            background-color: white;
-            min-width: 120px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-            border-radius: 4px;
-            z-index: 1;
-            display: none;
-        }
-
-        .dropdown-content.show {
-            display: block;
-        }
-
-        .dropdown-item {
-            padding: 8px 12px;
-            font-size: 14px;
-            cursor: pointer;
-        }
-
-        .dropdown-item:hover {
-            background-color: #f5f5f5;
-        }
-
-        .dropdown-item.kick {
-            color: #f44336;
-        }
-
+        /* Settings Section */
         .settings-section {
-            background-color: white;
-            border-radius: 8px;
-            padding: 15px;
-            margin-top: 20px;
-            box-shadow: var(--card-shadow);
+            background: var(--bg-surface);
+            border: 1px solid var(--border-default);
+            border-radius: var(--radius-md);
+            padding: var(--space-md);
         }
 
         .game-mode-info {
             display: flex;
             flex-direction: column;
-            gap: 10px;
-            margin-top: 10px;
+            gap: var(--space-sm);
+            margin-top: var(--space-sm);
         }
 
         .mode-name {
-            font-weight: 600;
             font-size: 16px;
+            font-weight: 600;
+            color: var(--neon-cyan);
         }
 
         .mode-description {
-            font-size: 14px;
-            color: #666;
-            margin-bottom: 10px;
+            font-size: 12px;
+            color: var(--text-secondary);
+            line-height: 1.5;
         }
 
         .mode-jobs {
             display: flex;
             flex-wrap: wrap;
-            gap: 5px;
+            gap: var(--space-xs);
+            margin-top: var(--space-sm);
         }
 
         .job-tag {
-            padding: 4px 8px;
-            border-radius: 12px;
-            font-size: 12px;
+            padding: var(--space-xs) var(--space-sm);
+            border-radius: var(--radius-full);
+            font-size: 11px;
             font-weight: 500;
         }
 
         .job-tag.mafia {
-            background-color: #ffcdd2;
-            color: #c62828;
+            background: rgba(255, 51, 102, 0.2);
+            color: #ff6b8a;
+            border: 1px solid rgba(255, 51, 102, 0.3);
         }
 
         .job-tag.citizen {
-            background-color: #bbdefb;
-            color: #1565c0;
+            background: rgba(0, 240, 255, 0.15);
+            color: var(--neon-cyan);
+            border: 1px solid rgba(0, 240, 255, 0.3);
         }
 
         .job-tag.neutral {
-            background-color: #e6ee9c;
-            color: #827717;
+            background: rgba(255, 170, 0, 0.15);
+            color: var(--warning);
+            border: 1px solid rgba(255, 170, 0, 0.3);
         }
 
-        #room-widget-container {
+        /* Players Grid */
+        .players-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            gap: var(--space-md);
+        }
+
+        .player-card {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-default);
+            border-radius: var(--radius-md);
+            padding: var(--space-md);
             display: flex;
             flex-direction: column;
-            height: 100%;
-            width: 100%;
-            background-color: var(--bg-color);
+            align-items: center;
+            gap: var(--space-sm);
+            transition: all var(--transition-fast);
         }
 
-        /* 모바일 UI 스타일 */
+        .player-card:hover {
+            border-color: var(--neon-cyan);
+            box-shadow: 0 0 15px rgba(0, 240, 255, 0.2);
+        }
+
+        .player-avatar {
+            width: 48px;
+            height: 48px;
+            border-radius: var(--radius-full);
+            background: var(--bg-elevated);
+            border: 2px solid var(--border-default);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--text-secondary);
+        }
+
+        .player-info {
+            text-align: center;
+        }
+
+        .player-name {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: var(--space-xs);
+        }
+
+        .player-level {
+            font-size: 10px;
+            color: var(--text-muted);
+        }
+
+        .player-status {
+            padding: var(--space-xs) var(--space-sm);
+            border-radius: var(--radius-full);
+            font-size: 10px;
+            font-weight: 600;
+        }
+
+        .player-status.host {
+            background: rgba(255, 45, 149, 0.2);
+            color: var(--neon-pink);
+            border: 1px solid rgba(255, 45, 149, 0.3);
+        }
+
+        .player-status.ready {
+            background: rgba(0, 255, 136, 0.15);
+            color: var(--success);
+            border: 1px solid rgba(0, 255, 136, 0.3);
+        }
+
+        .player-status.not-ready {
+            background: rgba(255, 51, 102, 0.15);
+            color: var(--danger);
+            border: 1px solid rgba(255, 51, 102, 0.3);
+        }
+
+        .player-actions {
+            margin-top: var(--space-xs);
+        }
+
+        .kick-btn {
+            padding: var(--space-xs) var(--space-sm);
+            background: transparent;
+            border: 1px solid rgba(255, 51, 102, 0.3);
+            border-radius: var(--radius-sm);
+            color: var(--danger);
+            font-size: 10px;
+            cursor: pointer;
+            transition: all var(--transition-fast);
+        }
+
+        .kick-btn:hover {
+            background: rgba(255, 51, 102, 0.2);
+        }
+
+        /* Action Buttons */
+        .action-buttons {
+            display: flex;
+            gap: var(--space-md);
+            margin-top: var(--space-lg);
+        }
+
+        .action-buttons .button {
+            flex: 1;
+            padding: var(--space-md);
+            font-size: 14px;
+        }
+
+        /* ============================================
+           Chat Sidebar
+           ============================================ */
+        .chat-sidebar {
+            width: 260px;
+            display: flex;
+            flex-direction: column;
+            background: var(--bg-surface);
+            border-left: 1px solid var(--border-default);
+        }
+
+        .chat-header {
+            padding: var(--space-md) var(--space-lg);
+            border-bottom: 1px solid var(--border-subtle);
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-secondary);
+        }
+
+        .chat-messages {
+            flex: 1;
+            padding: var(--space-md);
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-sm);
+        }
+
+        .message {
+            padding: var(--space-sm) var(--space-md);
+            border-radius: var(--radius-md);
+            font-size: 12px;
+            line-height: 1.4;
+            max-width: 90%;
+            word-break: break-word;
+            animation: messageAppear 0.2s ease-out;
+        }
+
+        @keyframes messageAppear {
+            from { opacity: 0; transform: translateY(5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .message.system {
+            background: var(--bg-elevated);
+            color: var(--text-muted);
+            text-align: center;
+            align-self: center;
+            font-size: 11px;
+        }
+
+        .message.mine {
+            background: rgba(0, 240, 255, 0.15);
+            border: 1px solid rgba(0, 240, 255, 0.2);
+            align-self: flex-end;
+            color: var(--text-primary);
+        }
+
+        .message.others {
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-subtle);
+            align-self: flex-start;
+        }
+
+        .sender-name {
+            font-size: 10px;
+            font-weight: 600;
+            color: var(--neon-cyan);
+            margin-bottom: var(--space-xs);
+        }
+
+        /* Chat Input */
+        .chat-input {
+            display: flex;
+            gap: var(--space-sm);
+            padding: var(--space-md);
+            border-top: 1px solid var(--border-subtle);
+        }
+
+        .chat-input input {
+            flex: 1;
+            padding: var(--space-sm) var(--space-md);
+            background: var(--bg-base);
+            border: 1px solid var(--border-default);
+            border-radius: var(--radius-full);
+            color: var(--text-primary);
+            font-family: var(--font-family);
+            font-size: 13px;
+        }
+
+        .chat-input input::placeholder {
+            color: var(--text-muted);
+        }
+
+        .chat-input input:focus {
+            outline: none;
+            border-color: var(--neon-cyan);
+        }
+
+        .chat-input button {
+            width: 36px;
+            height: 36px;
+            background: linear-gradient(135deg, var(--neon-cyan), #00b8cc);
+            border: none;
+            border-radius: var(--radius-full);
+            color: var(--bg-base);
+            font-size: 14px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all var(--transition-fast);
+        }
+
+        .chat-input button:hover {
+            box-shadow: var(--glow-cyan);
+        }
+
+        /* ============================================
+           Scrollbar
+           ============================================ */
+        ::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--bg-base);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--bg-elevated);
+            border-radius: var(--radius-full);
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(0, 240, 255, 0.3);
+        }
+
+        /* ============================================
+           Mobile Styles
+           ============================================ */
+        body.mobile #room-widget-container {
+            display: flex;
+        }
+
         body.mobile .room-header {
-            padding: 10px 15px;
+            padding: var(--space-sm) var(--space-md);
         }
 
         body.mobile .room-title {
-            font-size: 18px;
-        }
-
-        body.mobile .room-info {
-            font-size: 12px;
+            font-size: 16px;
         }
 
         body.mobile .main-content {
@@ -469,144 +691,67 @@
         }
 
         body.mobile .players-container {
-            padding: 10px;
-            width: 100%;
+            padding: var(--space-md);
         }
 
         body.mobile .chat-sidebar {
             width: 100%;
-            height: 250px;
+            height: 200px;
             border-left: none;
-            border-top: 1px solid #e0e0e0;
-        }
-
-        body.mobile .section-title {
-            font-size: 16px;
-            margin-bottom: 10px;
+            border-top: 1px solid var(--border-default);
         }
 
         body.mobile .players-grid {
-            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-            gap: 10px;
+            grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+            gap: var(--space-sm);
         }
 
         body.mobile .player-card {
-            padding: 10px;
+            padding: var(--space-sm);
         }
 
         body.mobile .player-avatar {
-            width: 48px;
-            height: 48px;
-            font-size: 18px;
+            width: 36px;
+            height: 36px;
+            font-size: 14px;
         }
 
         body.mobile .player-name {
-            font-size: 14px;
-        }
-
-        body.mobile .player-level {
             font-size: 11px;
         }
 
-        body.mobile .player-status {
-            font-size: 10px;
-            padding: 2px 6px;
-        }
-
-        body.mobile .chat-header {
-            padding: 10px;
-        }
-
-        body.mobile .chat-messages {
-            padding: 10px;
-            gap: 8px;
-        }
-
-        body.mobile .message {
-            padding: 6px 10px;
-            font-size: 14px;
-            max-width: 90%;
-        }
-
-        body.mobile .sender-name {
-            font-size: 11px;
-        }
-
-        body.mobile .chat-input input {
-            font-size: 16px;
-            padding: 8px;
-        }
-
-        body.mobile .action-buttons .button {
-            padding: 10px;
-            font-size: 14px;
-        }
-
-        body.mobile .button {
-            font-size: 12px;
-            padding: 6px 12px;
-        }
-
-        body.mobile .settings-section {
-            padding: 10px;
-        }
-
-        body.mobile .mode-name {
-            font-size: 14px;
-        }
-
-        body.mobile .mode-description {
-            font-size: 12px;
-        }
-
-        body.mobile .job-tag {
-            font-size: 10px;
-            padding: 3px 6px;
-        }
-
-        /* 모바일 가로 모드에서의 조정 */
         @media (orientation: landscape) {
             body.mobile .main-content {
                 flex-direction: row;
             }
 
             body.mobile .players-container {
-                width: 70%;
+                width: 65%;
             }
 
             body.mobile .chat-sidebar {
-                width: 30%;
+                width: 35%;
                 height: auto;
                 border-top: none;
-                border-left: 1px solid #e0e0e0;
-            }
-
-            body.mobile .players-grid {
-                grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+                border-left: 1px solid var(--border-default);
             }
         }
 
-        /* 모바일 세로 모드에서의 조정 */
-        @media (orientation: portrait) {
-            body.mobile .main-content {
-                flex-direction: column;
-            }
-
-            body.mobile .players-container {
-                width: 100%;
-            }
-
-            body.mobile .chat-sidebar {
-                width: 100%;
-                height: 250px;
-                border-top: 1px solid #e0e0e0;
-                border-left: none;
-            }
+        .hidden {
+            display: none !important;
         }
     </style>
 </head>
-
 <body>
+    <!-- Blur Overlay -->
+    <div class="blur-overlay"></div>
+
+    <!-- Compact Mode Button -->
+    <button id="compactButton" class="compact-button">
+        👥
+        <span id="playerCountBadge" class="badge">0/0</span>
+    </button>
+
     <div id="room-widget-container">
         <div class="room-header">
             <div class="room-details">
@@ -618,46 +763,39 @@
             </div>
             <div class="header-controls">
                 <button class="button secondary" id="leaveRoomBtn">나가기</button>
+                <button id="minimizeBtn" class="header-btn minimize" title="축소">−</button>
             </div>
         </div>
 
         <div class="main-content">
             <div class="players-container">
-                <div class="section-title">참가자 목록</div>
-
                 <div class="settings-section">
                     <div class="section-title">게임 설정</div>
-                    <div id="gameModeInfo" class="game-mode-info">
-                        <!-- 게임 모드 정보가 동적으로 추가됩니다 -->
-                    </div>
+                    <div id="gameModeInfo" class="game-mode-info"></div>
                 </div>
 
-                <div id="playersGrid" class="players-grid">
-                    <!-- 플레이어 카드가 동적으로 추가됩니다 -->
+                <div>
+                    <div class="section-title">참가자 목록</div>
+                    <div id="playersGrid" class="players-grid"></div>
                 </div>
 
-                <div class="action-buttons" id="actionButtonsContainer">
-                    <!-- 호스트일 경우 시작 버튼, 일반 유저일 경우 준비 버튼 -->
-                </div>
+                <div class="action-buttons" id="actionButtonsContainer"></div>
             </div>
 
             <div class="chat-sidebar">
                 <div class="chat-header">채팅</div>
                 <div id="chatMessages" class="chat-messages">
                     <div class="message system">채팅방에 입장했습니다.</div>
-                    <!-- 채팅 메시지가 동적으로 추가됩니다 -->
                 </div>
                 <div class="chat-input">
                     <input type="text" id="chatInput" placeholder="메시지 입력...">
-                    <button id="sendBtn">➤</button>
+                    <button id="sendBtn">></button>
                 </div>
             </div>
         </div>
     </div>
 
-
     <script>
-        // 전역 변수
         let room = null;
         let players = [];
         let currentUser = null;
@@ -665,8 +803,11 @@
         let isReady = false;
         let gameMode = null;
         let gameModeDetails = null;
+        let _isMobile = false;
+        let _isTablet = false;
+        let isCompact = true; // Start in compact mode
 
-        // DOM 요소 접근
+        const roomContainer = document.getElementById('room-widget-container');
         const roomTitle = document.getElementById('roomTitle');
         const roomPlayers = document.getElementById('roomPlayers');
         const roomMode = document.getElementById('roomMode');
@@ -677,70 +818,60 @@
         const chatInput = document.getElementById('chatInput');
         const sendBtn = document.getElementById('sendBtn');
         const gameModeInfo = document.getElementById('gameModeInfo');
+        const compactButton = document.getElementById('compactButton');
+        const playerCountBadge = document.getElementById('playerCountBadge');
+        const minimizeBtn = document.getElementById('minimizeBtn');
+        const blurOverlay = document.querySelector('.blur-overlay');
 
-        // 이벤트 리스너 설정
         leaveRoomBtn.addEventListener('click', leaveRoom);
         sendBtn.addEventListener('click', sendChatMessage);
         chatInput.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter') {
-                sendChatMessage();
-            }
+            if (e.key === 'Enter') sendChatMessage();
         });
+        compactButton.addEventListener('click', expandFromCompact);
+        minimizeBtn.addEventListener('click', enterCompactMode);
+        blurOverlay.addEventListener('click', enterCompactMode);
 
-        // ESC 키 이벤트 리스너 추가
         document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape') {
-                window.parent.focus();
-            }
+            if (e.key === 'Escape') window.parent.focus();
         });
 
-        // 초기화 함수
         function initializeRoom() {
-            // 방 정보 및 플레이어 정보 요청
-            window.parent.postMessage({
-                type: 'requestRoomInfo'
-            }, "*");
-
-            // 게임 모드 정보 요청
-            window.parent.postMessage({
-                type: 'requestGameModeDetails'
-            }, "*");
+            window.parent.postMessage({ type: 'requestRoomInfo' }, "*");
+            window.parent.postMessage({ type: 'requestGameModeDetails' }, "*");
         }
 
-        // 방 정보 업데이트
         function updateRoomInfo(roomData) {
             room = roomData;
             players = roomData.players;
             currentUser = roomData.currentUser;
             isHost = currentUser.id === roomData.host.id;
 
-            // UI 업데이트
             roomTitle.textContent = room.title;
             roomPlayers.textContent = `참가자: ${players.length}/${room.maxPlayers}`;
             roomMode.textContent = `모드: ${room.gameMode}`;
+            updatePlayerCountBadge();
 
-            // 플레이어 목록 렌더링
             renderPlayers();
-
-            // 액션 버튼 렌더링
             renderActionButtons();
         }
 
-        // 게임 모드 정보 업데이트
+        function updatePlayerCountBadge() {
+            if (room) {
+                const readyCount = players.filter(p => p.isReady || p.id === room.host.id).length;
+                playerCountBadge.textContent = `${readyCount}/${players.length}`;
+            }
+        }
+
         function updateGameModeInfo(modeData) {
             gameModeDetails = modeData;
-
-            // UI 업데이트
             gameModeInfo.innerHTML = `
                 <div class="mode-name">${modeData.name}</div>
                 <div class="mode-description">${modeData.description}</div>
-                <div class="mode-jobs">
-                    ${renderJobTags(modeData.jobs)}
-                </div>
+                <div class="mode-jobs">${renderJobTags(modeData.jobs)}</div>
             `;
         }
 
-        // 직업 태그 렌더링
         function renderJobTags(jobs) {
             return jobs.map(job => {
                 const teamClass = job.team.toLowerCase();
@@ -748,7 +879,6 @@
             }).join('');
         }
 
-        // 플레이어 목록 렌더링
         function renderPlayers() {
             playersGrid.innerHTML = '';
 
@@ -756,14 +886,10 @@
                 const playerCard = document.createElement('div');
                 playerCard.className = 'player-card';
 
-                // 이니셜 생성 (이름의 첫 글자)
                 const initial = player.name.charAt(0).toUpperCase();
-
-                // 플레이어 상태 확인
                 const isPlayerHost = player.id === room.host.id;
                 const isPlayerReady = player.isReady;
 
-                // 상태 클래스/텍스트 결정
                 let statusClass = '';
                 let statusText = '';
 
@@ -778,7 +904,6 @@
                     statusText = '미준비';
                 }
 
-                // 플레이어 카드 HTML 생성
                 playerCard.innerHTML = `
                     <div class="player-avatar">${initial}</div>
                     <div class="player-info">
@@ -788,14 +913,13 @@
                     </div>
                 `;
 
-                // 방장인 경우 다른 플레이어에 대한 액션 추가
                 if (isHost && !isPlayerHost) {
                     const playerActions = document.createElement('div');
                     playerActions.className = 'player-actions';
 
                     const kickBtn = document.createElement('button');
                     kickBtn.className = 'kick-btn';
-                    kickBtn.innerHTML = '강퇴 ⊗';
+                    kickBtn.textContent = '강퇴';
                     kickBtn.addEventListener('click', () => kickPlayer(player.id));
 
                     playerActions.appendChild(kickBtn);
@@ -806,31 +930,25 @@
             });
         }
 
-        // 액션 버튼 렌더링
         function renderActionButtons() {
             actionButtonsContainer.innerHTML = '';
 
             if (isHost) {
-                // 방장인 경우 게임 시작 버튼
                 const startBtn = document.createElement('button');
                 startBtn.className = 'button primary';
                 startBtn.textContent = '게임 시작';
                 startBtn.addEventListener('click', startGame);
 
-                // 모든 플레이어가 준비 상태인지 확인
                 const canStart = players.length >= 4 && players.every(player =>
                     player.id === room.host.id || player.isReady
                 );
 
                 if (!canStart) {
                     startBtn.disabled = true;
-                    startBtn.style.opacity = '0.5';
-                    startBtn.style.cursor = 'not-allowed';
                 }
 
                 actionButtonsContainer.appendChild(startBtn);
             } else {
-                // 일반 참가자인 경우 준비/준비취소 버튼
                 const readyBtn = document.createElement('button');
 
                 if (isReady) {
@@ -847,76 +965,36 @@
             }
         }
 
-        // 준비 상태 설정
         function setReady() {
-            try {
-                isReady = true;
-                window.parent.postMessage({
-                    type: 'setReady'
-                }, "*");
-            } catch (error) {
-                console.error('[room_widget] 준비 상태 설정 오류:', error);
-            }
+            isReady = true;
+            window.parent.postMessage({ type: 'setReady' }, "*");
         }
 
-        // 준비 취소
         function cancelReady() {
             isReady = false;
-            window.parent.postMessage({
-                type: 'cancelReady'
-            }, "*");
+            window.parent.postMessage({ type: 'cancelReady' }, "*");
         }
 
-        // 게임 시작
         function startGame() {
-            try {
-                window.parent.postMessage({
-                    type: 'startGame'
-                }, "*");
-            } catch (error) {
-                console.error('[room_widget] 게임 시작 오류:', error);
-            }
+            window.parent.postMessage({ type: 'startGame' }, "*");
         }
 
-        // 방에서 나가기
         function leaveRoom() {
-            try {
-                window.parent.postMessage({
-                    type: 'leaveRoom'
-                }, "*");
-            } catch (error) {
-                console.error('[room_widget] 방 나가기 오류:', error);
-            }
+            window.parent.postMessage({ type: 'leaveRoom' }, "*");
         }
 
-        // 플레이어 강퇴
         function kickPlayer(playerId) {
             if (!isHost) return;
-
-            try {
-                window.parent.postMessage({
-                    type: 'kickPlayer',
-                    playerId: playerId
-                }, "*");
-            } catch (error) {
-                console.error('[room_widget] 플레이어 강퇴 오류:', error);
-            }
+            window.parent.postMessage({ type: 'kickPlayer', playerId: playerId }, "*");
         }
 
-        // 채팅 메시지 전송
         function sendChatMessage() {
             const message = chatInput.value.trim();
             if (!message) return;
-
-            window.parent.postMessage({
-                type: 'chatMessage',
-                content: message
-            }, "*");
-
+            window.parent.postMessage({ type: 'chatMessage', content: message }, "*");
             chatInput.value = '';
         }
 
-        // 채팅 메시지 추가
         function addChatMessage(message) {
             const msgElement = document.createElement('div');
 
@@ -928,239 +1006,188 @@
                 msgElement.textContent = message.content;
             } else {
                 msgElement.className = 'message others';
-                msgElement.innerHTML = `
-                    <div class="sender-name">${message.senderName}</div>
-                    ${message.content}
-                `;
+                msgElement.innerHTML = `<div class="sender-name">${message.senderName}</div>${message.content}`;
             }
 
             chatMessages.appendChild(msgElement);
             chatMessages.scrollTop = chatMessages.scrollHeight;
         }
 
-        function revealWidget(moveScrollToBottom = false) {
-            if (moveScrollToBottom) {
-                $contentWrapper.scrollTop = $contentWrapper.scrollHeight;
-            }
+        function revealWidget() {
             if (_isMobile) {
-                const rtcAndNotchHeight = 160 + parseInt(getComputedStyle(document.documentElement,).getPropertyValue("--sat"));
+                // Mobile: full screen
+                document.body.classList.remove('compact');
+                roomContainer.style.display = 'flex';
                 window.parent.postMessage({
                     type: 'WidgetRearrange',
-                    anchor: 'bottom',
-                    height: '40%',
+                    anchor: 'middle',
+                    height: '100%',
                     width: '100%',
-                    top: `-${parseInt(0)}px`
-                }, '*')
+                }, '*');
             } else {
-                window.parent.postMessage({
-                    type: "WidgetRearrange",
-                    anchor: "middleright",
-                    width: `30%`,
-                    height: `75%`,
-                    left: `75px`,
-                }, "*");
-                // window.parent.postMessage({
-                //     type: "WidgetRearrange",
-                //     anchor: "middle",
-                //     width: `100%`,
-                //     height: `100%`,
-                // }, "*")
+                // Desktop: Center Card mode
+                if (isCompact) {
+                    applyCompactMode();
+                } else {
+                    applyExpandedMode();
+                }
             }
         }
 
+        function applyExpandedMode() {
+            isCompact = false;
+            document.body.classList.remove('compact');
+            roomContainer.style.display = 'flex';
+            window.parent.postMessage({
+                type: "WidgetRearrange",
+                anchor: "middle",
+                width: "100%",
+                height: "100%",
+            }, "*");
+        }
+
+        function applyCompactMode() {
+            isCompact = true;
+            document.body.classList.add('compact');
+            roomContainer.style.display = 'none';
+            updatePlayerCountBadge();
+            window.parent.postMessage({
+                type: "WidgetRearrange",
+                anchor: "topright",
+                width: "80px",
+                height: "80px",
+            }, "*");
+        }
+
+        function enterCompactMode() {
+            if (_isMobile) return;
+            applyCompactMode();
+        }
+
+        function expandFromCompact() {
+            applyExpandedMode();
+            window.parent.postMessage({ type: 'requestRoomInfo' }, "*");
+        }
+
         function hideWidget() {
+            isCompact = false;
+            document.body.classList.remove('compact');
             window.parent.postMessage({
                 type: "WidgetRearrange",
                 width: "0px",
                 height: "0px",
-            }, "*")
+            }, "*");
             window.parent.focus();
         }
 
-        function fitTheSize() {
-            window.parent.postMessage({
-                type: "WidgetRearrange",
-                width: document.body.offsetWidth + 10,
-                height: document.body.offsetHeight + 10,
-            }, "*")
-        }
-
-        // 메시지 수신 처리
-        let messageListener = null;
-        let isListenerSetup = false;
-
-        function setupMessageListener() {
-            // 이미 설정된 경우 중복 설정 방지
-            if (isListenerSetup) {
-                return;
-            }
-            
-            // 기존 이벤트 리스너가 있다면 제거
-            if (messageListener) {
-                window.removeEventListener('message', messageListener);
-            }
-
-            // 새 메시지 리스너 생성 및 등록
-            messageListener = function (e) {
-                const data = e.data;
-                if (data.type === "setWidget") {
-                    _isMobile = data.isMobile;
-                    _isTablet = data.isTablet;
-                    if (data.isMobile && !data.isTablet) {
-                        document.body.classList.add('mobile');
-                        adjustMobileUI();
-                    } else {
-                        document.body.classList.remove('mobile');
-                    }
-                    hideWidget();
-                } else if (data.type === 'init') {
-                    _languageCode = e.data.languageCode;
-                    _localizeContainer = e.data.localizeContainer;
-                    document.body.classList.remove("hidden");
-                    revealWidget();
-                } else if (data.type === 'roomInfo') {
-                    updateRoomInfo(data.roomData);
-
-                    // 게임 상태에 따라 위젯 표시/숨김 처리
-                    if (data.roomData.state === 'IN_PROGRESS') {
-                        hideWidget();
-                    } else {
-                        revealWidget();
-                    }
-                } else if (data.type === 'gameModeDetails') {
-                    updateGameModeInfo(data.modeData);
-                } else if (data.type === 'playerJoined') {
-                    addChatMessage({
-                        type: 'system',
-                        content: `${data.playerName}님이 입장했습니다.`
-                    });
-
-                    // 방 정보 업데이트 요청
-                    window.parent.postMessage({ type: 'requestRoomInfo' }, "*");
-                } else if (data.type === 'playerLeft') {
-                    addChatMessage({
-                        type: 'system',
-                        content: `${data.playerName}님이 퇴장했습니다.`
-                    });
-
-                    // 방 정보 업데이트 요청
-                    window.parent.postMessage({ type: 'requestRoomInfo' }, "*");
-                } else if (data.type === 'playerKicked') {
-                    addChatMessage({
-                        type: 'system',
-                        content: `${data.playerName}님이 강퇴되었습니다.`
-                    });
-
-                    // 방 정보 업데이트 요청
-                    window.parent.postMessage({ type: 'requestRoomInfo' }, "*");
-                } else if (data.type === 'readyStatusChanged') {
-                    // 방 정보 업데이트 요청
-                    window.parent.postMessage({ type: 'requestRoomInfo' }, "*");
-                } else if (data.type === 'hostChanged') {
-                    addChatMessage({
-                        type: 'system',
-                        content: `${data.newHostName}님이 새로운 방장이 되었습니다.`
-                    });
-
-                    // 방 정보 업데이트 요청
-                    window.parent.postMessage({ type: 'requestRoomInfo' }, "*");
-                } else if (data.type === 'gameStarting') {
-                    addChatMessage({
-                        type: 'system',
-                        content: `게임이 곧 시작됩니다...`
-                    });
-
-                    // 게임 시작 시 위젯 숨김
-                    hideWidget();
-                } else if (data.type === 'gameEnded') {
-                    addChatMessage({
-                        type: 'system',
-                        content: `게임이 종료되었습니다.`
-                    });
-
-                    // 게임 종료 시 위젯 다시 표시
-                    revealWidget();
-                } else if (data.type === 'chatMessage') {
-                    addChatMessage({
-                        type: 'normal',
-                        senderId: data.senderId,
-                        senderName: data.senderName,
-                        content: data.content
-                    });
-                } else if (data.type === 'error') {
-                    alert(data.message);
-                } else if (data.type === 'hideWidget') {
-                    // WidgetManager에서 보내는 숨김 메시지 처리
-                    hideWidget();
-                } else if (data.type === 'showWidget') {
-                    chatMessages.innerHTML = `<div class="message system">채팅방에 입장했습니다.</div>`;
-                    // WidgetManager에서 보내는 표시 메시지 처리
-                    revealWidget();
-                } else if (data.type === 'focusInput') {
-                    chatInput.focus();
-                }
-            };
-
-            window.addEventListener('message', messageListener);
-            isListenerSetup = true;
-        }
-
-        // 클린업 함수 추가
-        function cleanupMessageListener() {
-            if (messageListener) {
-                window.removeEventListener('message', messageListener);
-                messageListener = null;
-                isListenerSetup = false;
-            }
-        }
-
-        // 초기화 시 이벤트 리스너 설정
-        setupMessageListener();
-
-        // 초기화
-        initializeRoom();
-
-        // 모바일 UI 조정 함수
         function adjustMobileUI() {
-            // 화면 방향 감지 (가로 또는 세로)
             const isLandscape = window.innerWidth > window.innerHeight;
+            const mainContent = document.querySelector('.main-content');
+            const playersContainer = document.querySelector('.players-container');
+            const chatSidebar = document.querySelector('.chat-sidebar');
 
             if (isLandscape) {
-                // 가로 모드일 때 추가 조정
-                document.querySelector('.main-content').style.flexDirection = 'row';
-                document.querySelector('.players-container').style.width = '70%';
-                document.querySelector('.chat-sidebar').style.width = '30%';
-                document.querySelector('.chat-sidebar').style.height = 'auto';
-                document.querySelector('.chat-sidebar').style.borderTop = 'none';
-                document.querySelector('.chat-sidebar').style.borderLeft = '1px solid #e0e0e0';
+                mainContent.style.flexDirection = 'row';
+                playersContainer.style.width = '65%';
+                chatSidebar.style.width = '35%';
+                chatSidebar.style.height = 'auto';
+                chatSidebar.style.borderTop = 'none';
+                chatSidebar.style.borderLeft = '1px solid var(--border-default)';
             } else {
-                // 세로 모드일 때 추가 조정
-                document.querySelector('.main-content').style.flexDirection = 'column';
-                document.querySelector('.players-container').style.width = '100%';
-                document.querySelector('.chat-sidebar').style.width = '100%';
-                document.querySelector('.chat-sidebar').style.height = '250px';
-                document.querySelector('.chat-sidebar').style.borderTop = '1px solid #e0e0e0';
-                document.querySelector('.chat-sidebar').style.borderLeft = 'none';
+                mainContent.style.flexDirection = 'column';
+                playersContainer.style.width = '100%';
+                chatSidebar.style.width = '100%';
+                chatSidebar.style.height = '200px';
+                chatSidebar.style.borderTop = '1px solid var(--border-default)';
+                chatSidebar.style.borderLeft = 'none';
             }
-
-            // 모바일 키보드 대응
-            chatInput.addEventListener('focus', () => {
-                if (_isMobile) {
-                    // 입력창에 포커스시 스크롤 조정
-                    setTimeout(() => {
-                        chatMessages.scrollTop = chatMessages.scrollHeight;
-                    }, 300);
-                }
-            });
         }
 
-        // 화면 방향 변경 감지
-        window.addEventListener('resize', function () {
-            if (_isMobile) {
-                adjustMobileUI();
+        window.addEventListener('message', function(e) {
+            const data = e.data;
+
+            if (data.type === "setWidget") {
+                _isMobile = data.isMobile;
+                _isTablet = data.isTablet;
+                if (data.isMobile && !data.isTablet) {
+                    document.body.classList.add('mobile');
+                    adjustMobileUI();
+                } else {
+                    document.body.classList.remove('mobile');
+                }
+                hideWidget();
+            } else if (data.type === 'init') {
+                _isMobile = data.isMobile || false;
+                _isTablet = data.isTablet || false;
+                if (_isMobile && !_isTablet) {
+                    document.body.classList.add('mobile');
+                    isCompact = false; // Mobile always starts expanded
+                } else {
+                    document.body.classList.remove('mobile');
+                    isCompact = true; // Desktop starts in compact mode
+                }
+                document.body.classList.remove("hidden");
+                revealWidget();
+            } else if (data.type === 'roomInfo') {
+                updateRoomInfo(data.roomData);
+                if (data.roomData.state === 'IN_PROGRESS') {
+                    hideWidget();
+                } else {
+                    revealWidget();
+                }
+            } else if (data.type === 'gameModeDetails') {
+                updateGameModeInfo(data.modeData);
+            } else if (data.type === 'playerJoined') {
+                addChatMessage({ type: 'system', content: `${data.playerName}님이 입장했습니다.` });
+                window.parent.postMessage({ type: 'requestRoomInfo' }, "*");
+            } else if (data.type === 'playerLeft') {
+                addChatMessage({ type: 'system', content: `${data.playerName}님이 퇴장했습니다.` });
+                window.parent.postMessage({ type: 'requestRoomInfo' }, "*");
+            } else if (data.type === 'playerKicked') {
+                addChatMessage({ type: 'system', content: `${data.playerName}님이 강퇴되었습니다.` });
+                window.parent.postMessage({ type: 'requestRoomInfo' }, "*");
+            } else if (data.type === 'readyStatusChanged') {
+                window.parent.postMessage({ type: 'requestRoomInfo' }, "*");
+            } else if (data.type === 'hostChanged') {
+                addChatMessage({ type: 'system', content: `${data.newHostName}님이 새로운 방장이 되었습니다.` });
+                window.parent.postMessage({ type: 'requestRoomInfo' }, "*");
+            } else if (data.type === 'gameStarting') {
+                addChatMessage({ type: 'system', content: '게임이 곧 시작됩니다...' });
+                hideWidget();
+            } else if (data.type === 'gameEnded') {
+                addChatMessage({ type: 'system', content: '게임이 종료되었습니다.' });
+                revealWidget();
+            } else if (data.type === 'chatMessage') {
+                addChatMessage({
+                    type: 'normal',
+                    senderId: data.senderId,
+                    senderName: data.senderName,
+                    content: data.content
+                });
+            } else if (data.type === 'error') {
+                alert(data.message);
+            } else if (data.type === 'hideWidget' || data.type === 'hide') {
+                hideWidget();
+            } else if (data.type === 'showWidget' || data.type === 'reveal') {
+                chatMessages.innerHTML = '<div class="message system">채팅방에 입장했습니다.</div>';
+                if (!_isMobile) {
+                    isCompact = true; // Desktop starts in compact mode
+                }
+                revealWidget();
+            } else if (data.type === 'focusInput') {
+                chatInput.focus();
             }
         });
+
+        window.addEventListener('resize', function() {
+            if (_isMobile) adjustMobileUI();
+        });
+
+        window.addEventListener('unload', function() {
+            window.parent.focus();
+        });
+
+        initializeRoom();
     </script>
 </body>
-
 </html>

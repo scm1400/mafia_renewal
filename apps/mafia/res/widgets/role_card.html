@@ -1,350 +1,315 @@
 <!DOCTYPE html>
-<html style="overflow: hidden">
-
+<html lang="ko">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script>
-        /* create style sheet */
-        const newFontStylePath = document.URL.includes('https://zep.us') ? "https://cdn-static.zep.us/static/zep-script/css/typography.css" : "https://cdn-static-stage.zep.us/static/zep-script/css/typography.css";
-
+        const fontPath = document.URL.includes('https://zep.us')
+            ? "https://cdn-static.zep.us/static/zep-script/css/typography.css"
+            : "https://cdn-static-stage.zep.us/static/zep-script/css/typography.css";
         document.head.appendChild(Object.assign(document.createElement("link"), {
             rel: "stylesheet",
             type: "text/css",
-            href: newFontStylePath
+            href: fontPath
         }));
     </script>
-    <style type="text/css">
+    <style>
+        /* ============================================
+           Design System Variables
+           ============================================ */
         :root {
             --sat: env(safe-area-inset-top);
             --sar: env(safe-area-inset-right);
             --sab: env(safe-area-inset-bottom);
             --sal: env(safe-area-inset-left);
+
+            /* Neon Colors */
+            --neon-cyan: #00f0ff;
+            --neon-pink: #ff2d95;
+            --neon-purple: #b026ff;
+
+            /* Role Colors */
+            --role-mafia: #ff3366;
+            --role-police: #00aaff;
+            --role-doctor: #00ff88;
+            --role-citizen: #ffdd00;
+            --role-spy: #b026ff;
+            --role-medium: #8b5cf6;
+            --role-soldier: #64748b;
+            --role-politician: #f59e0b;
+            --role-lover: #ec4899;
+            --role-journalist: #06b6d4;
+            --role-werewolf: #a16207;
+            --role-gangster: #475569;
+            --role-detective: #0284c7;
+            --role-gravedigger: #6b7280;
+            --role-terrorist: #dc2626;
+            --role-madam: #db2777;
+
+            /* Background */
+            --bg-base: #0a0a0f;
+            --bg-surface: #12121a;
+            --bg-elevated: #1a1a25;
+
+            /* Text */
+            --text-primary: #ffffff;
+            --text-secondary: #a0a0b0;
+            --text-muted: #606070;
+
+            /* Border */
+            --border-subtle: rgba(255, 255, 255, 0.05);
+            --border-default: rgba(255, 255, 255, 0.1);
+
+            /* Shadow */
+            --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.5);
+
+            /* Spacing */
+            --space-xs: 4px;
+            --space-sm: 8px;
+            --space-md: 12px;
+            --space-lg: 16px;
+            --space-xl: 24px;
+
+            /* Radius */
+            --radius-sm: 6px;
+            --radius-md: 10px;
+            --radius-lg: 14px;
+            --radius-full: 9999px;
+
+            /* Typography */
+            --font-family: 'Pretendard', 'Pretendard JP', -apple-system, BlinkMacSystemFont, sans-serif;
+
+            /* Transition */
+            --transition-fast: 0.15s ease;
+
+            /* Role-specific (will be overridden by class) */
+            --role-color: var(--neon-cyan);
+            --role-glow: 0 0 20px rgba(0, 240, 255, 0.5);
         }
 
+        /* ============================================
+           Base Reset
+           ============================================ */
         * {
-            padding: 0;
             margin: 0;
+            padding: 0;
             box-sizing: border-box;
-            user-select: none !important;
-            font-family: 'Pretendard JP', 'Pretendard', sans-serif, Arial;
-            color: #27262E;
         }
 
         html {
             width: 100%;
             height: 100%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            overflow: hidden;
         }
 
         body {
+            width: 100%;
+            height: 100%;
+            font-family: var(--font-family);
+            font-size: 14px;
+            color: var(--text-primary);
+            background: transparent;
             display: flex;
-            flex-direction: column;
-            justify-content: center;
-            width: 300px;
-            max-width: 100%;
-            align-items: center;
-            height: max-content;
+            align-items: flex-start;
+            justify-content: flex-start;
+            user-select: none;
+            -webkit-user-select: none;
+            -webkit-font-smoothing: antialiased;
+            padding: var(--space-lg);
         }
 
+        /* ============================================
+           Role Card
+           ============================================ */
         .role-card {
-            width: 100%;
-            background-color: #fff;
-            border-radius: 12px;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+            width: 280px;
+            max-width: 100%;
+            background: var(--bg-surface);
+            border: 1px solid var(--role-color);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-lg), var(--role-glow);
             overflow: hidden;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            padding: 20px;
             position: relative;
+            animation: cardAppear 0.4s ease-out;
         }
 
+        @keyframes cardAppear {
+            from {
+                opacity: 0;
+                transform: scale(0.9) translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1) translateY(0);
+            }
+        }
+
+        /* Animated border effect */
+        .role-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, transparent, var(--role-color), transparent);
+            animation: borderGlow 2s ease-in-out infinite;
+        }
+
+        @keyframes borderGlow {
+            0%, 100% { opacity: 0.5; }
+            50% { opacity: 1; }
+        }
+
+        /* Close Button */
+        .close-button {
+            position: absolute;
+            top: var(--space-md);
+            right: var(--space-md);
+            width: 28px;
+            height: 28px;
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-default);
+            border-radius: var(--radius-full);
+            color: var(--text-secondary);
+            font-size: 16px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all var(--transition-fast);
+            z-index: 10;
+        }
+
+        .close-button:hover {
+            border-color: var(--neon-pink);
+            color: var(--neon-pink);
+        }
+
+        /* ============================================
+           Header
+           ============================================ */
         .role-header {
-            width: 100%;
+            padding: var(--space-xl);
+            padding-right: 48px;
             text-align: center;
-            margin-bottom: 15px;
+            background: linear-gradient(180deg, rgba(255, 255, 255, 0.03) 0%, transparent 100%);
         }
 
         .role-title {
-            font-size: 24px;
+            font-size: 22px;
             font-weight: 700;
-            margin-bottom: 5px;
+            color: var(--role-color);
+            text-shadow: var(--role-glow);
+            margin-bottom: var(--space-md);
         }
 
         .role-icon {
-            width: 80px;
-            height: 80px;
-            border-radius: 50%;
-            margin: 10px auto;
+            width: 72px;
+            height: 72px;
+            margin: 0 auto;
+            background: linear-gradient(135deg, var(--role-color), rgba(0, 0, 0, 0.3));
+            border: 2px solid var(--role-color);
+            border-radius: var(--radius-full);
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 40px;
+            font-size: 36px;
+            box-shadow: var(--role-glow);
+            animation: iconPulse 3s ease-in-out infinite;
         }
 
+        @keyframes iconPulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        /* ============================================
+           Content
+           ============================================ */
         .role-description {
+            padding: 0 var(--space-lg);
+            padding-bottom: var(--space-lg);
             text-align: center;
-            font-size: 14px;
-            line-height: 1.5;
-            margin-bottom: 15px;
-            color: #555;
+            font-size: 13px;
+            line-height: 1.6;
+            color: var(--text-secondary);
         }
 
         .role-ability {
-            width: 100%;
-            background-color: #f5f5f5;
-            border-radius: 8px;
-            padding: 12px;
-            margin-top: 10px;
+            background: var(--bg-elevated);
+            border-top: 1px solid var(--border-subtle);
+            padding: var(--space-lg);
         }
 
         .ability-title {
+            font-size: 14px;
             font-weight: 600;
-            font-size: 16px;
-            margin-bottom: 5px;
+            color: var(--role-color);
+            margin-bottom: var(--space-sm);
+            display: flex;
+            align-items: center;
+            gap: var(--space-sm);
+        }
+
+        .ability-title::before {
+            content: '';
+            width: 4px;
+            height: 4px;
+            background: var(--role-color);
+            border-radius: var(--radius-full);
+            box-shadow: var(--role-glow);
         }
 
         .ability-description {
-            font-size: 14px;
-            color: #555;
+            font-size: 13px;
+            line-height: 1.5;
+            color: var(--text-secondary);
         }
 
-        /* 역할별 색상 */
-        .mafia {
-            background-color: #ffebee;
-        }
+        /* ============================================
+           Role-specific Colors
+           ============================================ */
+        .role-card.mafia { --role-color: var(--role-mafia); --role-glow: 0 0 20px rgba(255, 51, 102, 0.5); }
+        .role-card.police { --role-color: var(--role-police); --role-glow: 0 0 20px rgba(0, 170, 255, 0.5); }
+        .role-card.doctor { --role-color: var(--role-doctor); --role-glow: 0 0 20px rgba(0, 255, 136, 0.5); }
+        .role-card.citizen { --role-color: var(--role-citizen); --role-glow: 0 0 20px rgba(255, 221, 0, 0.5); }
+        .role-card.spy { --role-color: var(--role-spy); --role-glow: 0 0 20px rgba(176, 38, 255, 0.5); }
+        .role-card.medium { --role-color: var(--role-medium); --role-glow: 0 0 20px rgba(139, 92, 246, 0.5); }
+        .role-card.soldier { --role-color: var(--role-soldier); --role-glow: 0 0 20px rgba(100, 116, 139, 0.5); }
+        .role-card.politician { --role-color: var(--role-politician); --role-glow: 0 0 20px rgba(245, 158, 11, 0.5); }
+        .role-card.lover { --role-color: var(--role-lover); --role-glow: 0 0 20px rgba(236, 72, 153, 0.5); }
+        .role-card.journalist { --role-color: var(--role-journalist); --role-glow: 0 0 20px rgba(6, 182, 212, 0.5); }
+        .role-card.werewolf { --role-color: var(--role-werewolf); --role-glow: 0 0 20px rgba(161, 98, 7, 0.5); }
+        .role-card.gangster { --role-color: var(--role-gangster); --role-glow: 0 0 20px rgba(71, 85, 105, 0.5); }
+        .role-card.detective { --role-color: var(--role-detective); --role-glow: 0 0 20px rgba(2, 132, 199, 0.5); }
+        .role-card.gravedigger { --role-color: var(--role-gravedigger); --role-glow: 0 0 20px rgba(107, 114, 128, 0.5); }
+        .role-card.terrorist { --role-color: var(--role-terrorist); --role-glow: 0 0 20px rgba(220, 38, 38, 0.5); }
+        .role-card.madam { --role-color: var(--role-madam); --role-glow: 0 0 20px rgba(219, 39, 119, 0.5); }
 
-        .mafia .role-title, .mafia .ability-title {
-            color: #d32f2f;
-        }
-
-        .mafia .role-icon {
-            background-color: #d32f2f;
-            color: white;
-        }
-
-        .police {
-            background-color: #e3f2fd;
-        }
-
-        .police .role-title, .police .ability-title {
-            color: #1976d2;
-        }
-
-        .police .role-icon {
-            background-color: #1976d2;
-            color: white;
-        }
-
-        .doctor {
-            background-color: #e8f5e9;
-        }
-
-        .doctor .role-title, .doctor .ability-title {
-            color: #388e3c;
-        }
-
-        .doctor .role-icon {
-            background-color: #388e3c;
-            color: white;
-        }
-
-        .citizen {
-            background-color: #fffde7;
-        }
-
-        .citizen .role-title, .citizen .ability-title {
-            color: #fbc02d;
-        }
-
-        .citizen .role-icon {
-            background-color: #fbc02d;
-            color: white;
-        }
-        
-        /* 추가 역할 스타일 */
-        .spy {
-            background-color: #f3e5f5;
-        }
-
-        .spy .role-title, .spy .ability-title {
-            color: #9c27b0;
-        }
-
-        .spy .role-icon {
-            background-color: #9c27b0;
-            color: white;
-        }
-        
-        .medium {
-            background-color: #e0f7fa;
-        }
-
-        .medium .role-title, .medium .ability-title {
-            color: #00acc1;
-        }
-
-        .medium .role-icon {
-            background-color: #00acc1;
-            color: white;
-        }
-        
-        .soldier {
-            background-color: #e8eaf6;
-        }
-
-        .soldier .role-title, .soldier .ability-title {
-            color: #3f51b5;
-        }
-
-        .soldier .role-icon {
-            background-color: #3f51b5;
-            color: white;
-        }
-        
-        .politician {
-            background-color: #efebe9;
-        }
-
-        .politician .role-title, .politician .ability-title {
-            color: #795548;
-        }
-
-        .politician .role-icon {
-            background-color: #795548;
-            color: white;
-        }
-        
-        .lover {
-            background-color: #fce4ec;
-        }
-
-        .lover .role-title, .lover .ability-title {
-            color: #e91e63;
-        }
-
-        .lover .role-icon {
-            background-color: #e91e63;
-            color: white;
-        }
-        
-        .journalist {
-            background-color: #fff3e0;
-        }
-
-        .journalist .role-title, .journalist .ability-title {
-            color: #ff9800;
-        }
-
-        .journalist .role-icon {
-            background-color: #ff9800;
-            color: white;
-        }
-        
-        .werewolf {
-            background-color: #fafafa;
-        }
-
-        .werewolf .role-title, .werewolf .ability-title {
-            color: #616161;
-        }
-
-        .werewolf .role-icon {
-            background-color: #616161;
-            color: white;
-        }
-        
-        .gangster {
-            background-color: #eceff1;
-        }
-
-        .gangster .role-title, .gangster .ability-title {
-            color: #607d8b;
-        }
-
-        .gangster .role-icon {
-            background-color: #607d8b;
-            color: white;
-        }
-        
-        .detective {
-            background-color: #f1f8e9;
-        }
-
-        .detective .role-title, .detective .ability-title {
-            color: #689f38;
-        }
-
-        .detective .role-icon {
-            background-color: #689f38;
-            color: white;
-        }
-        
-        .gravedigger {
-            background-color: #e0f2f1;
-        }
-
-        .gravedigger .role-title, .gravedigger .ability-title {
-            color: #00897b;
-        }
-
-        .gravedigger .role-icon {
-            background-color: #00897b;
-            color: white;
-        }
-        
-        .terrorist {
-            background-color: #f9fbe7;
-        }
-
-        .terrorist .role-title, .terrorist .ability-title {
-            color: #827717;
-        }
-
-        .terrorist .role-icon {
-            background-color: #827717;
-            color: white;
-        }
-        
-        .madam {
-            background-color: #fff1f1;
-        }
-
-        .madam .role-title, .madam .ability-title {
-            color: #d81b60;
-        }
-
-        .madam .role-icon {
-            background-color: #d81b60;
-            color: white;
-        }
-
-        .close-button {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            width: 30px;
-            height: 30px;
-            border-radius: 50%;
-            background-color: #f5f5f5;
-            display: flex;
+        /* ============================================
+           Mobile Styles
+           ============================================ */
+        body.mobile {
             align-items: center;
             justify-content: center;
-            cursor: pointer;
-            font-size: 18px;
-            color: #555;
+            background: rgba(10, 10, 15, 0.92);
+            padding: var(--space-lg);
+        }
+
+        body.mobile .role-card {
+            width: 320px;
+            max-width: calc(100% - 32px);
         }
     </style>
 </head>
-
 <body>
-    <div class="role-card">
+    <div class="role-card" id="roleCard">
         <div class="close-button" onclick="closeWidget()">×</div>
         <div class="role-header">
             <div class="role-title" id="role-title">역할 이름</div>
+            <div class="role-icon" id="role-icon">🎭</div>
         </div>
-        <div class="role-icon" id="role-icon">🎭</div>
         <div class="role-description" id="role-description">
             역할에 대한 설명이 여기에 표시됩니다.
         </div>
@@ -357,12 +322,9 @@
     </div>
 
     <script>
-        // roleData는 서버로부터 초기화됨 (비어있는 상태로 시작)
         let roleData = {};
-
         let _isMobile = false;
         let _isTablet = false;
-        let $contentWrapper;
 
         function closeWidget() {
             hideWidget();
@@ -373,112 +335,78 @@
                 type: "WidgetRearrange",
                 width: "0px",
                 height: "0px",
-            }, "*")
+            }, "*");
             window.parent.focus();
         }
 
-        function revealWidget(moveScrollToBottom = false) {
-            if (moveScrollToBottom && $contentWrapper) {
-                $contentWrapper.scrollTop = $contentWrapper.scrollHeight;
-            }
+        function revealWidget() {
             if (_isMobile) {
-                const rtcAndNotchHeight = 160 + parseInt(getComputedStyle(document.documentElement,).getPropertyValue("--sat"));
                 window.parent.postMessage({
                     type: 'WidgetRearrange',
                     anchor: 'middle',
                     height: '100%',
                     width: '100%',
-                    top: `-${parseInt(0)}px`
-                }, '*')
+                }, '*');
             } else {
                 window.parent.postMessage({
                     type: "WidgetRearrange",
                     anchor: "topleft",
-                    width: `300px`,
-                    height: `400px`,
-                }, "*")
+                    width: "320px",
+                    height: "420px",
+                }, "*");
             }
         }
 
-        function fitTheSize() {
-            window.parent.postMessage({
-                type: "WidgetRearrange",
-                width: document.body.offsetWidth + 10,
-                height: document.body.offsetHeight + 10,
-            }, "*")
-        }
-        
-        // 주어진 역할 ID에 맞는 역할 정보 설정
         function updateRoleUI(roleId) {
-            // 역할 ID가 대문자라면 소문자로 변환
             const role = roleId ? roleId.toLowerCase() : '';
             const roleInfo = roleData[role];
-            
-            console.log(`역할 ID: ${roleId}, 변환된 ID: ${role}, 정보 찾음: ${roleInfo ? '예' : '아니오'}`);
-            
+
             if (roleInfo) {
                 document.getElementById('role-title').textContent = roleInfo.title;
                 document.getElementById('role-icon').textContent = roleInfo.icon;
                 document.getElementById('role-description').textContent = roleInfo.description;
                 document.getElementById('ability-title').textContent = roleInfo.abilityTitle;
                 document.getElementById('ability-description').textContent = roleInfo.abilityDescription;
-                
-                // 역할에 따른 클래스 추가
-                const roleCard = document.querySelector('.role-card');
-                roleCard.classList.remove('mafia', 'police', 'doctor', 'citizen', 'spy', 'medium',
-                                        'soldier', 'politician', 'lover', 'journalist', 'werewolf',
-                                        'gangster', 'detective', 'gravedigger', 'terrorist', 'madam');
+
+                const roleCard = document.getElementById('roleCard');
+                roleCard.className = 'role-card';
                 roleCard.classList.add(role);
             } else {
-                // console.error(`알 수 없는 역할: ${roleId}`);
-                document.getElementById('role-title').textContent = `알 수 없는 역할 (${roleId})`;
+                document.getElementById('role-title').textContent = `알 수 없는 역할`;
                 document.getElementById('role-icon').textContent = "❓";
                 document.getElementById('role-description').textContent = "직업 정보를 찾을 수 없습니다.";
                 document.getElementById('ability-title').textContent = "알 수 없는 능력";
                 document.getElementById('ability-description').textContent = "능력 정보를 찾을 수 없습니다.";
             }
-            
-            // 위젯을 표시
+
             revealWidget();
         }
 
         window.addEventListener('message', function(e) {
             const data = e.data;
-            
-            if(data.type === "setWidget"){
+
+            if (data.type === "setWidget") {
                 _isMobile = data.isMobile;
                 _isTablet = data.isTablet;
-                if(data.isMobile && !data.isTablet){
+                if (data.isMobile && !data.isTablet) {
                     document.body.classList.add('mobile');
-                }else{
+                } else {
                     document.body.classList.remove('mobile');
                 }
                 hideWidget();
             } else if (data.type === 'init') {
-                try {
-                    document.body.classList.remove("hidden");
-                    revealWidget();
-                } catch (error) {
-                    alert("An error occurred:", error);
-                }
+                document.body.classList.remove("hidden");
+                revealWidget();
             } else if (data.type === 'initRoleData') {
-                // 서버에서 전송한 역할 데이터로 초기화
                 if (data.roleData) {
                     roleData = data.roleData;
-                    console.log("서버에서 역할 데이터 수신 완료:", Object.keys(roleData).length);
                 }
             } else if (data.type === 'setRole') {
-                // 기존 setRole 타입 처리 (legacy)
                 updateRoleUI(data.role);
             } else if (data.type === 'role_info') {
-                // GameFlowManager에서 사용하는 role_info 타입 처리
-                console.log("역할 정보 수신:", data);
-                
-                // 서버에서 전달한 역할 정보 사용
                 const roleId = data.roleId || data.role.toLowerCase();
                 const role = roleId.toLowerCase();
-                
-                // roleData에 없는 직업이라면 동적으로 추가
+
                 if (!roleData[role]) {
                     roleData[role] = {
                         title: data.role,
@@ -488,49 +416,29 @@
                         abilityDescription: data.ability || "능력 설명 없음"
                     };
                 }
-                
-                // UI 업데이트
+
                 document.getElementById('role-title').textContent = data.role;
                 document.getElementById('role-icon').textContent = data.icon || "❓";
                 document.getElementById('role-description').textContent = data.description || "설명 없음";
                 document.getElementById('ability-title').textContent = "능력";
                 document.getElementById('ability-description').textContent = data.ability || "능력 설명 없음";
-                
-                // 팀에 따라 스타일 조정
-                const roleCard = document.querySelector('.role-card');
-                roleCard.classList.remove('mafia', 'police', 'doctor', 'citizen', 'spy', 'medium',
-                                        'soldier', 'politician', 'lover', 'journalist', 'werewolf',
-                                        'gangster', 'detective', 'gravedigger', 'terrorist', 'madam');
-                
-                if (data.team === "마피아팀") {
-                    roleCard.classList.add(data.roleId);
-                } else if (data.team === "시민팀") {
-                    roleCard.classList.add(data.roleId);
-                } else {
-                    // 해당 역할 ID로 클래스 추가
-                    roleCard.classList.add(data.roleId);
-                }
-                
-                // 위젯 표시
+
+                const roleCard = document.getElementById('roleCard');
+                roleCard.className = 'role-card';
+                roleCard.classList.add(data.roleId || role);
+
                 revealWidget();
-            } else if (data.type === "hide") {
+            } else if (data.type === "hide" || data.type === "hideWidget") {
                 hideWidget();
-            } else if (data.type === "reveal") {
-                revealWidget(true);
-            } else if (data.type === "hideWidget") {
-                // WidgetManager에서 보내는 숨김 메시지 처리
-                hideWidget();
-            } else if (data.type === "showWidget") {
-                // WidgetManager에서 보내는 표시 메시지 처리
+            } else if (data.type === "reveal" || data.type === "showWidget") {
                 revealWidget();
             }
         });
 
-        window.addEventListener('unload', function () {
+        window.addEventListener('unload', function() {
             window.parent.focus();
         });
 
-        // 모바일 환경 감지
         function checkMobile() {
             if (window.innerWidth <= 768) {
                 document.body.classList.add('mobile');
@@ -543,5 +451,4 @@
         checkMobile();
     </script>
 </body>
-
-</html> 
+</html>

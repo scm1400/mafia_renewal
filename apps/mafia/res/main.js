@@ -1,7 +1,7 @@
 /******/ (() => { // webpackBootstrap
 /******/ 	"use strict";
 
-;// ../../libs/utils/Localizer.ts
+;// CONCATENATED MODULE: ../../libs/utils/Localizer.ts
 const LOCALIZE_KEYS = {};
 const LOCALIZE_CONTAINER = {
   ko: null,
@@ -32,7 +32,7 @@ class Localizer_Localizer {
     return acc;
   }
 }
-;// ../../libs/utils/Common.ts
+;// CONCATENATED MODULE: ../../libs/utils/Common.ts
 
 
 let log;
@@ -127,7 +127,7 @@ function getLocationAreaCoordinates(locationName) {
 function isAdmin(player) {
   return player.role >= 3000 || adminList.includes(player.id);
 }
-;// ../../libs/utils/CustomLabelFunctions.ts
+;// CONCATENATED MODULE: ../../libs/utils/CustomLabelFunctions.ts
 
 const LABEL_SPACING = 60;
 const labelCounts = {};
@@ -284,7 +284,7 @@ function showLabel(player, key, options = {}) {
   };
   player.showCustomLabel(htmlStr, 0xffffff, backgroundColor, topGap, labelPercentWidth, 0.64, labelDisplayTime, customLabelOption);
 }
-;// ../../libs/core/GameBase.ts
+;// CONCATENATED MODULE: ../../libs/core/GameBase.ts
 class GameBase {
   constructor() {
     this.onStartCallbacks = [];
@@ -358,7 +358,7 @@ class GameBase {
     this.onTriggerObjectCallbacks.push(callback);
   }
 }
-;// ../../libs/core/mafia/types/JobTypes.ts
+;// CONCATENATED MODULE: ../../libs/core/mafia/types/JobTypes.ts
 var JobId;
 (function (JobId) {
   JobId["MAFIA"] = "mafia";
@@ -703,7 +703,7 @@ function shuffleArray(array) {
   }
   return newArray;
 }
-;// ../../libs/core/mafia/managers/widget/WidgetType.ts
+;// CONCATENATED MODULE: ../../libs/core/mafia/managers/widget/WidgetType.ts
 var WidgetType;
 (function (WidgetType) {
   WidgetType["LOBBY"] = "LOBBY";
@@ -717,7 +717,7 @@ var WidgetType;
   WidgetType["ROLE_CARD"] = "ROLE_CARD";
   WidgetType["DAY_CHAT"] = "DAY_CHAT";
 })(WidgetType || (WidgetType = {}));
-;// ../../libs/core/mafia/managers/widget/WidgetManager.ts
+;// CONCATENATED MODULE: ../../libs/core/mafia/managers/widget/WidgetManager.ts
 
 
 class WidgetManager {
@@ -984,7 +984,7 @@ class WidgetManager {
     return widgetMap[widgetType];
   }
 }
-;// ../../libs/core/mafia/managers/command/CommandParser.ts
+;// CONCATENATED MODULE: ../../libs/core/mafia/managers/command/CommandParser.ts
 class CommandParser {
   static isCommand(message) {
     if (!message) return false;
@@ -1031,7 +1031,7 @@ class CommandParser {
   }
 }
 CommandParser.COMMAND_PREFIX = "/";
-;// ../../libs/core/mafia/managers/command/CommandManager.ts
+;// CONCATENATED MODULE: ../../libs/core/mafia/managers/command/CommandManager.ts
 
 
 class CommandManager {
@@ -1078,7 +1078,7 @@ class CommandManager {
     return cmdList;
   }
 }
-;// ../../libs/core/mafia/managers/command/BotManager.ts
+;// CONCATENATED MODULE: ../../libs/core/mafia/managers/command/BotManager.ts
 
 class BotManager {
   static get instance() {
@@ -1131,7 +1131,7 @@ class BotManager {
     return Math.random() < 0.8;
   }
 }
-;// ../../libs/core/mafia/managers/command/BotActionScheduler.ts
+;// CONCATENATED MODULE: ../../libs/core/mafia/managers/command/BotActionScheduler.ts
 
 
 
@@ -1240,7 +1240,7 @@ class BotActionScheduler {
     }
   }
 }
-;// ../../libs/core/mafia/managers/gameFlow/GameFlowManager.ts
+;// CONCATENATED MODULE: ../../libs/core/mafia/managers/gameFlow/GameFlowManager.ts
 
 
 
@@ -3084,7 +3084,7 @@ class GameFlowManager {
     }
   }
 }
-;// ../../libs/core/mafia/managers/gameRoom/GameRoom.ts
+;// CONCATENATED MODULE: ../../libs/core/mafia/managers/gameRoom/GameRoom.ts
 
 
 
@@ -3464,7 +3464,7 @@ class GameRoom {
     sendAdminConsoleMessage(`[GameRoom] 방 ${this.id}의 모든 플레이어 준비 상태 초기화됨`);
   }
 }
-;// ../../libs/core/mafia/managers/gameRoom/GameRoomManager.ts
+;// CONCATENATED MODULE: ../../libs/core/mafia/managers/gameRoom/GameRoomManager.ts
 
 
 
@@ -3613,7 +3613,7 @@ class GameRoomManager {
     this.callbacks = {};
   }
 }
-;// ../../libs/core/mafia/gameMode/GameMode.ts
+;// CONCATENATED MODULE: ../../libs/core/mafia/gameMode/GameMode.ts
 class GameMode {
   constructor(config) {
     this.jobs = [];
@@ -3656,7 +3656,7 @@ class GameMode {
     };
   }
 }
-;// ../../libs/core/mafia/gameMode/defaultGameModes.ts
+;// CONCATENATED MODULE: ../../libs/core/mafia/gameMode/defaultGameModes.ts
 
 
 function createDefaultGameModes() {
@@ -3679,7 +3679,7 @@ function createDefaultGameModes() {
   });
   return modes;
 }
-;// ../../libs/core/mafia/managers/Sprite/SpriteManager.ts
+;// CONCATENATED MODULE: ../../libs/core/mafia/managers/Sprite/SpriteManager.ts
 var SpriteType;
 (function (SpriteType) {
   SpriteType["CHARACTER_BASIC"] = "character_basic";
@@ -3712,7 +3712,7 @@ class SpriteManager {
     };
   }
 }
-;// ../../libs/core/mafia/managers/command/CheatCommands.ts
+;// CONCATENATED MODULE: ../../libs/core/mafia/managers/command/CheatCommands.ts
 
 
 
@@ -4105,7 +4105,7 @@ function registerCheatCommands() {
   manager.registerCommand(new AutoBotAllCommand());
   manager.registerCommand(new ClearBotsCommand());
 }
-;// ../../libs/core/mafia/Game.ts
+;// CONCATENATED MODULE: ../../libs/core/mafia/Game.ts
 
 
 
@@ -4130,8 +4130,6 @@ class Game extends GameBase {
   constructor() {
     super();
     this.mafiaGameRoomManager = new GameRoomManager();
-    App.showName = false;
-    App.sendUpdated();
     SpriteManager.getInstance();
     this.addOnStartCallback(this.onStart.bind(this));
     this.addOnJoinPlayerCallback(this.onJoinPlayer.bind(this));
@@ -4160,11 +4158,6 @@ class Game extends GameBase {
       isReady: false,
       profile: this.getDefaultProfile(player)
     };
-    const color = Math.floor(Math.random() * 12);
-    player.setAvatarParts({
-      hairId: 61 + color,
-      clothesId: 61 + color
-    });
     if (!player.isMobile) {
       player.displayRatio = 1.25;
     }
@@ -4804,6 +4797,7 @@ class Game extends GameBase {
   sendLobbyChatMessage(sender, content) {
     var _a;
     const widgetManager = WidgetManager.instance;
+    sender.sendMessageBubbleOnly(content);
     const chatMessage = {
       type: "chatMessage",
       senderId: sender.id,
@@ -4839,7 +4833,7 @@ class Game extends GameBase {
   }
 }
 Game.ROOM_COUNT = 0;
-;// ./main.ts
+;// CONCATENATED MODULE: ./main.ts
 
 App.onInit.Add(() => {
   Game.create();

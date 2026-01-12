@@ -1,0 +1,1205 @@
+<!doctype html>
+<html lang="ko">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<link
+			rel="stylesheet"
+			as="style"
+			crossorigin
+			href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.6/dist/web/variable/pretendardvariable-dynamic-subset.css"
+		/>
+		<style>
+			:root {
+				--primary-color: #3182f6;
+				--primary-hover: #1b64da;
+				--text-primary: #191f28;
+				--text-secondary: #4e5968;
+				--text-tertiary: #8b95a1;
+				--bg-primary: #f2f4f6;
+				--bg-card: #ffffff;
+				--shadow-card: 0 4px 20px rgba(0, 0, 0, 0.1);
+				--radius-full: 9999px;
+				--radius-md: 16px;
+				--radius-sm: 8px;
+
+				/* Game action colors */
+				--rank-color: #f59e0b;
+				--rank-hover: #b45309;
+				--normal-color: #10b981;
+				--normal-hover: #047857;
+				--ai-color: #6366f1;
+				--ai-hover: #4338ca;
+			}
+
+			* {
+				margin: 0;
+				padding: 0;
+				box-sizing: border-box;
+				font-family:
+					"Pretendard Variable",
+					-apple-system,
+					BlinkMacSystemFont,
+					system-ui,
+					sans-serif;
+				user-select: none;
+				-webkit-user-select: none;
+			}
+
+			body {
+				background-color: transparent;
+				display: flex;
+				justify-content: center;
+				overflow: hidden;
+			}
+
+			/* ========== Layout Container ========== */
+			.nav-wrapper {
+				display: flex;
+				flex-direction: column;
+				align-items: center;
+				gap: 6px;
+			}
+
+			/* ========== Top Row: Game Buttons ========== */
+			.nav-primary {
+				display: flex;
+				background: var(--bg-card);
+				padding: 6px 10px;
+				border-radius: 10px;
+				box-shadow: var(--shadow-card);
+				gap: 8px;
+				align-items: center;
+			}
+
+			/* Compact Card Style */
+			.game-card {
+				display: flex;
+				align-items: center;
+				gap: 10px;
+				padding: 10px 16px;
+				border-radius: 12px;
+				border: none;
+				cursor: pointer;
+				transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+				position: relative;
+				overflow: hidden;
+			}
+
+			.game-card::before {
+				content: "";
+				position: absolute;
+				inset: 0;
+				background: linear-gradient(180deg, rgba(255, 255, 255, 0.15) 0%, transparent 60%);
+				pointer-events: none;
+			}
+
+			.game-card:hover {
+				transform: translateY(-3px) scale(1.02);
+			}
+
+			.game-card__icon {
+				font-size: 22px;
+				filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.2));
+			}
+
+			.game-card__text {
+				display: flex;
+				flex-direction: column;
+				gap: 1px;
+				text-align: left;
+			}
+
+			.game-card__title {
+				font-size: 13px;
+				font-weight: 700;
+				color: white;
+				text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+			}
+
+			.game-card__desc {
+				font-size: 10px;
+				color: rgba(255, 255, 255, 0.8);
+			}
+
+			.game-card--rank {
+				background: linear-gradient(135deg, var(--rank-color) 0%, var(--rank-hover) 100%);
+				box-shadow: 0 4px 16px rgba(245, 158, 11, 0.35);
+			}
+
+			.game-card--rank:hover {
+				box-shadow: 0 8px 24px rgba(245, 158, 11, 0.5);
+			}
+
+			.game-card--normal {
+				background: linear-gradient(135deg, var(--normal-color) 0%, var(--normal-hover) 100%);
+				box-shadow: 0 4px 16px rgba(16, 185, 129, 0.35);
+			}
+
+			.game-card--normal:hover {
+				box-shadow: 0 8px 24px rgba(16, 185, 129, 0.5);
+			}
+
+			.game-card--ai {
+				background: linear-gradient(135deg, var(--ai-color) 0%, var(--ai-hover) 100%);
+				box-shadow: 0 4px 16px rgba(99, 102, 241, 0.35);
+			}
+
+			.game-card--ai:hover {
+				box-shadow: 0 8px 24px rgba(99, 102, 241, 0.5);
+			}
+
+			/* ========== Bottom Row: Grouped Menu ========== */
+			.nav-secondary {
+				display: flex;
+				background: rgba(255, 255, 255, 0.95);
+				padding: 4px 8px;
+				border-radius: var(--radius-full);
+				box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+				gap: 4px;
+				align-items: center;
+			}
+
+			/* Menu Group with Dropdown */
+			.menu-group {
+				position: relative;
+			}
+
+			.menu-group-btn {
+				display: flex;
+				align-items: center;
+				justify-content: center;
+				gap: 4px;
+				padding: 8px 14px;
+				border-radius: var(--radius-full);
+				font-size: 12px;
+				font-weight: 600;
+				color: var(--text-secondary);
+				background: transparent;
+				border: none;
+				cursor: pointer;
+				transition: all 0.2s;
+				white-space: nowrap;
+				position: relative;
+			}
+
+			.menu-group-btn:hover {
+				background: var(--bg-primary);
+				color: var(--text-primary);
+			}
+
+			.menu-group-btn .icon {
+				font-size: 14px;
+			}
+
+			.menu-group-btn .arrow {
+				font-size: 8px;
+				margin-left: 2px;
+				transition: transform 0.2s;
+			}
+
+			.menu-group.active .menu-group-btn .arrow {
+				transform: rotate(180deg);
+			}
+
+			.menu-group.active .menu-group-btn {
+				background: var(--bg-primary);
+				color: var(--text-primary);
+			}
+
+			/* Dropdown */
+			.menu-dropdown {
+				position: absolute;
+				top: 100%;
+				left: 50%;
+				transform: translateX(-50%);
+				margin-top: 8px;
+				background: var(--bg-card);
+				border-radius: var(--radius-md);
+				box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+				padding: 6px;
+				min-width: 140px;
+				opacity: 0;
+				visibility: hidden;
+				transition: all 0.2s;
+				z-index: 100;
+				display: none;
+			}
+
+			.menu-group.active .menu-dropdown {
+				opacity: 1;
+				visibility: visible;
+				display: block;
+			}
+
+			.menu-dropdown-item {
+				display: flex;
+				align-items: center;
+				gap: 10px;
+				padding: 10px 14px;
+				border-radius: var(--radius-sm);
+				font-size: 13px;
+				font-weight: 500;
+				color: var(--text-primary);
+				cursor: pointer;
+				transition: all 0.15s;
+				position: relative;
+			}
+
+			.menu-dropdown-item:hover {
+				background: var(--bg-primary);
+			}
+
+			.menu-dropdown-item .icon {
+				font-size: 16px;
+			}
+
+			/* Badge in dropdown */
+			.menu-dropdown-item .badge {
+				position: absolute;
+				top: 50%;
+				right: 10px;
+				transform: translateY(-50%);
+				background-color: #f04452;
+				color: white;
+				font-size: 8px;
+				font-weight: 700;
+				min-width: 14px;
+				height: 14px;
+				border-radius: 7px;
+				display: flex;
+				align-items: center;
+				justify-content: center;
+				padding: 0 3px;
+			}
+
+			/* Badge on group button */
+			.menu-group-btn .group-badge {
+				position: absolute;
+				top: 0;
+				right: 0;
+				background-color: #f04452;
+				width: 8px;
+				height: 8px;
+				border-radius: 50%;
+				border: 2px solid white;
+			}
+
+			.hidden {
+				display: none !important;
+			}
+
+			/* Divider */
+			.nav-divider {
+				width: 1px;
+				height: 20px;
+				background: #e5e8eb;
+				margin: 0 4px;
+			}
+
+			/* ========== Currency Display ========== */
+			.currency-display {
+				display: flex;
+				align-items: center;
+				gap: 8px;
+				padding: 6px 12px;
+				background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+				border-radius: 20px;
+				border: 1px solid #e2e8f0;
+			}
+
+			.currency-item {
+				display: flex;
+				align-items: center;
+				gap: 4px;
+				font-size: 12px;
+				font-weight: 600;
+				color: var(--text-primary);
+			}
+
+			.currency-item__icon {
+				width: 16px;
+				height: 16px;
+				object-fit: contain;
+			}
+
+			.currency-item__value {
+				min-width: 32px;
+				text-align: right;
+			}
+
+			.currency-divider {
+				width: 1px;
+				height: 14px;
+				background: #cbd5e1;
+			}
+
+			/* ========== Mobile Styles ========== */
+			body.mobile .nav-wrapper {
+				width: 100%;
+				padding: 0 8px;
+			}
+
+			body.mobile .nav-primary {
+				width: 100%;
+				justify-content: space-between;
+				padding: 8px 12px;
+			}
+
+			body.mobile .game-card {
+				flex: 1;
+				padding: 8px 10px;
+				gap: 6px;
+			}
+
+			body.mobile .game-card__icon {
+				font-size: 18px;
+			}
+
+			body.mobile .game-card__title {
+				font-size: 11px;
+			}
+
+			body.mobile .game-card__desc {
+				display: none;
+			}
+
+			body.mobile .currency-display {
+				display: none;
+			}
+
+			/* Hide secondary row on mobile */
+			body.mobile .nav-secondary {
+				display: none;
+			}
+
+			/* Show hamburger on mobile */
+			.hamburger {
+				display: none;
+				width: 40px;
+				height: 40px;
+				background: var(--bg-primary);
+				color: var(--text-secondary);
+				border-radius: 50%;
+				border: none;
+				align-items: center;
+				justify-content: center;
+				cursor: pointer;
+				font-size: 18px;
+				transition: all 0.2s;
+				position: relative;
+			}
+
+			.hamburger:hover {
+				background: #e8ebed;
+			}
+
+			.hamburger.active {
+				background: var(--primary-color);
+				color: white;
+			}
+
+			body.mobile .hamburger {
+				display: flex;
+			}
+
+			/* Mobile dropdown menu */
+			.mobile-dropdown {
+				display: none;
+				position: absolute;
+				top: 70px;
+				right: 16px;
+				background: var(--bg-card);
+				border-radius: var(--radius-md);
+				box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+				padding: 8px;
+				min-width: 160px;
+				z-index: 1000;
+				animation: slideDown 0.2s ease-out;
+			}
+
+			@keyframes slideDown {
+				from {
+					opacity: 0;
+					transform: translateY(-10px);
+				}
+				to {
+					opacity: 1;
+					transform: translateY(0);
+				}
+			}
+
+			.mobile-dropdown.show {
+				display: block;
+			}
+
+			.mobile-menu-item {
+				display: flex;
+				align-items: center;
+				gap: 10px;
+				padding: 10px 14px;
+				border-radius: var(--radius-sm);
+				font-size: 13px;
+				font-weight: 600;
+				color: var(--text-primary);
+				cursor: pointer;
+				transition: all 0.2s;
+				position: relative;
+			}
+
+			.mobile-menu-item:hover {
+				background: var(--bg-primary);
+			}
+
+			.mobile-menu-item .badge {
+				position: static;
+				margin-left: auto;
+			}
+
+			.mobile-menu-divider {
+				height: 1px;
+				background: #e5e8eb;
+				margin: 4px 8px;
+			}
+		</style>
+	</head>
+
+	<body>
+		<div class="nav-wrapper">
+			<!-- Top Row: Game Buttons -->
+			<div class="nav-primary">
+				<button class="game-card game-card--rank" onclick="joinRank()">
+					<span class="game-card__icon">⚔️</span>
+					<div class="game-card__text">
+						<span class="game-card__title">랭크전</span>
+						<span class="game-card__desc">레이팅 적용</span>
+					</div>
+				</button>
+				<button class="game-card game-card--normal" onclick="joinNormal()">
+					<span class="game-card__icon">🤝</span>
+					<div class="game-card__text">
+						<span class="game-card__title">친선전</span>
+						<span class="game-card__desc">가볍게 한판</span>
+					</div>
+				</button>
+				<button class="game-card game-card--ai" onclick="joinAI()">
+					<span class="game-card__icon">🤖</span>
+					<div class="game-card__text">
+						<span class="game-card__title">AI 대전</span>
+						<span class="game-card__desc">연습 모드</span>
+					</div>
+				</button>
+
+				<!-- Hamburger (mobile only) -->
+				<button id="hamburger" class="hamburger" onclick="toggleMenu()">
+					<span id="hamburger-icon">☰</span>
+					<div id="hamburger-badge" class="badge hidden">!</div>
+				</button>
+			</div>
+
+			<!-- Bottom Row: Grouped Menu (PC only) -->
+			<div class="nav-secondary">
+				<!-- 게임 그룹 -->
+				<div id="group-game" class="menu-group">
+					<button class="menu-group-btn" onclick="toggleDropdown('game')">
+						<span class="icon">🎮</span>
+						<span>게임</span>
+						<span class="arrow">▼</span>
+						<div id="game-group-badge" class="group-badge hidden"></div>
+					</button>
+					<div class="menu-dropdown">
+						<div class="menu-dropdown-item" onclick="showQuest()">
+							<span class="icon">📋</span>
+							<span>퀘스트</span>
+							<div id="quest-badge" class="badge hidden">!</div>
+						</div>
+						<div class="menu-dropdown-item" onclick="showAchievement()">
+							<span class="icon">🏆</span>
+							<span>업적</span>
+							<div id="achievement-badge" class="badge hidden">!</div>
+						</div>
+						<div class="menu-dropdown-item" onclick="showStatistics()">
+							<span class="icon">📊</span>
+							<span>전적</span>
+						</div>
+						<div class="menu-dropdown-item" onclick="showTournament()">
+							<span class="icon">🏅</span>
+							<span>대회</span>
+							<div id="tournament-badge" class="badge hidden">!</div>
+						</div>
+					</div>
+				</div>
+
+				<!-- 아이템 그룹 -->
+				<div id="group-item" class="menu-group">
+					<button class="menu-group-btn" onclick="toggleDropdown('item')">
+						<span class="icon">🎒</span>
+						<span>아이템</span>
+						<span class="arrow">▼</span>
+					</button>
+					<div class="menu-dropdown">
+						<div class="menu-dropdown-item" onclick="showBag()">
+							<span class="icon">💼</span>
+							<span>내 스킨</span>
+						</div>
+						<div class="menu-dropdown-item" onclick="showShop()">
+							<span class="icon">💰</span>
+							<span>상점</span>
+						</div>
+						<div class="menu-dropdown-item" onclick="showGatcha()">
+							<span class="icon">🎰</span>
+							<span>뽑기</span>
+						</div>
+					</div>
+				</div>
+
+				<!-- 보상 그룹 -->
+				<div id="group-reward" class="menu-group">
+					<button class="menu-group-btn" onclick="toggleDropdown('reward')">
+						<span class="icon">🎁</span>
+						<span>보상</span>
+						<span class="arrow">▼</span>
+						<div id="reward-group-badge" class="group-badge hidden"></div>
+					</button>
+					<div class="menu-dropdown">
+						<div class="menu-dropdown-item" onclick="showAttendance()">
+							<span class="icon">📅</span>
+							<span>출석</span>
+							<div id="attendance-badge" class="badge hidden">!</div>
+						</div>
+						<div class="menu-dropdown-item" onclick="showEvent()">
+							<span class="icon">🎉</span>
+							<span>이벤트</span>
+							<div id="event-badge" class="badge hidden">!</div>
+						</div>
+						<div class="menu-dropdown-item" onclick="showSeasonReward()">
+							<span class="icon">🏅</span>
+							<span>시즌 보상</span>
+							<div id="season-badge" class="badge hidden">!</div>
+						</div>
+					</div>
+				</div>
+
+				<div class="nav-divider"></div>
+
+				<!-- 랭킹 (단독) -->
+				<button class="menu-group-btn" onclick="showRanking()">
+					<span class="icon">🏆</span>
+					<span>랭킹</span>
+				</button>
+
+				<!-- 프로필 (단독) -->
+				<button class="menu-group-btn" onclick="showProfile()">
+					<span class="icon">👤</span>
+					<span>프로필</span>
+				</button>
+
+				<div class="nav-divider"></div>
+
+				<!-- Currency Display -->
+				<div id="currency-display" class="currency-display">
+					<div class="currency-item">
+						<img
+							class="currency-item__icon"
+							src="https://vfhpyxobepohhaxixiky.supabase.co/storage/v1/object/public/shop/stone.png"
+							alt="돌맹이"
+						/>
+						<span id="dolmaengi-value" class="currency-item__value">0</span>
+					</div>
+					<div class="currency-divider"></div>
+					<div class="currency-item">
+						<img
+							class="currency-item__icon"
+							src="https://vfhpyxobepohhaxixiky.supabase.co/storage/v1/object/public/shop/shiny_stone.png"
+							alt="빤짝이"
+						/>
+						<span id="shiny-value" class="currency-item__value">0</span>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<!-- Mobile Dropdown Menu -->
+		<div id="mobile-dropdown" class="mobile-dropdown">
+			<div
+				class="mobile-menu-item"
+				onclick="
+					showBag();
+					closeMenu();
+				"
+			>
+				<span>💼</span>
+				<span>내스킨</span>
+			</div>
+			<div
+				class="mobile-menu-item"
+				onclick="
+					showShop();
+					closeMenu();
+				"
+			>
+				<span>💰</span>
+				<span>상점</span>
+			</div>
+			<div class="mobile-menu-divider"></div>
+			<div
+				class="mobile-menu-item"
+				onclick="
+					showQuest();
+					closeMenu();
+				"
+			>
+				<span>📋</span>
+				<span>퀘스트</span>
+				<div id="mobile-quest-badge" class="badge hidden">!</div>
+			</div>
+			<div
+				class="mobile-menu-item"
+				onclick="
+					showTournament();
+					closeMenu();
+				"
+			>
+				<span>🏅</span>
+				<span>대회</span>
+				<div id="mobile-tournament-badge" class="badge hidden">!</div>
+			</div>
+			<div
+				class="mobile-menu-item"
+				onclick="
+					showAchievement();
+					closeMenu();
+				"
+			>
+				<span>🏆</span>
+				<span>업적</span>
+				<div id="mobile-achievement-badge" class="badge hidden">!</div>
+			</div>
+			<div
+				class="mobile-menu-item"
+				onclick="
+					showStatistics();
+					closeMenu();
+				"
+			>
+				<span>📊</span>
+				<span>전적</span>
+			</div>
+			<div
+				class="mobile-menu-item"
+				onclick="
+					showAttendance();
+					closeMenu();
+				"
+			>
+				<span>📅</span>
+				<span>출석</span>
+				<div id="mobile-attendance-badge" class="badge hidden">!</div>
+			</div>
+			<div class="mobile-menu-divider"></div>
+			<div
+				class="mobile-menu-item"
+				onclick="
+					showGatcha();
+					closeMenu();
+				"
+			>
+				<span>🎰</span>
+				<span>뽑기</span>
+			</div>
+			<div
+				class="mobile-menu-item"
+				onclick="
+					showEvent();
+					closeMenu();
+				"
+			>
+				<span>🎉</span>
+				<span>이벤트</span>
+				<div id="mobile-event-badge" class="badge hidden">!</div>
+			</div>
+			<div class="mobile-menu-divider"></div>
+			<div
+				class="mobile-menu-item"
+				onclick="
+					showSeasonReward();
+					closeMenu();
+				"
+			>
+				<span>🏅</span>
+				<span>시즌 보상</span>
+				<div id="mobile-season-badge" class="badge hidden">!</div>
+			</div>
+			<div class="mobile-menu-divider"></div>
+			<div
+				class="mobile-menu-item"
+				onclick="
+					showRanking();
+					closeMenu();
+				"
+			>
+				<span>🏆</span>
+				<span>랭킹</span>
+			</div>
+			<div
+				class="mobile-menu-item"
+				onclick="
+					showProfile();
+					closeMenu();
+				"
+			>
+				<span>👤</span>
+				<span>프로필</span>
+			</div>
+		</div>
+
+		<script>
+			// ============================================================
+			// Flutter Bridge - Flutter 앱과 통신
+			// ============================================================
+			(function () {
+				var _debug =
+					window.location.hostname === "localhost" ||
+					window.location.hostname === "127.0.0.1" ||
+					window.location.search.includes("debug=true");
+
+				function log() {
+					if (_debug) console.log.apply(console, arguments);
+				}
+
+				log("[NavbarBridge] Flutter 브릿지 초기화...");
+
+				window.sendToFlutter = function (data) {
+					window.parent.postMessage(
+						{
+							type: "navbarToFlutter",
+							data: data,
+						},
+						"*"
+					);
+					log("[NavbarBridge] Flutter로 메시지 전송:", data);
+				};
+
+				window.addEventListener("message", function (e) {
+					if (e.data && e.data.type === "flutterToNavbar") {
+						log("[NavbarBridge] Flutter에서 메시지 수신:", e.data.data);
+						handleFlutterMessage(e.data.data);
+					}
+				});
+
+				window.handleFlutterMessage = function (data) {
+					log("[NavbarBridge] 메시지 처리:", data);
+					if (!data || !data.action) return;
+
+					switch (data.action) {
+						case "requestCurrency":
+							syncCurrencyToFlutter();
+							break;
+					}
+				};
+
+				log("[NavbarBridge] Flutter 브릿지 준비 완료");
+			})();
+
+			function syncCurrencyToFlutter() {
+				if (typeof sendToFlutter === "function") {
+					sendToFlutter({
+						action: "currencyUpdate",
+						dolmaengi: _dolmaengi,
+						shinyStone: _shinyStone,
+					});
+				}
+			}
+
+			// ============================================================
+			// State
+			// ============================================================
+			let _isMobile = false;
+			let _menuOpen = false;
+			let _init = false;
+			let _dolmaengi = 0;
+			let _shinyStone = 0;
+			let _activeDropdown = null; // 현재 열린 드롭다운
+			let _baseWidgetHeight = 0; // 기본 위젯 높이
+			let _baseWidgetWidth = 0;
+			const BASE_HEIGHT_PC = 90;
+			const BASE_HEIGHT_MOBILE = 64;
+			const DROPDOWN_HEIGHT = 180; // 드롭다운 예상 높이
+
+			const _initInterval = setInterval(() => {
+				if (!_init) {
+					sendMessage("retryInit");
+				} else {
+					clearInterval(_initInterval);
+				}
+			}, 1000);
+
+			// ============================================================
+			// Messaging
+			// ============================================================
+			function sendMessage(type, payload = {}) {
+				window.parent.postMessage({ type, ...payload }, "*");
+			}
+
+			window.addEventListener("message", e => {
+				switch (e.data.type) {
+					case "init":
+						_init = true;
+						_isMobile = e.data.isMobile || false;
+						_dolmaengi = e.data.dolmaengi || 0;
+						_shinyStone = e.data.shinyStone || 0;
+						initWidget();
+						updateCurrencyDisplay();
+						syncCurrencyToFlutter();
+						break;
+
+					case "loginRequired":
+						sendMessage("ScriptAction:OPEN_Signin_Modal", { zepSystem: true });
+						break;
+
+					case "showBadge":
+						showBadge(e.data.target);
+						break;
+
+					case "hideBadge":
+						hideBadge(e.data.target);
+						break;
+
+					case "updateCurrency":
+						_dolmaengi = e.data.dolmaengi ?? _dolmaengi;
+						_shinyStone = e.data.shinyStone ?? _shinyStone;
+						updateCurrencyDisplay();
+						syncCurrencyToFlutter();
+						break;
+				}
+			});
+
+			// ============================================================
+			// Widget Initialization
+			// ============================================================
+			function initWidget() {
+				const navWrapper = document.querySelector(".nav-wrapper");
+				_baseWidgetHeight = navWrapper.offsetHeight;
+				_baseWidgetWidth = navWrapper.offsetWidth + 32;
+
+				if (_isMobile) {
+					document.body.classList.add("mobile");
+					sendMessage("WidgetRearrange", {
+						height: `${_baseWidgetHeight}px`,
+						width: "100%",
+						anchor: "top",
+						top: "-4px",
+					});
+				} else {
+					sendMessage("WidgetRearrange", {
+						height: `${_baseWidgetHeight}px`,
+						width: `${_baseWidgetWidth}px`,
+						anchor: "top",
+						top: "16px",
+					});
+				}
+			}
+
+			// ============================================================
+			// PC Dropdown Toggle
+			// ============================================================
+			function toggleDropdown(groupName) {
+				const groupEl = document.getElementById(`group-${groupName}`);
+				if (!groupEl) return;
+
+				// 같은 드롭다운 클릭시 닫기
+				if (_activeDropdown === groupName) {
+					closeAllDropdowns();
+					return;
+				}
+
+				// 다른 드롭다운 열려있으면 닫기
+				closeAllDropdowns();
+
+				// 드롭다운 열기
+				groupEl.classList.add("active");
+				_activeDropdown = groupName;
+
+				// 위젯 높이 늘리기
+				const dropdown = groupEl.querySelector(".menu-dropdown");
+				if (dropdown) {
+					const dropdownHeight = dropdown.offsetHeight || DROPDOWN_HEIGHT;
+					const newHeight = _baseWidgetHeight + dropdownHeight + 16;
+					sendMessage("WidgetRearrange", {
+						height: `${newHeight}px`,
+						width: `${_baseWidgetWidth}px`,
+						anchor: "top",
+						top: "16px",
+					});
+				}
+			}
+
+			function closeAllDropdowns() {
+				const groups = document.querySelectorAll(".menu-group");
+				groups.forEach(g => g.classList.remove("active"));
+				_activeDropdown = null;
+
+				// PC에서만 높이 복원
+				if (!_isMobile && _baseWidgetHeight > 0) {
+					sendMessage("WidgetRearrange", {
+						height: `${_baseWidgetHeight}px`,
+						width: `${_baseWidgetWidth}px`,
+						anchor: "top",
+						top: "16px",
+					});
+				}
+			}
+
+			// ============================================================
+			// Menu Toggle (Mobile)
+			// ============================================================
+			function toggleMenu() {
+				_menuOpen = !_menuOpen;
+				const dropdown = document.getElementById("mobile-dropdown");
+				const hamburger = document.getElementById("hamburger");
+				const icon = document.getElementById("hamburger-icon");
+
+				if (_menuOpen) {
+					dropdown.classList.add("show");
+					hamburger.classList.add("active");
+					icon.textContent = "✕";
+
+					const dropdownHeight = dropdown.offsetHeight;
+					const newHeight = BASE_HEIGHT_MOBILE + dropdownHeight + 16;
+					sendMessage("WidgetRearrange", {
+						height: `${newHeight}px`,
+						width: "100%",
+						anchor: "top",
+						top: "-4px",
+					});
+				} else {
+					closeMenu();
+				}
+			}
+
+			function closeMenu() {
+				_menuOpen = false;
+				const dropdown = document.getElementById("mobile-dropdown");
+				const hamburger = document.getElementById("hamburger");
+				const icon = document.getElementById("hamburger-icon");
+
+				dropdown.classList.remove("show");
+				hamburger.classList.remove("active");
+				icon.textContent = "☰";
+
+				if (_isMobile) {
+					sendMessage("WidgetRearrange", {
+						height: `${BASE_HEIGHT_MOBILE}px`,
+						width: "100%",
+						anchor: "top",
+						top: "-4px",
+					});
+				}
+			}
+
+			document.addEventListener("click", e => {
+				// 모바일 메뉴 외부 클릭
+				const hamburger = document.getElementById("hamburger");
+				const mobileDropdown = document.getElementById("mobile-dropdown");
+				if (_menuOpen && !hamburger.contains(e.target) && !mobileDropdown.contains(e.target)) {
+					closeMenu();
+				}
+
+				// PC 드롭다운 외부 클릭
+				if (_activeDropdown && !_isMobile) {
+					const navSecondary = document.querySelector(".nav-secondary");
+					if (navSecondary && !navSecondary.contains(e.target)) {
+						closeAllDropdowns();
+					}
+				}
+			});
+
+			// ============================================================
+			// Badge Management
+			// ============================================================
+			function showBadge(target) {
+				const pcBadge = document.getElementById(`${target}-badge`);
+				const mobileBadge = document.getElementById(`mobile-${target}-badge`);
+				const hamburgerBadge = document.getElementById("hamburger-badge");
+
+				if (pcBadge) pcBadge.classList.remove("hidden");
+				if (mobileBadge) mobileBadge.classList.remove("hidden");
+				if (hamburgerBadge) hamburgerBadge.classList.remove("hidden");
+
+				// Update group badges
+				updateGroupBadges();
+			}
+
+			function hideBadge(target) {
+				const pcBadge = document.getElementById(`${target}-badge`);
+				const mobileBadge = document.getElementById(`mobile-${target}-badge`);
+
+				if (pcBadge) pcBadge.classList.add("hidden");
+				if (mobileBadge) mobileBadge.classList.add("hidden");
+
+				updateHamburgerBadge();
+				updateGroupBadges();
+			}
+
+			function updateHamburgerBadge() {
+				const badges = ["quest", "tournament", "attendance", "event", "achievement", "season"];
+				const hasVisibleBadge = badges.some(b => {
+					const badge = document.getElementById(`mobile-${b}-badge`);
+					return badge && !badge.classList.contains("hidden");
+				});
+
+				const hamburgerBadge = document.getElementById("hamburger-badge");
+				if (hamburgerBadge) {
+					if (hasVisibleBadge) {
+						hamburgerBadge.classList.remove("hidden");
+					} else {
+						hamburgerBadge.classList.add("hidden");
+					}
+				}
+			}
+
+			function updateGroupBadges() {
+				// 게임 그룹: quest, achievement, tournament
+				const gameGroupBadges = ["quest", "achievement", "tournament"];
+				const hasGameBadge = gameGroupBadges.some(b => {
+					const badge = document.getElementById(`${b}-badge`);
+					return badge && !badge.classList.contains("hidden");
+				});
+				const gameGroupBadge = document.getElementById("game-group-badge");
+				if (gameGroupBadge) {
+					if (hasGameBadge) {
+						gameGroupBadge.classList.remove("hidden");
+					} else {
+						gameGroupBadge.classList.add("hidden");
+					}
+				}
+
+				// 보상 그룹: attendance, event, season
+				const rewardGroupBadges = ["attendance", "event", "season"];
+				const hasRewardBadge = rewardGroupBadges.some(b => {
+					const badge = document.getElementById(`${b}-badge`);
+					return badge && !badge.classList.contains("hidden");
+				});
+				const rewardGroupBadge = document.getElementById("reward-group-badge");
+				if (rewardGroupBadge) {
+					if (hasRewardBadge) {
+						rewardGroupBadge.classList.remove("hidden");
+					} else {
+						rewardGroupBadge.classList.add("hidden");
+					}
+				}
+			}
+
+			// ============================================================
+			// Currency Display
+			// ============================================================
+			function updateCurrencyDisplay() {
+				const dolmaengiEl = document.getElementById("dolmaengi-value");
+				const shinyEl = document.getElementById("shiny-value");
+
+				if (dolmaengiEl) {
+					dolmaengiEl.textContent = formatNumber(_dolmaengi);
+				}
+				if (shinyEl) {
+					shinyEl.textContent = formatNumber(_shinyStone);
+				}
+			}
+
+			function formatNumber(num) {
+				if (num >= 10000) {
+					return (num / 10000).toFixed(1) + "만";
+				} else if (num >= 1000) {
+					return (num / 1000).toFixed(1) + "천";
+				}
+				return num.toLocaleString();
+			}
+
+			// ============================================================
+			// Game Actions
+			// ============================================================
+			function joinRank() {
+				sendMessage("join_rank");
+				sendToFlutter({ action: "gameJoin", gameType: "rank" });
+			}
+
+			function joinNormal() {
+				sendMessage("join_normal");
+				sendToFlutter({ action: "gameJoin", gameType: "normal" });
+			}
+
+			function joinAI() {
+				sendMessage("join_ai");
+				sendToFlutter({ action: "gameJoin", gameType: "ai" });
+			}
+
+			// ============================================================
+			// Menu Actions
+			// ============================================================
+			function showBag() {
+				closeAllDropdowns();
+				sendMessage("showBag");
+			}
+
+			function showShop() {
+				closeAllDropdowns();
+				sendMessage("showShop");
+			}
+
+			function showQuest() {
+				closeAllDropdowns();
+				sendMessage("showQuest");
+				hideBadge("quest");
+			}
+
+			function showTournament() {
+				closeAllDropdowns();
+				sendMessage("showTournament");
+				hideBadge("tournament");
+			}
+
+			function showStatistics() {
+				closeAllDropdowns();
+				sendMessage("showStatistics");
+			}
+
+			function showAttendance() {
+				closeAllDropdowns();
+				sendMessage("showAttendance");
+				hideBadge("attendance");
+			}
+
+			function showGatcha() {
+				closeAllDropdowns();
+				sendMessage("showGatcha");
+			}
+
+			function showEvent() {
+				closeAllDropdowns();
+				sendMessage("showEvent");
+				hideBadge("event");
+			}
+
+			function showAchievement() {
+				closeAllDropdowns();
+				sendMessage("showAchievement");
+				hideBadge("achievement");
+			}
+
+			function showSeasonReward() {
+				closeAllDropdowns();
+				sendMessage("showSeasonReward");
+				hideBadge("season");
+			}
+
+			function showProfile() {
+				closeAllDropdowns();
+				sendMessage("showProfile");
+			}
+
+			function showRanking() {
+				closeAllDropdowns();
+				sendMessage("showRank");
+			}
+		</script>
+	</body>
+</html>
