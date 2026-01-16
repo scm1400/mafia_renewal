@@ -92,7 +92,7 @@ export class GameFlowManager {
 	public deadPlayers: string[] = []; // 죽은 플레이어 ID 목록 (치트 명령어에서 접근)
 	private mafiaChatPlayers: string[] = []; // 마피아 채팅 가능한 플레이어 ID 목록 (마피아, 스파이)
 	private chatMessages: { target: string; sender: string; senderName: string; message: string }[] = [];
-	private deadChatWidgetShown: { [playerId: string]: boolean } = {}; // 죽은 플레이어별 채팅 위젯 표시 여부
+	// OLD deadChatWidgetShown removed - UNIFIED_CHAT handles this now
 	private mafiaChatWidgetShown: { [playerId: string]: boolean } = {}; // 마피아 채팅 위젯 표시 여부
 
 	// 낮 단계 채팅 관련 변수 추가
@@ -461,7 +461,7 @@ export class GameFlowManager {
 					widgetManager.hideWidget(gamePlayer, WidgetType.NIGHT_ACTION);
 					break;
 				case MafiaPhase.DAY:
-					widgetManager.hideWidget(gamePlayer, WidgetType.DAY_CHAT);
+					// DAY_CHAT widget removed - using UNIFIED_CHAT
 					break;
 				case MafiaPhase.VOTING:
 					widgetManager.hideWidget(gamePlayer, WidgetType.VOTE);
@@ -495,6 +495,9 @@ export class GameFlowManager {
 					// 밤 액션 초기화
 					this.nightActions = [];
 					this.werewolfTargetSelection = null;
+
+					// 마피아 채팅 위젯 표시 상태 초기화 (매 밤마다 재초기화)
+					this.mafiaChatWidgetShown = {};
 
 					// 스파이의 능력 사용 횟수 초기화 (기본 1회)
 					this.room.players.forEach((player) => {
@@ -540,6 +543,53 @@ export class GameFlowManager {
 								role: roleId,
 								timeLimit: phaseDurations[MafiaPhase.NIGHT],
 								serverTime: Date.now(), // 서버 시간 전송
+							});
+
+							// 통합 채팅 채널 업데이트
+							// 마피아팀: 마피아 채널 쓰기 가능으로 변경 및 전환
+							if (this.mafiaChatPlayers.includes(player.id)) {
+								widgetManager.sendMessageToWidget(gamePlayer, WidgetType.UNIFIED_CHAT, {
+									type: 'setReadOnly',
+									channel: 'mafia',
+									readOnly: false
+								});
+								widgetManager.sendMessageToWidget(gamePlayer, WidgetType.UNIFIED_CHAT, {
+									type: 'switchChannel',
+									channel: 'mafia'
+								});
+							}
+
+							// 연인: 연인 채널 쓰기 가능으로 변경 및 전환
+							if (this.loverPlayers.includes(player.id)) {
+								widgetManager.sendMessageToWidget(gamePlayer, WidgetType.UNIFIED_CHAT, {
+									type: 'setReadOnly',
+									channel: 'lover',
+									readOnly: false
+								});
+								widgetManager.sendMessageToWidget(gamePlayer, WidgetType.UNIFIED_CHAT, {
+									type: 'switchChannel',
+									channel: 'lover'
+								});
+							}
+
+							// 영매: 죽은자 채널 쓰기 가능으로 변경 및 전환
+							if (player.jobId === JobId.MEDIUM && player.isAlive) {
+								widgetManager.sendMessageToWidget(gamePlayer, WidgetType.UNIFIED_CHAT, {
+									type: 'setReadOnly',
+									channel: 'dead',
+									readOnly: false
+								});
+								widgetManager.sendMessageToWidget(gamePlayer, WidgetType.UNIFIED_CHAT, {
+									type: 'switchChannel',
+									channel: 'dead'
+								});
+							}
+
+							// 낮 채널은 밤에 읽기 전용
+							widgetManager.sendMessageToWidget(gamePlayer, WidgetType.UNIFIED_CHAT, {
+								type: 'setReadOnly',
+								channel: 'day',
+								readOnly: true
 							});
 
 							// 마피아팀 채팅 참여자가 2명 이상이고 현재 플레이어가 마피아팀인 경우 채팅 위젯 활성화
@@ -715,33 +765,31 @@ export class GameFlowManager {
 
 						// 낮 채팅 위젯 표시 (살아있는 플레이어만)
 						if (player.isAlive) {
-							// 이전 메시지 핸들러 제거를 위해 위젯 초기화
-							widgetManager.clearMessageHandlers(gamePlayer, WidgetType.DAY_CHAT);
+							// OLD DAY_CHAT widget code removed - using UNIFIED_CHAT
 
-							// 낮 채팅 위젯 표시
-							widgetManager.showWidget(gamePlayer, WidgetType.DAY_CHAT);
+							// 통합 채팅 설정
+							const channels = ['day'];
+							const readOnlyChannels: string[] = [];
 
-							// 낮 채팅 위젯에 데이터 전송
-							widgetManager.sendMessageToWidget(gamePlayer, WidgetType.DAY_CHAT, {
-								type: "init",
-								players: this.room?.players.filter((p) => p.isAlive) || [],
-								myPlayerId: player.id,
-								myPlayerName: player.name,
-								timeLimit: phaseDurations[MafiaPhase.DAY],
-								serverTime: Date.now(),
-								isMobile: gamePlayer.isMobile,
-								isTablet: gamePlayer.isTablet,
-							});
+							// 마피아팀은 마피아 채널도 접근 가능 (낮에는 읽기 전용)
+							if (this.mafiaChatPlayers.includes(player.id)) {
+								channels.push('mafia');
+								readOnlyChannels.push('mafia');
+							}
 
-							// 낮 채팅 위젯 메시지 처리 - 등록
-							widgetManager.registerMessageHandler(gamePlayer, WidgetType.DAY_CHAT, (player: GamePlayer, data) => {
-								const mafiaPlayer = this.room?.players.find((p) => p.id === player.id);
-								if (!mafiaPlayer || !mafiaPlayer.isAlive) return;
+							// 연인은 연인 채널도 접근 가능 (낮에는 읽기 전용)
+							if (this.loverPlayers.includes(player.id)) {
+								channels.push('lover');
+								readOnlyChannels.push('lover');
+							}
 
-								if (data.type === "chatMessage" && data.message) {
-									this.processDayChatMessage(player, data.message);
-								}
-							});
+							// 영매는 죽은자 채널 접근 가능 (낮에는 읽기 전용)
+							if (player.jobId === JobId.MEDIUM) {
+								channels.push('dead');
+								readOnlyChannels.push('dead');
+							}
+
+							this.initUnifiedChat(gamePlayer, channels, 'day', readOnlyChannels);
 						}
 					});
 
@@ -1052,68 +1100,21 @@ export class GameFlowManager {
 
 	/**
 	 * 사망자 채팅 위젯을 표시합니다.
+	 * OLD DEAD_CHAT widget code removed - using UNIFIED_CHAT
+	 * The unified chat handles dead player messaging via broadcastDeadChatToUnifiedChat
 	 */
 	public showPermanentDeadChatWidget(player: GamePlayer) {
-		if (this.deadChatWidgetShown[player.id]) {
-			return; // 이미 표시된 경우 중복 실행 방지
-		}
-
-		const widgetManager = WidgetManager.instance;
-
-		// 사망자 채팅 위젯 표시
-		widgetManager.showWidget(player, WidgetType.DEAD_CHAT);
-
-		// 사망자 채팅 위젯 초기화 데이터 전송
-		widgetManager.sendMessageToWidget(player, WidgetType.DEAD_CHAT, {
-			type: "initDeadChat",
-			messages: this.chatMessages.filter((msg) => msg.target === "dead"),
-		});
-
-		widgetManager.clearMessageHandlers(player, WidgetType.DEAD_CHAT);
-
-		// 사망자 채팅 위젯 메시지 처리 - 최초 한 번만 등록
-		widgetManager.registerMessageHandler(player, WidgetType.DEAD_CHAT, (sender: GamePlayer, data) => {
-			if (data.type === "deadChatMessage" && data.message) {
-				this.broadcastPermanentDeadMessage(sender, data.message);
-			}
-		});
-
-		this.deadChatWidgetShown[player.id] = true;
+		// OLD DEAD_CHAT widget removed - UNIFIED_CHAT handles dead chat now
+		// The unified chat is initialized via initUnifiedChat and updateUnifiedChatChannels
 	}
 
 	/**
 	 * 영매를 위한 채팅 위젯을 표시합니다.
+	 * OLD DEAD_CHAT widget code removed - using UNIFIED_CHAT
 	 */
 	showMediumChatWidget(player: GamePlayer) {
-		if (this.deadChatWidgetShown[player.id]) {
-			return; // 이미 표시된 경우 중복 실행 방지
-		}
-
-		const widgetManager = WidgetManager.instance;
-
-		// 사망자 채팅 위젯 표시
-		widgetManager.showWidget(player, WidgetType.DEAD_CHAT);
-
-		// 영매 채팅 위젯 초기화 데이터 전송
-		widgetManager.sendMessageToWidget(player, WidgetType.DEAD_CHAT, {
-			type: "init",
-			myPlayerId: player.id,
-			myName: player.name,
-			myRole: "medium",
-			isNight: this.currentPhase === MafiaPhase.NIGHT, // 현재 밤 여부 전송
-			messages: this.chatMessages.filter((msg) => msg.target === "dead"),
-		});
-
-		widgetManager.clearMessageHandlers(player, WidgetType.DEAD_CHAT);
-
-		// 영매 채팅 위젯 메시지 처리 - 최초 한 번만 등록
-		widgetManager.registerMessageHandler(player, WidgetType.DEAD_CHAT, (sender: GamePlayer, data) => {
-			if (data.type === "deadChatMessage" && data.message && this.currentPhase === MafiaPhase.NIGHT) {
-				this.broadcastPermanentDeadMessage(sender, data.message);
-			}
-		});
-
-		this.deadChatWidgetShown[player.id] = true;
+		// OLD DEAD_CHAT widget removed - UNIFIED_CHAT handles medium chat now
+		// Medium players get the 'dead' channel in their unified chat
 	}
 
 	/**
@@ -1422,9 +1423,9 @@ export class GameFlowManager {
 					widgetManager.hideWidget(gamePlayer, WidgetType.VOTE);
 					widgetManager.hideWidget(gamePlayer, WidgetType.FINAL_DEFENSE);
 					widgetManager.hideWidget(gamePlayer, WidgetType.APPROVAL_VOTE);
-					widgetManager.hideWidget(gamePlayer, WidgetType.DEAD_CHAT);
 					widgetManager.hideWidget(gamePlayer, WidgetType.ROLE_CARD);
-					widgetManager.hideWidget(gamePlayer, WidgetType.DAY_CHAT);
+					// OLD DAY_CHAT and DEAD_CHAT removed - using UNIFIED_CHAT
+					widgetManager.hideWidget(gamePlayer, WidgetType.UNIFIED_CHAT);
 
 					// 방 위젯이 있으면 게임 종료 메시지 전송
 					if (gamePlayer.tag.widget.room) {
@@ -1475,27 +1476,15 @@ export class GameFlowManager {
 		this.mafiaChatPlayers = [];
 		this.chatMessages = [];
 		this.speedMultiplier = 1; // 속도 배수 초기화
-		this.deadChatWidgetShown = {};
+		// deadChatWidgetShown removed - UNIFIED_CHAT handles this now
 		this.mafiaChatWidgetShown = {};
 	}
 
 	setPhase(phase: MafiaPhase) {
 		this.currentPhase = phase;
 
-		// 영매에게 페이즈 변경 알림
-		if (this.room) {
-			this.room.actionToRoomPlayers((player) => {
-				if (player.jobId === JobId.MEDIUM && player.isAlive) {
-					const mediumPlayer = getPlayerById(player.id);
-					if (mediumPlayer && mediumPlayer.tag.widget.deadChat) {
-						mediumPlayer.tag.widget.deadChat.sendMessage({
-							type: "phaseChange",
-							isNight: phase === MafiaPhase.NIGHT,
-						});
-					}
-				}
-			});
-		}
+		// OLD DEAD_CHAT phase change removed - UNIFIED_CHAT handles this via channel read-only state
+		// Phase changes to medium players are handled in startNight/startDay via UNIFIED_CHAT setReadOnly messages
 
 		// 봇 자동 행동 스케줄링
 		this.botScheduler.scheduleActionsForPhase(phase);
@@ -1721,6 +1710,8 @@ export class GameFlowManager {
 	 * 연인 메시지 브로드캐스트
 	 */
 	private broadcastLoverMessage(sender: GamePlayer, message: string) {
+		const widgetManager = WidgetManager.instance;
+
 		// 메시지 저장
 		this.chatMessages.push({
 			target: "lover",
@@ -1739,12 +1730,25 @@ export class GameFlowManager {
 			if (!player || !player.isAlive) return;
 
 			const loverPlayer = getPlayerById(loverId) as GamePlayer;
-			if (loverPlayer && loverPlayer.tag.widget.nightAction) {
-				loverPlayer.tag.widget.nightAction.sendMessage({
-					type: "chatMessage",
-					chatTarget: "lover",
-					sender: sender.name,
+			if (loverPlayer) {
+				// 기존 night_action 위젯에 전송
+				if (loverPlayer.tag.widget.nightAction) {
+					loverPlayer.tag.widget.nightAction.sendMessage({
+						type: "chatMessage",
+						chatTarget: "lover",
+						sender: sender.name,
+						message: message,
+					});
+				}
+
+				// 통합 채팅에도 전송
+				widgetManager.sendMessageToWidget(loverPlayer, WidgetType.UNIFIED_CHAT, {
+					type: 'newMessage',
+					channel: 'lover',
+					senderId: sender.id,
+					senderName: sender.name,
 					message: message,
+					timestamp: Date.now()
 				});
 			}
 		});
@@ -2031,6 +2035,9 @@ export class GameFlowManager {
 
 					// 죽은 플레이어용 채팅 위젯 표시
 					this.showPermanentDeadChatWidget(gamePlayer);
+
+					// 통합 채팅 위젯 업데이트 (사망 시 채널 변경)
+					this.updateUnifiedChatOnDeath(gamePlayer);
 				}
 			}
 		});
@@ -2122,6 +2129,7 @@ export class GameFlowManager {
 
 	/**
 	 * 죽은 플레이어 메시지 브로드캐스트 (상시)
+	 * OLD DEAD_CHAT widget code removed - now uses UNIFIED_CHAT via broadcastDeadChatMessage
 	 */
 	private broadcastPermanentDeadMessage(sender: GamePlayer, message: string) {
 		// 메시지 저장
@@ -2132,33 +2140,8 @@ export class GameFlowManager {
 			message: message,
 		});
 
-		// 다른 죽은 플레이어들과 영매에게 메시지 전송
-		this.room?.actionToRoomPlayers((player) => {
-			// 죽은 플레이어에게 전송
-			if (!player.isAlive || this.deadPlayers.includes(player.id)) {
-				const deadPlayer = getPlayerById(player.id) as GamePlayer;
-				if (deadPlayer && deadPlayer.tag.widget.deadChat && deadPlayer.id !== sender.id) {
-					deadPlayer.tag.widget.deadChat.sendMessage({
-						type: "chatMessage",
-						senderId: sender.id,
-						senderName: sender.name,
-						message: message,
-					});
-				}
-			}
-			// 영매에게도 전송
-			else if (player.jobId === JobId.MEDIUM) {
-				const mediumPlayer = getPlayerById(player.id) as GamePlayer;
-				if (mediumPlayer && mediumPlayer.tag.widget.deadChat) {
-					mediumPlayer.tag.widget.deadChat.sendMessage({
-						type: "chatMessage",
-						senderId: sender.id,
-						senderName: sender.name,
-						message: message,
-					});
-				}
-			}
-		});
+		// 통합 채팅으로 브로드캐스트
+		this.broadcastDeadChatMessage(sender, message);
 	}
 
 	/**
@@ -2197,13 +2180,13 @@ export class GameFlowManager {
 		// 쿨다운 체크
 		const cooldownTime = this.CHAT_COOLDOWN * 1000;
 		if (lastMessageTime !== 0 && currentTime - lastMessageTime < cooldownTime) {
-			// 쿨다운 중이면 플레이어에게 알림
-			if (player.tag.widget && player.tag.widget.dayChat) {
-				player.tag.widget.dayChat.sendMessage({
-					type: "cooldown",
-					remainingTime: Math.ceil((cooldownTime - (currentTime - lastMessageTime)) / 1000),
-				});
-			}
+			// 쿨다운 중이면 플레이어에게 알림 (통합 채팅으로 전송)
+			const widgetManager = WidgetManager.instance;
+			widgetManager.sendMessageToWidget(player, WidgetType.UNIFIED_CHAT, {
+				type: "cooldown",
+				channel: "day",
+				remainingTime: Math.ceil((cooldownTime - (currentTime - lastMessageTime)) / 1000),
+			});
 			return;
 		}
 
@@ -2237,9 +2220,12 @@ export class GameFlowManager {
 
 	/**
 	 * 모든 살아있는 플레이어에게 낮 채팅 메시지 브로드캐스트
+	 * OLD DAY_CHAT widget code removed - using UNIFIED_CHAT only
 	 */
 	private broadcastDayChatMessage(chatMessage: { sender: string; senderName: string; message: string; timestamp: number }): void {
 		if (!this.room) return;
+
+		const widgetManager = WidgetManager.instance;
 
 		this.room.actionToRoomPlayers((player) => {
 			if (!player.isAlive) return;
@@ -2247,38 +2233,159 @@ export class GameFlowManager {
 			const gamePlayer = getPlayerById(player.id);
 			if (!gamePlayer) return;
 
-			// 위젯 존재 여부 확인
-			if (!gamePlayer.tag.widget || !gamePlayer.tag.widget.dayChat) return;
-
-			gamePlayer.tag.widget.dayChat.sendMessage({
-				type: "newMessage",
+			// 통합 채팅으로 전송
+			widgetManager.sendMessageToWidget(gamePlayer, WidgetType.UNIFIED_CHAT, {
+				type: 'newMessage',
+				channel: 'day',
 				senderId: chatMessage.sender,
 				senderName: chatMessage.senderName,
 				message: chatMessage.message,
-				timestamp: chatMessage.timestamp,
-				isMine: player.id === chatMessage.sender,
+				timestamp: chatMessage.timestamp
 			});
 		});
 	}
 
 	/**
 	 * 특정 플레이어에게 이전 채팅 메시지 기록을 전송
+	 * OLD DAY_CHAT widget code removed - using UNIFIED_CHAT
 	 */
 	public sendDayChatHistory(player: GamePlayer): void {
-		if (!player.tag.widget || !player.tag.widget.dayChat) return;
-
-		player.tag.widget.dayChat.sendMessage({
+		const widgetManager = WidgetManager.instance;
+		widgetManager.sendMessageToWidget(player, WidgetType.UNIFIED_CHAT, {
 			type: "chatHistory",
+			channel: "day",
 			messages: this.dayChatMessages,
+		});
+	}
+
+	/**
+	 * 통합 채팅 위젯 초기화
+	 */
+	private initUnifiedChat(player: GamePlayer, channels: string[], activeChannel: string, readOnlyChannels: string[] = []) {
+		const widgetManager = WidgetManager.instance;
+
+		widgetManager.showWidget(player, WidgetType.UNIFIED_CHAT);
+
+		widgetManager.sendMessageToWidget(player, WidgetType.UNIFIED_CHAT, {
+			type: 'init',
+			myPlayerId: player.id,
+			channels: channels,
+			activeChannel: activeChannel,
+			readOnlyChannels: readOnlyChannels,
+			isMobile: player.isMobile,
+			isTablet: player.isTablet
+		});
+
+		// 메시지 핸들러 등록
+		widgetManager.clearMessageHandlers(player, WidgetType.UNIFIED_CHAT);
+		widgetManager.registerMessageHandler(player, WidgetType.UNIFIED_CHAT, (sender: GamePlayer, data) => {
+			this.handleUnifiedChatMessage(sender, data);
+		});
+	}
+
+	/**
+	 * 통합 채팅 메시지 핸들러
+	 */
+	private handleUnifiedChatMessage(player: GamePlayer, data: any) {
+		if (data.type === 'sendMessage' && data.message) {
+			const channel = data.channel;
+			const message = data.message.trim();
+
+			if (!message) return;
+
+			switch (channel) {
+				case 'day':
+					this.processDayChatMessage(player, message);
+					break;
+				case 'dead':
+					this.broadcastDeadChatMessage(player, message);
+					break;
+				case 'mafia':
+					this.broadcastMafiaMessage(player, message);
+					break;
+				case 'lover':
+					this.broadcastLoverMessage(player, message);
+					break;
+			}
+		}
+	}
+
+	/**
+	 * 죽은자 채팅 메시지 브로드캐스트 (통합 채팅용)
+	 */
+	private broadcastDeadChatMessage(sender: GamePlayer, message: string) {
+		const widgetManager = WidgetManager.instance;
+
+		// 죽은 플레이어들에게 전송
+		this.deadPlayers.forEach((deadId) => {
+			const deadPlayer = getPlayerById(deadId);
+			if (deadPlayer) {
+				widgetManager.sendMessageToWidget(deadPlayer, WidgetType.UNIFIED_CHAT, {
+					type: 'newMessage',
+					channel: 'dead',
+					senderId: sender.id,
+					senderName: sender.name,
+					message: message,
+					timestamp: Date.now()
+				});
+			}
+		});
+
+		// 영매에게도 전송
+		this.room?.actionToRoomPlayers((player) => {
+			if (player.jobId === JobId.MEDIUM && player.isAlive) {
+				const mediumPlayer = getPlayerById(player.id);
+				if (mediumPlayer) {
+					widgetManager.sendMessageToWidget(mediumPlayer, WidgetType.UNIFIED_CHAT, {
+						type: 'newMessage',
+						channel: 'dead',
+						senderId: sender.id,
+						senderName: sender.name,
+						message: message,
+						timestamp: Date.now()
+					});
+				}
+			}
+		});
+	}
+
+	/**
+	 * 플레이어 사망 시 통합 채팅 업데이트
+	 */
+	private updateUnifiedChatOnDeath(player: GamePlayer) {
+		const widgetManager = WidgetManager.instance;
+
+		const channels = ['dead', 'day'];
+		const readOnlyChannels = ['day'];
+
+		// 마피아였다면 마피아 채널도 유지 (읽기 전용)
+		if (this.mafiaChatPlayers.includes(player.id)) {
+			channels.push('mafia');
+			readOnlyChannels.push('mafia');
+		}
+
+		// 연인이었다면 연인 채널도 유지 (읽기 전용)
+		if (this.loverPlayers.includes(player.id)) {
+			channels.push('lover');
+			readOnlyChannels.push('lover');
+		}
+
+		widgetManager.sendMessageToWidget(player, WidgetType.UNIFIED_CHAT, {
+			type: 'setChannels',
+			channels: channels,
+			activeChannel: 'dead',
+			readOnlyChannels: readOnlyChannels
 		});
 	}
 
 	/**
 	 * 모든 플레이어의 채팅 쿨다운 상태 업데이트
 	 * (게임 루프에서 호출)
+	 * OLD DAY_CHAT widget code removed - using UNIFIED_CHAT
 	 */
 	public updateChatCooldowns(): void {
 		const currentTime = Date.now() / 1000;
+		const widgetManager = WidgetManager.instance;
 
 		// 모든 플레이어의 쿨다운 상태 업데이트
 		for (const playerId in this.dayChatCooldowns) {
@@ -2288,11 +2395,12 @@ export class GameFlowManager {
 			if (currentTime - cooldownTime >= this.CHAT_COOLDOWN) {
 				delete this.dayChatCooldowns[playerId];
 
-				// 플레이어에게 쿨다운 종료 알림
+				// 플레이어에게 쿨다운 종료 알림 (통합 채팅으로 전송)
 				const gamePlayer = this.room.getGamePlayer(playerId);
-				if (gamePlayer && gamePlayer.tag.widget && gamePlayer.tag.widget.dayChat) {
-					gamePlayer.tag.widget.dayChat.sendMessage({
+				if (gamePlayer) {
+					widgetManager.sendMessageToWidget(gamePlayer, WidgetType.UNIFIED_CHAT, {
 						type: "cooldownEnd",
+						channel: "day",
 					});
 				}
 			}
@@ -2366,6 +2474,17 @@ export class GameFlowManager {
 				ScriptApp.runLater(() => {
 					this.activateMafiaChat();
 				}, 100);
+
+				// 마피아에게 스파이 접선 알림 (스파이가 누군지 공개)
+				const mafiaGamePlayer = getPlayerById(targetPlayer.id);
+				if (mafiaGamePlayer && mafiaGamePlayer.tag.widget.nightAction) {
+					mafiaGamePlayer.tag.widget.nightAction.sendMessage({
+						type: "spyContact",
+						spyName: spyPlayer.name,
+						spyId: spyPlayer.id,
+						message: `스파이 ${spyPlayer.name}님이 접선했습니다!`,
+					});
+				}
 			}
 		}
 
@@ -2470,6 +2589,8 @@ export class GameFlowManager {
 	 * 마피아 메시지 브로드캐스트
 	 */
 	private broadcastMafiaMessage(sender: GamePlayer, message: string) {
+		const widgetManager = WidgetManager.instance;
+
 		// 메시지 저장
 		this.chatMessages.push({
 			target: "mafia",
@@ -2488,12 +2609,25 @@ export class GameFlowManager {
 			if (!player || !player.isAlive) return;
 
 			const mafiaPlayer = getPlayerById(mafiaId) as GamePlayer;
-			if (mafiaPlayer && mafiaPlayer.tag.widget.nightAction) {
-				mafiaPlayer.tag.widget.nightAction.sendMessage({
-					type: "chatMessage",
-					chatTarget: "mafia",
-					sender: sender.name,
+			if (mafiaPlayer) {
+				// 기존 night_action 위젯에 전송
+				if (mafiaPlayer.tag.widget.nightAction) {
+					mafiaPlayer.tag.widget.nightAction.sendMessage({
+						type: "chatMessage",
+						chatTarget: "mafia",
+						sender: sender.name,
+						message: message,
+					});
+				}
+
+				// 통합 채팅에도 전송
+				widgetManager.sendMessageToWidget(mafiaPlayer, WidgetType.UNIFIED_CHAT, {
+					type: 'newMessage',
+					channel: 'mafia',
+					senderId: sender.id,
+					senderName: sender.name,
 					message: message,
+					timestamp: Date.now()
 				});
 			}
 		});

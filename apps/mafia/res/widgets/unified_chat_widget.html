@@ -1,0 +1,770 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>통합 채팅</title>
+    <style>
+        /* ============================================
+           Design System Variables
+           ============================================ */
+        :root {
+            --sat: env(safe-area-inset-top);
+            --sar: env(safe-area-inset-right);
+            --sab: env(safe-area-inset-bottom);
+            --sal: env(safe-area-inset-left);
+
+            /* Channel Colors */
+            --channel-day: #ffdd00;
+            --channel-day-dark: #ccb100;
+            --channel-mafia: #ff2d95;
+            --channel-mafia-dark: #cc0055;
+            --channel-dead: #b026ff;
+            --channel-dead-dark: #8b1acc;
+            --channel-lover: #ec4899;
+            --channel-lover-dark: #be185d;
+
+            /* Background */
+            --bg-base: #0a0a0f;
+            --bg-surface: #12121a;
+            --bg-elevated: #1a1a25;
+
+            /* Text */
+            --text-primary: #ffffff;
+            --text-secondary: #a0a0b0;
+            --text-muted: #606070;
+
+            /* Border */
+            --border-subtle: rgba(255, 255, 255, 0.05);
+            --border-default: rgba(255, 255, 255, 0.1);
+
+            /* Spacing */
+            --space-xs: 4px;
+            --space-sm: 8px;
+            --space-md: 12px;
+            --space-lg: 16px;
+
+            /* Radius */
+            --radius-sm: 6px;
+            --radius-md: 10px;
+            --radius-lg: 14px;
+            --radius-full: 9999px;
+
+            /* Typography */
+            --font-family: 'Pretendard', 'Pretendard JP', -apple-system, BlinkMacSystemFont, sans-serif;
+
+            /* Transition */
+            --transition-fast: 0.15s ease;
+        }
+
+        /* ============================================
+           Base Reset
+           ============================================ */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html, body {
+            width: 100%;
+            height: 100%;
+            font-family: var(--font-family);
+            font-size: 14px;
+            color: var(--text-primary);
+            background: transparent;
+            overflow: hidden;
+        }
+
+        body {
+            display: flex;
+            user-select: none;
+            -webkit-user-select: none;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* ============================================
+           Chat Container
+           ============================================ */
+        .chat-container {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            background: linear-gradient(180deg, rgba(18, 18, 26, 0.98) 0%, rgba(10, 10, 15, 0.98) 100%);
+            border-top: 1px solid var(--border-default);
+            position: relative;
+        }
+
+        /* ============================================
+           Tab Bar
+           ============================================ */
+        .tab-bar {
+            display: flex;
+            gap: var(--space-xs);
+            padding: var(--space-sm) var(--space-md);
+            background: var(--bg-base);
+            border-bottom: 1px solid var(--border-subtle);
+            overflow-x: auto;
+            flex-shrink: 0;
+            scrollbar-width: none; /* Firefox */
+        }
+
+        .tab-bar::-webkit-scrollbar { height: 0; }
+
+        .tab {
+            padding: var(--space-sm) var(--space-md);
+            border-radius: var(--radius-sm);
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: var(--space-sm);
+            transition: all var(--transition-fast);
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+
+        /* Channel Colors */
+        .tab.day { color: var(--channel-day); border: 1px solid rgba(255, 221, 0, 0.3); }
+        .tab.mafia { color: var(--channel-mafia); border: 1px solid rgba(255, 45, 149, 0.3); }
+        .tab.dead { color: var(--channel-dead); border: 1px solid rgba(176, 38, 255, 0.3); }
+        .tab.lover { color: var(--channel-lover); border: 1px solid rgba(236, 72, 153, 0.3); }
+
+        /* Active Tab */
+        .tab.active.day { background: rgba(255, 221, 0, 0.15); box-shadow: 0 0 12px rgba(255, 221, 0, 0.3); }
+        .tab.active.mafia { background: rgba(255, 45, 149, 0.15); box-shadow: 0 0 12px rgba(255, 45, 149, 0.3); }
+        .tab.active.dead { background: rgba(176, 38, 255, 0.15); box-shadow: 0 0 12px rgba(176, 38, 255, 0.3); }
+        .tab.active.lover { background: rgba(236, 72, 153, 0.15); box-shadow: 0 0 12px rgba(236, 72, 153, 0.3); }
+
+        /* Badge */
+        .tab-badge {
+            min-width: 18px;
+            height: 18px;
+            padding: 0 5px;
+            background: var(--channel-mafia);
+            border-radius: 9px;
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--bg-base);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .read-only-icon {
+            font-size: 11px;
+            opacity: 0.7;
+        }
+
+        /* ============================================
+           Messages Area
+           ============================================ */
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: var(--space-md);
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-sm);
+            min-height: 0;
+        }
+
+        .chat-messages::-webkit-scrollbar { width: 4px; }
+        .chat-messages::-webkit-scrollbar-track { background: transparent; }
+        .chat-messages::-webkit-scrollbar-thumb { background: var(--bg-elevated); border-radius: var(--radius-full); }
+
+        /* Message */
+        .message {
+            max-width: 85%;
+            padding: var(--space-sm) var(--space-md);
+            border-radius: var(--radius-md);
+            animation: fadeIn 0.2s ease-out;
+            word-break: break-word;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* My Message - Channel Colors */
+        .message.mine { align-self: flex-end; }
+        .message.mine.day { background: linear-gradient(135deg, var(--channel-day), var(--channel-day-dark)); color: var(--bg-base); }
+        .message.mine.mafia { background: linear-gradient(135deg, var(--channel-mafia), var(--channel-mafia-dark)); color: var(--text-primary); }
+        .message.mine.dead { background: linear-gradient(135deg, var(--channel-dead), var(--channel-dead-dark)); color: var(--text-primary); }
+        .message.mine.lover { background: linear-gradient(135deg, var(--channel-lover), var(--channel-lover-dark)); color: var(--text-primary); }
+
+        /* Other Message */
+        .message.other {
+            align-self: flex-start;
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-subtle);
+        }
+
+        /* Sender Name - Channel Colors */
+        .sender-name { font-size: 11px; font-weight: 600; margin-bottom: 2px; }
+        .sender-name.day { color: var(--channel-day); }
+        .sender-name.mafia { color: var(--channel-mafia); }
+        .sender-name.dead { color: var(--channel-dead); }
+        .sender-name.lover { color: var(--channel-lover); }
+
+        .message-content { font-size: 14px; line-height: 1.4; }
+        .message-time { font-size: 10px; color: rgba(255, 255, 255, 0.5); text-align: right; margin-top: 2px; }
+        .message.mine .message-time { color: rgba(0, 0, 0, 0.5); }
+        .message.mine.mafia .message-time,
+        .message.mine.dead .message-time,
+        .message.mine.lover .message-time { color: rgba(255, 255, 255, 0.5); }
+
+        /* System Message */
+        .message.system {
+            align-self: center;
+            max-width: 90%;
+            padding: var(--space-xs) var(--space-md);
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: var(--radius-full);
+            font-size: 12px;
+            color: var(--text-muted);
+            text-align: center;
+        }
+
+        /* ============================================
+           Input Container
+           ============================================ */
+        .input-container {
+            display: flex;
+            align-items: center;
+            gap: var(--space-sm);
+            padding: var(--space-md);
+            background: var(--bg-surface);
+            border-top: 1px solid var(--border-subtle);
+            flex-shrink: 0;
+        }
+
+        /* ============================================
+           Read-only Notice
+           ============================================ */
+        .read-only-notice {
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: var(--space-md);
+            background: var(--bg-surface);
+            border-top: 1px solid var(--border-subtle);
+            color: var(--text-muted);
+            font-size: 13px;
+            flex-shrink: 0;
+        }
+
+        .read-only-notice.visible {
+            display: flex;
+        }
+
+        /* ============================================
+           Mobile Styles
+           ============================================ */
+        body.mobile .input-container {
+            padding-bottom: calc(var(--space-md) + var(--sab));
+        }
+
+        body.mobile .read-only-notice {
+            padding-bottom: calc(var(--space-md) + var(--sab));
+        }
+
+        body.mobile .chat-input {
+            font-size: 16px; /* Prevent zoom on iOS */
+        }
+
+        /* ============================================
+           Chat Input
+           ============================================ */
+        .chat-input {
+            flex: 1;
+            height: 40px;
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-default);
+            border-radius: var(--radius-md);
+            padding: 0 var(--space-md);
+            color: var(--text-primary);
+            font-family: var(--font-family);
+            font-size: 14px;
+            outline: none;
+            transition: border-color var(--transition-fast);
+        }
+
+        .chat-input:focus { border-color: var(--channel-day); }
+        .chat-input::placeholder { color: var(--text-muted); }
+        .chat-input:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        /* Dynamic border color based on active channel */
+        .chat-container.channel-day .chat-input:focus { border-color: var(--channel-day); }
+        .chat-container.channel-mafia .chat-input:focus { border-color: var(--channel-mafia); }
+        .chat-container.channel-dead .chat-input:focus { border-color: var(--channel-dead); }
+        .chat-container.channel-lover .chat-input:focus { border-color: var(--channel-lover); }
+
+        /* ============================================
+           Send Button
+           ============================================ */
+        .send-button {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, var(--channel-day), var(--channel-day-dark));
+            border: none;
+            border-radius: var(--radius-md);
+            color: var(--bg-base);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all var(--transition-fast);
+            flex-shrink: 0;
+        }
+
+        .send-button:hover:not(:disabled) { transform: scale(1.05); }
+        .send-button:disabled { background: var(--bg-elevated); cursor: not-allowed; opacity: 0.5; }
+        .send-button svg { width: 18px; height: 18px; }
+
+        /* Dynamic button color based on active channel */
+        .chat-container.channel-day .send-button { background: linear-gradient(135deg, var(--channel-day), var(--channel-day-dark)); color: var(--bg-base); }
+        .chat-container.channel-mafia .send-button { background: linear-gradient(135deg, var(--channel-mafia), var(--channel-mafia-dark)); color: var(--text-primary); }
+        .chat-container.channel-dead .send-button { background: linear-gradient(135deg, var(--channel-dead), var(--channel-dead-dark)); color: var(--text-primary); }
+        .chat-container.channel-lover .send-button { background: linear-gradient(135deg, var(--channel-lover), var(--channel-lover-dark)); color: var(--text-primary); }
+    </style>
+</head>
+<body>
+    <div class="chat-container">
+        <div class="tab-bar" id="tabBar"></div>
+
+        <div class="chat-messages" id="chatMessages"></div>
+
+        <div class="input-container" id="inputContainer">
+            <input type="text" class="chat-input" id="chatInput" placeholder="메시지 입력..." maxlength="200">
+            <button class="send-button" id="sendButton" aria-label="메시지 전송">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M22 2L11 13"/>
+                    <path d="M22 2L15 22L11 13L2 9L22 2Z"/>
+                </svg>
+            </button>
+        </div>
+
+        <div class="read-only-notice" id="readOnlyNotice">
+            이 채널은 읽기 전용입니다
+        </div>
+    </div>
+
+    <script>
+        // ============================================
+        // Channel Configuration
+        // ============================================
+        const CHANNEL_CONFIG = {
+            day: { icon: '☀️', name: '낮', color: 'day' },
+            mafia: { icon: '🔪', name: '마피아', color: 'mafia' },
+            dead: { icon: '💀', name: '죽은자', color: 'dead' },
+            lover: { icon: '💕', name: '연인', color: 'lover' }
+        };
+
+        // ============================================
+        // State
+        // ============================================
+        const state = {
+            myPlayerId: '',
+            channels: [],           // Available channels: ['day', 'mafia', 'dead', 'lover']
+            activeChannel: 'day',   // Currently selected channel
+            readOnlyChannels: [],   // Channels that are read-only for this player
+            readOnlyReasons: {},    // Reason text per channel: { day: '밤에는...', ... }
+            messages: {},           // Messages per channel: { day: [], mafia: [], dead: [], lover: [] }
+            unreadCounts: {},       // Unread count per channel: { day: 0, mafia: 0, dead: 0, lover: 0 }
+            isMobile: false,
+            isTablet: false
+        };
+
+        // ============================================
+        // DOM Elements
+        // ============================================
+        const tabBar = document.getElementById('tabBar');
+        const chatMessages = document.getElementById('chatMessages');
+        const inputContainer = document.getElementById('inputContainer');
+        const chatInput = document.getElementById('chatInput');
+        const sendButton = document.getElementById('sendButton');
+        const readOnlyNotice = document.getElementById('readOnlyNotice');
+
+        // ============================================
+        // Widget Visibility Functions
+        // ============================================
+        function hideWidget() {
+            window.parent.postMessage({
+                type: 'WidgetRearrange',
+                anchor: 'bottom',
+                width: '0',
+                height: '0',
+                zIndex: 9999
+            }, '*');
+        }
+
+        function revealWidget() {
+            if (state.isMobile && !state.isTablet) {
+                window.parent.postMessage({
+                    type: 'WidgetRearrange',
+                    anchor: 'bottom',
+                    width: '100%',
+                    height: '35%',
+                    zIndex: 9999
+                }, '*');
+            } else {
+                window.parent.postMessage({
+                    type: 'WidgetRearrange',
+                    anchor: 'bottom',
+                    width: '40%',
+                    height: '35%',
+                    zIndex: 9999
+                }, '*');
+            }
+        }
+
+        // ============================================
+        // Initialization
+        // ============================================
+        function initializeWidget(data) {
+            state.myPlayerId = data.myPlayerId || '';
+            state.channels = data.channels || ['day'];
+            state.activeChannel = data.activeChannel || state.channels[0] || 'day';
+            state.readOnlyChannels = data.readOnlyChannels || [];
+            state.isMobile = data.isMobile || false;
+            state.isTablet = data.isTablet || false;
+
+            // Initialize messages and unread counts for each channel
+            state.channels.forEach(channel => {
+                if (!state.messages[channel]) {
+                    state.messages[channel] = [];
+                }
+                if (state.unreadCounts[channel] === undefined) {
+                    state.unreadCounts[channel] = 0;
+                }
+            });
+
+            // Apply mobile class
+            if (state.isMobile) {
+                document.body.classList.add('mobile');
+            }
+
+            revealWidget();
+            renderTabs();
+            renderMessages();
+            updateInputState();
+        }
+
+        // ============================================
+        // Tab Rendering
+        // ============================================
+        function renderTabs() {
+            const tabBar = document.getElementById('tabBar');
+            tabBar.innerHTML = '';
+
+            state.channels.forEach(channel => {
+                const config = CHANNEL_CONFIG[channel];
+                if (!config) return;
+
+                const tab = document.createElement('div');
+                tab.className = `tab ${config.color} ${state.activeChannel === channel ? 'active' : ''}`;
+                tab.dataset.channel = channel;
+                tab.onclick = () => switchChannel(channel);
+
+                let html = `<span>${config.icon}</span><span>${config.name}</span>`;
+
+                // 읽기 전용 아이콘
+                if (state.readOnlyChannels.includes(channel)) {
+                    html += `<span class="read-only-icon">👁</span>`;
+                }
+
+                // 읽지 않은 메시지 뱃지
+                const unread = state.unreadCounts[channel] || 0;
+                if (unread > 0 && state.activeChannel !== channel) {
+                    html += `<span class="tab-badge">${unread > 99 ? '99+' : unread}</span>`;
+                }
+
+                tab.innerHTML = html;
+                tabBar.appendChild(tab);
+            });
+        }
+
+        function switchChannel(channel) {
+            if (!state.channels.includes(channel)) return;
+
+            state.activeChannel = channel;
+            state.unreadCounts[channel] = 0;
+
+            renderTabs();
+            renderMessages();
+            updateInputState();
+
+            // 서버에 탭 전환 알림
+            window.parent.postMessage({ type: 'tabChanged', channel: channel }, '*');
+        }
+
+        // ============================================
+        // Message Rendering
+        // ============================================
+        function renderMessages() {
+            const container = document.getElementById('chatMessages');
+            container.innerHTML = '';
+
+            const messages = state.messages[state.activeChannel] || [];
+
+            messages.forEach(msg => {
+                const messageEl = document.createElement('div');
+
+                if (msg.isSystem) {
+                    messageEl.className = 'message system';
+                    messageEl.textContent = msg.message;
+                } else {
+                    const isMine = msg.senderId === state.myPlayerId;
+                    messageEl.className = `message ${isMine ? 'mine' : 'other'} ${state.activeChannel}`;
+
+                    let html = '';
+                    if (!isMine) {
+                        html += `<div class="sender-name ${state.activeChannel}">${escapeHtml(msg.senderName)}</div>`;
+                    }
+                    html += `<div class="message-content">${escapeHtml(msg.message)}</div>`;
+
+                    if (msg.timestamp) {
+                        const date = new Date(msg.timestamp);
+                        const timeStr = `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
+                        html += `<div class="message-time">${timeStr}</div>`;
+                    }
+
+                    messageEl.innerHTML = html;
+                }
+
+                container.appendChild(messageEl);
+            });
+
+            scrollToBottom();
+        }
+
+        function addMessage(channel, messageData) {
+            if (!state.messages[channel]) {
+                state.messages[channel] = [];
+            }
+
+            state.messages[channel].push(messageData);
+
+            // 현재 채널이면 바로 렌더링
+            if (channel === state.activeChannel) {
+                renderMessages();
+            } else {
+                // 다른 채널이면 읽지 않은 메시지 수 증가
+                state.unreadCounts[channel] = (state.unreadCounts[channel] || 0) + 1;
+                renderTabs();
+            }
+        }
+
+        function scrollToBottom() {
+            const container = document.getElementById('chatMessages');
+            container.scrollTop = container.scrollHeight;
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // ============================================
+        // Message Handler
+        // ============================================
+        window.addEventListener('message', (event) => {
+            const data = event.data;
+            if (!data || !data.type) return;
+
+            switch (data.type) {
+                case 'setWidget':
+                    // Legacy support - same as init
+                    initializeWidget(data);
+                    break;
+
+                case 'init':
+                    initializeWidget(data);
+                    break;
+
+                case 'hideWidget':
+                    hideWidget();
+                    break;
+
+                case 'showWidget':
+                    revealWidget();
+                    break;
+
+                case 'newMessage':
+                    // 새 메시지 추가
+                    if (data.channel && data.message) {
+                        addMessage(data.channel, {
+                            senderId: data.senderId || '',
+                            senderName: data.senderName || '???',
+                            message: data.message,
+                            timestamp: data.timestamp || Date.now(),
+                            isSystem: false
+                        });
+                    }
+                    break;
+
+                case 'systemMessage':
+                    // 시스템 메시지 추가
+                    if (data.message) {
+                        addMessage(data.channel || state.activeChannel, {
+                            message: data.message,
+                            isSystem: true
+                        });
+                    }
+                    break;
+
+                case 'addChannel':
+                    // 새 채널 추가 (스파이 접선 성공 등)
+                    if (!state.channels.includes(data.channel)) {
+                        state.channels.push(data.channel);
+                        state.messages[data.channel] = [];
+                        state.unreadCounts[data.channel] = 0;
+                        renderTabs();
+                    }
+                    break;
+
+                case 'removeChannel':
+                    // 채널 제거
+                    const removeIdx = state.channels.indexOf(data.channel);
+                    if (removeIdx !== -1) {
+                        state.channels.splice(removeIdx, 1);
+                        if (state.activeChannel === data.channel) {
+                            state.activeChannel = state.channels[0] || 'day';
+                            renderMessages();
+                            updateInputState();
+                        }
+                        renderTabs();
+                    }
+                    break;
+
+                case 'setChannels':
+                    // 채널 전체 설정 (플레이어 사망 시 등)
+                    state.channels = Array.isArray(data.channels) ? data.channels : [];
+                    state.readOnlyChannels = Array.isArray(data.readOnlyChannels) ? data.readOnlyChannels : [];
+                    if (data.activeChannel) {
+                        state.activeChannel = data.activeChannel;
+                    } else if (!state.channels.includes(state.activeChannel)) {
+                        state.activeChannel = state.channels[0] || 'day';
+                    }
+                    // 새 채널에 대한 메시지 배열 초기화
+                    state.channels.forEach((ch) => {
+                        if (!state.messages[ch]) state.messages[ch] = [];
+                        if (state.unreadCounts[ch] === undefined) state.unreadCounts[ch] = 0;
+                    });
+                    renderTabs();
+                    renderMessages();
+                    updateInputState();
+                    break;
+
+                case 'switchChannel':
+                    // 자동 채널 전환 (낮→밤 전환 시 등)
+                    if (state.channels.includes(data.channel)) {
+                        switchChannel(data.channel);
+                    }
+                    break;
+
+                case 'setReadOnly':
+                    // 읽기 전용 모드 설정
+                    if (data.readOnly && !state.readOnlyChannels.includes(data.channel)) {
+                        state.readOnlyChannels.push(data.channel);
+                    } else if (!data.readOnly) {
+                        const roIdx = state.readOnlyChannels.indexOf(data.channel);
+                        if (roIdx !== -1) state.readOnlyChannels.splice(roIdx, 1);
+                    }
+                    // 읽기 전용 이유 저장
+                    if (data.reason) {
+                        state.readOnlyReasons[data.channel] = data.reason;
+                    }
+                    renderTabs();
+                    updateInputState();
+                    break;
+
+                case 'focusInput':
+                    // 입력창 포커스
+                    chatInput.focus();
+                    break;
+            }
+        });
+
+        // ============================================
+        // Event Listeners
+        // ============================================
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                window.parent.focus();
+            }
+        });
+
+        // ============================================
+        // Input State Management
+        // ============================================
+        const chatContainerEl = document.querySelector('.chat-container');
+
+        function updateInputState() {
+            // 채널별 클래스 업데이트
+            chatContainerEl.className = 'chat-container channel-' + state.activeChannel;
+
+            const isReadOnly = state.readOnlyChannels.includes(state.activeChannel);
+
+            if (isReadOnly) {
+                inputContainer.style.display = 'none';
+                readOnlyNotice.classList.add('visible');
+                // 읽기 전용 이유 표시
+                const reason = state.readOnlyReasons[state.activeChannel] || '이 채널은 읽기 전용입니다';
+                readOnlyNotice.textContent = reason;
+            } else {
+                inputContainer.style.display = 'flex';
+                readOnlyNotice.classList.remove('visible');
+                chatInput.disabled = false;
+                sendButton.disabled = false;
+            }
+        }
+
+        // ============================================
+        // Send Message
+        // ============================================
+        let isSending = false;
+
+        function sendMessage() {
+            if (isSending) return;
+
+            const message = chatInput.value.trim();
+
+            if (!message) return;
+            if (state.readOnlyChannels.includes(state.activeChannel)) return;
+
+            isSending = true;
+
+            // 서버로 메시지 전송
+            window.parent.postMessage({
+                type: 'sendMessage',
+                channel: state.activeChannel,
+                message: message
+            }, '*');
+
+            chatInput.value = '';
+            chatInput.focus();
+
+            // 300ms 후 다시 전송 가능
+            setTimeout(() => { isSending = false; }, 300);
+        }
+
+        // ============================================
+        // Input Event Listeners
+        // ============================================
+        sendButton.addEventListener('click', sendMessage);
+
+        chatInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
+        });
+    </script>
+</body>
+</html>

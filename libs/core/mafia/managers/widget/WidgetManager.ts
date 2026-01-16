@@ -45,11 +45,8 @@ export class WidgetManager {
             if(player.tag.widget.finalDefense){
                 player.tag.widget.finalDefense.sendMessage({type:"focusInput"})
             }
-            if(player.tag.widget.deadChat){
-                player.tag.widget.deadChat.sendMessage({type:"focusInput"})
-            }
-            if(player.tag.widget.dayChat){
-                player.tag.widget.dayChat.sendMessage({type:"focusInput"})
+            if(player.tag.widget.unifiedChat){
+                player.tag.widget.unifiedChat.sendMessage({type:"focusInput"})
             }
         });
     }
@@ -99,9 +96,8 @@ export class WidgetManager {
         this.createAndInitializeWidget(player, widgetMap, WidgetType.VOTE, "widgets/vote_widget.html", "middle");
         this.createAndInitializeWidget(player, widgetMap, WidgetType.FINAL_DEFENSE, "widgets/final_defense_widget.html", "middle");
         this.createAndInitializeWidget(player, widgetMap, WidgetType.APPROVAL_VOTE, "widgets/approval_vote_widget.html", "middle");
-        this.createAndInitializeWidget(player, widgetMap, WidgetType.DEAD_CHAT, "widgets/dead_chat_widget.html", "middleright");
         this.createAndInitializeWidget(player, widgetMap, WidgetType.ROLE_CARD, "widgets/role_card.html", "middle");
-        this.createAndInitializeWidget(player, widgetMap, WidgetType.DAY_CHAT, "widgets/day_chat_widget.html", "middleright");
+        this.createAndInitializeWidget(player, widgetMap, WidgetType.UNIFIED_CHAT, "widgets/unified_chat_widget.html", "bottom");
     }
 
     /**
@@ -178,19 +174,16 @@ export class WidgetManager {
             case WidgetType.APPROVAL_VOTE:
                 player.tag.widget.approvalVote = widget.element;
                 break;
-            case WidgetType.DEAD_CHAT:
-                player.tag.widget.deadChat = widget.element;
-                break;
             case WidgetType.ROLE_CARD:
                 player.tag.widget.roleCard = widget.element;
                 break;
-            case WidgetType.DAY_CHAT:
-                player.tag.widget.dayChat = widget.element;
+            case WidgetType.UNIFIED_CHAT:
+                player.tag.widget.unifiedChat = widget.element;
                 break;
             default:
                 break;
         }
-        
+
         widget.element.sendMessage({ type: "showWidget" });
         sendAdminConsoleMessage(`위젯 표시: ${widgetType} (플레이어: ${player.name})`);
     }
@@ -231,20 +224,17 @@ export class WidgetManager {
                 case WidgetType.APPROVAL_VOTE:
                     player.tag.widget.approvalVote = null;
                     break;
-                case WidgetType.DEAD_CHAT:
-                    player.tag.widget.deadChat = null;
-                    break;
                 case WidgetType.ROLE_CARD:
                     player.tag.widget.roleCard = null;
                     break;
-                case WidgetType.DAY_CHAT:
-                    player.tag.widget.dayChat = null;
+                case WidgetType.UNIFIED_CHAT:
+                    player.tag.widget.unifiedChat = null;
                     break;
                 default:
                     break;
             }
         }
-        
+
         widget.element.sendMessage({ type: "hideWidget" });
         sendAdminConsoleMessage(`위젯 숨김: ${widgetType} (플레이어: ${player.name})`);
     }
@@ -418,10 +408,9 @@ export class WidgetManager {
             player.tag.widget.voteWidget = null;
             player.tag.widget.finalDefense = null;
             player.tag.widget.approvalVote = null;
-            player.tag.widget.deadChat = null; 
             player.tag.widget.roleCard = null;
             player.tag.widget.gameModeSelect = null;
-            player.tag.widget.dayChat = null;
+            player.tag.widget.unifiedChat = null;
         }
         
         sendAdminConsoleMessage(`위젯 정리 완료 (플레이어: ${player.name})`);

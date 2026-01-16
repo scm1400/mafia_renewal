@@ -943,12 +943,18 @@
                 myRoleId = data.role;
                 hasActed = false;
                 selectedPlayerId = null;
+                chatEnabled = false;
+                chatTarget = "";
 
                 initializeRoleUI(myRoleId);
                 renderPlayers();
 
                 document.getElementById('result-container').classList.remove('visible');
                 document.getElementById('chat-container').classList.remove('visible');
+
+                // 채팅 메시지 초기화
+                const chatMessages = document.getElementById('chat-messages');
+                if (chatMessages) chatMessages.innerHTML = '';
                 document.getElementById('action-button').parentElement.style.display = 'block';
                 document.getElementById('players-list').style.display = 'block';
                 document.getElementById('action-button').disabled = myRoleId !== 'citizen';
@@ -1013,6 +1019,41 @@
                 if (data.enableMafiaChat) {
                     roleActions["madam"].showChat = true;
                     initializeChat("mafia");
+                }
+            } else if (data.type === 'initChat') {
+                // 서버에서 채팅 초기화 요청 (마피아 채팅 등)
+                if (data.chatTarget === 'mafia') {
+                    chatEnabled = true;
+                    chatTarget = 'mafia';
+
+                    // 채팅 컨테이너 표시
+                    document.getElementById('chat-container').classList.add('visible');
+
+                    // 채팅 메시지 영역에 시스템 메시지 추가 (중복 방지)
+                    const chatMessages = document.getElementById('chat-messages');
+                    if (chatMessages && chatMessages.children.length === 0) {
+                        const systemMessage = document.createElement('div');
+                        systemMessage.className = 'chat-message system-message';
+                        systemMessage.innerHTML = '<div class="content">마피아 채팅이 활성화되었습니다.</div>';
+                        chatMessages.appendChild(systemMessage);
+                    }
+                }
+            } else if (data.type === 'spyContact') {
+                // 마피아에게 스파이가 접선했다는 알림
+                chatEnabled = true;
+                chatTarget = 'mafia';
+
+                // 채팅 컨테이너 표시
+                document.getElementById('chat-container').classList.add('visible');
+
+                // 스파이 접선 알림 메시지 추가
+                const chatMessages = document.getElementById('chat-messages');
+                if (chatMessages) {
+                    const alertMessage = document.createElement('div');
+                    alertMessage.className = 'chat-message system-message';
+                    alertMessage.innerHTML = `<div class="content">🕵️ ${data.message || '스파이가 접선했습니다!'}</div>`;
+                    chatMessages.appendChild(alertMessage);
+                    chatMessages.scrollTop = chatMessages.scrollHeight;
                 }
             }
         });

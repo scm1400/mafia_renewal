@@ -14,7 +14,8 @@ export enum WidgetType {
     APPROVAL_VOTE = "APPROVAL_VOTE",
     
     // 추가 기능 위젯
-    DEAD_CHAT = "DEAD_CHAT",
+    DEAD_CHAT = "DEAD_CHAT",      // deprecated - 추후 삭제
     ROLE_CARD = "ROLE_CARD",
-    DAY_CHAT = "DAY_CHAT",
+    DAY_CHAT = "DAY_CHAT",        // deprecated - 추후 삭제
+    UNIFIED_CHAT = "UNIFIED_CHAT", // 통합 채팅 위젯
 } 
