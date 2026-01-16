@@ -1,0 +1,642 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <link rel="stylesheet" as="style" crossorigin
+        href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.6/dist/web/variable/pretendardvariable-dynamic-subset.css">
+    <style>
+        :root {
+            /* Cyberpunk colors */
+            --neon-cyan: #00f0ff;
+            --neon-cyan-dark: #00b8cc;
+            --neon-pink: #ff2d95;
+            --neon-purple: #b026ff;
+
+            /* Background */
+            --bg-base: #0a0a0f;
+            --bg-card: rgba(18, 18, 26, 0.95);
+            --bg-elevated: rgba(26, 26, 37, 0.95);
+
+            /* Text */
+            --text-primary: #ffffff;
+            --text-secondary: #a0a0b0;
+            --text-muted: #606070;
+
+            /* Misc */
+            --shadow-card: 0 4px 20px rgba(0, 0, 0, 0.3);
+            --radius-full: 9999px;
+            --radius-lg: 14px;
+            --radius-md: 10px;
+            --radius-sm: 8px;
+            --border-subtle: rgba(255, 255, 255, 0.1);
+            --border-cyan: rgba(0, 240, 255, 0.3);
+            --glow-cyan: 0 0 20px rgba(0, 240, 255, 0.4);
+            --glow-cyan-subtle: 0 0 10px rgba(0, 240, 255, 0.2);
+            --transition-fast: 0.15s ease;
+            --transition-normal: 0.25s ease;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: "Pretendard Variable", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        html, body {
+            width: 100%;
+            height: 100%;
+            background: transparent;
+            overflow: hidden;
+        }
+
+        body {
+            display: flex;
+            align-items: flex-end;
+            justify-content: flex-start;
+            padding: 8px;
+        }
+
+        body.mobile {
+            padding: 6px;
+        }
+
+        /* ========== Scrollbar ========== */
+        ::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--bg-elevated);
+            border-radius: var(--radius-full);
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(0, 240, 255, 0.3);
+        }
+
+        /* ========== Chat Container ========== */
+        .chat-container {
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+            max-width: 360px;
+            height: 100%;
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-card);
+            overflow: hidden;
+        }
+
+        body.mobile .chat-container {
+            max-width: 100%;
+        }
+
+        /* ========== Header ========== */
+        .chat-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 14px;
+            background: var(--bg-elevated);
+            border-bottom: 1px solid var(--border-subtle);
+        }
+
+        .chat-header__title {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-secondary);
+        }
+
+        .chat-header__icon {
+            font-size: 14px;
+        }
+
+        .chat-header__toggle {
+            width: 28px;
+            height: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-sm);
+            color: var(--text-muted);
+            font-size: 12px;
+            cursor: pointer;
+            transition: all var(--transition-fast);
+        }
+
+        .chat-header__toggle:hover {
+            border-color: var(--neon-cyan);
+            color: var(--neon-cyan);
+        }
+
+        /* ========== Messages ========== */
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 10px 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .chat-message {
+            padding: 8px 10px;
+            border-radius: var(--radius-md);
+            font-size: 13px;
+            line-height: 1.4;
+            word-break: break-word;
+            background: var(--bg-elevated);
+        }
+
+        .chat-message__sender {
+            font-weight: 600;
+            color: var(--neon-pink);
+            margin-right: 6px;
+        }
+
+        .chat-message__content {
+            color: var(--text-primary);
+        }
+
+        .chat-message__time {
+            font-size: 10px;
+            color: var(--text-muted);
+            margin-left: 6px;
+        }
+
+        .chat-message.self {
+            background: rgba(0, 240, 255, 0.1);
+            border: 1px solid rgba(0, 240, 255, 0.2);
+        }
+
+        .chat-message.self .chat-message__sender {
+            color: var(--neon-cyan);
+        }
+
+        .chat-message.system {
+            background: rgba(176, 38, 255, 0.1);
+            border: 1px solid rgba(176, 38, 255, 0.2);
+            text-align: center;
+            font-style: italic;
+        }
+
+        .chat-message.system .chat-message__content {
+            color: var(--text-secondary);
+        }
+
+        /* ========== Input ========== */
+        .chat-input-container {
+            display: flex;
+            gap: 8px;
+            padding: 10px 12px;
+            background: var(--bg-elevated);
+            border-top: 1px solid var(--border-subtle);
+        }
+
+        .chat-input {
+            flex: 1;
+            padding: 10px 14px;
+            background: var(--bg-base);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-full);
+            color: var(--text-primary);
+            font-size: 13px;
+            transition: all var(--transition-fast);
+        }
+
+        .chat-input::placeholder {
+            color: var(--text-muted);
+        }
+
+        .chat-input:focus {
+            outline: none;
+            border-color: var(--neon-cyan);
+            box-shadow: var(--glow-cyan-subtle);
+        }
+
+        .chat-submit {
+            padding: 10px 16px;
+            background: linear-gradient(135deg, var(--neon-cyan) 0%, var(--neon-cyan-dark) 100%);
+            color: var(--bg-base);
+            border: none;
+            border-radius: var(--radius-full);
+            font-weight: 600;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all var(--transition-normal);
+            white-space: nowrap;
+        }
+
+        .chat-submit:hover {
+            box-shadow: var(--glow-cyan);
+        }
+
+        .chat-submit:active {
+            transform: scale(0.97);
+        }
+
+        /* ========== Collapsed State ========== */
+        .chat-container.collapsed {
+            height: auto;
+        }
+
+        .chat-container.collapsed .chat-messages,
+        .chat-container.collapsed .chat-input-container {
+            display: none;
+        }
+
+        .chat-container.collapsed .chat-header {
+            border-bottom: none;
+        }
+
+        .chat-container.collapsed .chat-header__toggle {
+            transform: rotate(180deg);
+        }
+
+        /* ========== Empty State ========== */
+        .chat-empty {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 30px 20px;
+            text-align: center;
+        }
+
+        .chat-empty__icon {
+            font-size: 32px;
+            margin-bottom: 8px;
+            opacity: 0.5;
+        }
+
+        .chat-empty__text {
+            font-size: 13px;
+            color: var(--text-muted);
+        }
+    </style>
+</head>
+
+<body>
+    <div id="chatContainer" class="chat-container">
+        <!-- Header -->
+        <div class="chat-header">
+            <div class="chat-header__title">
+                <span class="chat-header__icon">💬</span>
+                <span id="chatTitle">로비 채팅</span>
+            </div>
+            <button id="toggleBtn" class="chat-header__toggle" title="접기/펼치기">▼</button>
+        </div>
+
+        <!-- Messages -->
+        <div id="chatMessages" class="chat-messages">
+            <div class="chat-empty">
+                <div class="chat-empty__icon">💬</div>
+                <div class="chat-empty__text">아직 메시지가 없습니다</div>
+            </div>
+        </div>
+
+        <!-- Input -->
+        <div class="chat-input-container">
+            <input type="text" id="chatInput" class="chat-input" placeholder="메시지 입력..." maxlength="200">
+            <button id="chatSubmit" class="chat-submit">전송</button>
+        </div>
+    </div>
+
+    <script>
+        // ============================================================
+        // State
+        // ============================================================
+        let _isMobile = false;
+        let _isTablet = false;
+        let _init = false;
+        let _isCollapsed = false;
+        let _currentUserId = null;
+        let _currentUserName = null;
+        let _messages = [];
+        let _lastSentTime = 0;
+        let _chatCooldown = 500;
+        let _baseWidgetHeight = 0;
+        let _baseWidgetWidth = 0;
+
+        // State management
+        let _currentState = "LOBBY"; // "LOBBY" or "ROOM"
+
+        const _initInterval = setInterval(() => {
+            if (!_init) {
+                sendMessage("retryInit");
+            } else {
+                clearInterval(_initInterval);
+            }
+        }, 1000);
+
+        // ============================================================
+        // DOM Elements
+        // ============================================================
+        const chatContainer = document.getElementById('chatContainer');
+        const chatMessages = document.getElementById('chatMessages');
+        const chatInput = document.getElementById('chatInput');
+        const chatSubmit = document.getElementById('chatSubmit');
+        const toggleBtn = document.getElementById('toggleBtn');
+        const chatTitle = document.getElementById('chatTitle');
+
+        // ============================================================
+        // Event Listeners
+        // ============================================================
+        chatSubmit.addEventListener('click', sendChatMessage);
+        chatInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') sendChatMessage();
+        });
+        toggleBtn.addEventListener('click', toggleCollapse);
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') window.parent.focus();
+        });
+
+        // ============================================================
+        // Messaging
+        // ============================================================
+        function sendMessage(type, payload = {}) {
+            window.parent.postMessage({ type, ...payload }, "*");
+        }
+
+        window.addEventListener("message", e => {
+            const data = e.data;
+            if (!data || !data.type) return;
+
+            switch (data.type) {
+                case "init":
+                    _init = true;
+                    _isMobile = data.isMobile || false;
+                    _isTablet = data.isTablet || false;
+                    _currentUserId = data.userId;
+                    _currentUserName = data.userName;
+                    initWidget();
+                    break;
+
+                case "chatMessage":
+                    addChatMessage(data.senderId, data.senderName, data.content, data.timestamp);
+                    break;
+
+                case "hideWidget":
+                    hideWidget();
+                    break;
+
+                case "showWidget":
+                    revealWidget();
+                    break;
+
+                case "focusInput":
+                    chatInput.focus();
+                    break;
+
+                case "enterRoom":
+                    switchToRoomState();
+                    break;
+
+                case "exitRoom":
+                    switchToLobbyState();
+                    break;
+
+                case "systemMessage":
+                    addSystemMessage(data.content);
+                    break;
+            }
+        });
+
+        // ============================================================
+        // Widget Functions
+        // ============================================================
+        function initWidget() {
+            if (_isMobile && !_isTablet) {
+                document.body.classList.add('mobile');
+            } else {
+                document.body.classList.remove('mobile');
+            }
+
+            updateBaseWidgetSize();
+            revealWidget();
+        }
+
+        function updateBaseWidgetSize() {
+            _baseWidgetHeight = chatContainer.offsetHeight;
+            _baseWidgetWidth = chatContainer.offsetWidth + 16;
+        }
+
+        function isLandscapeMobileAsTablet() {
+            return _isMobile && !_isTablet && window.innerWidth > window.innerHeight;
+        }
+
+        function hideWidget() {
+            sendMessage("WidgetRearrange", {
+                width: "0px",
+                height: "0px",
+                pointerEvents: "none"
+            });
+        }
+
+        function revealWidget() {
+            rearrangeLayout();
+        }
+
+        function rearrangeLayout() {
+            const isTabletLayout = _isTablet || isLandscapeMobileAsTablet();
+
+            if (_isMobile && !isTabletLayout) {
+                // Mobile: bottom left, smaller
+                sendMessage("WidgetRearrange", {
+                    height: _isCollapsed ? "50px" : "200px",
+                    width: "calc(100% - 12px)",
+                    anchor: "bottomleft",
+                    bottom: "6px",
+                    left: "6px",
+                    pointerEvents: "auto"
+                });
+            } else if (_isMobile && isTabletLayout) {
+                // Tablet: bottom left, medium
+                sendMessage("WidgetRearrange", {
+                    height: _isCollapsed ? "50px" : "240px",
+                    width: "360px",
+                    anchor: "bottomleft",
+                    bottom: "12px",
+                    left: "12px",
+                    pointerEvents: "auto"
+                });
+            } else {
+                // PC: bottom left
+                sendMessage("WidgetRearrange", {
+                    height: _isCollapsed ? "50px" : "280px",
+                    width: "360px",
+                    anchor: "bottomleft",
+                    bottom: "16px",
+                    left: "16px",
+                    pointerEvents: "auto"
+                });
+            }
+        }
+
+        function toggleCollapse() {
+            _isCollapsed = !_isCollapsed;
+            chatContainer.classList.toggle('collapsed', _isCollapsed);
+            rearrangeLayout();
+        }
+
+        // ============================================================
+        // State Switching
+        // ============================================================
+        function switchToRoomState() {
+            _currentState = "ROOM";
+            chatTitle.textContent = "방 채팅";
+            clearChat();
+            addSystemMessage("채팅방에 입장했습니다.");
+        }
+
+        function switchToLobbyState() {
+            _currentState = "LOBBY";
+            chatTitle.textContent = "로비 채팅";
+            clearChat();
+        }
+
+        function clearChat() {
+            _messages = [];
+            chatMessages.innerHTML = `
+                <div class="chat-empty">
+                    <div class="chat-empty__icon">💬</div>
+                    <div class="chat-empty__text">아직 메시지가 없습니다</div>
+                </div>
+            `;
+        }
+
+        function addSystemMessage(content) {
+            // Remove empty state if present
+            const emptyState = chatMessages.querySelector('.chat-empty');
+            if (emptyState) {
+                emptyState.remove();
+            }
+
+            const msg = {
+                senderId: null,
+                senderName: null,
+                content: content,
+                timestamp: Date.now()
+            };
+            _messages.push(msg);
+
+            renderMessage(msg);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        // ============================================================
+        // Chat Functions
+        // ============================================================
+        function sendChatMessage() {
+            const content = chatInput.value.trim();
+            if (!content) return;
+
+            const now = Date.now();
+            if (now - _lastSentTime < _chatCooldown) return;
+            _lastSentTime = now;
+
+            // Send to appropriate handler based on state
+            if (_currentState === "ROOM") {
+                sendMessage("roomChatMessage", { content });
+            } else {
+                sendMessage("lobbyChatMessage", { content });
+            }
+            chatInput.value = '';
+            chatInput.focus();
+        }
+
+        function addChatMessage(senderId, senderName, content, timestamp) {
+            // Remove empty state if present
+            const emptyState = chatMessages.querySelector('.chat-empty');
+            if (emptyState) {
+                emptyState.remove();
+            }
+
+            const msg = {
+                senderId,
+                senderName,
+                content,
+                timestamp
+            };
+            _messages.push(msg);
+
+            // Keep max 100 messages
+            while (_messages.length > 100) {
+                _messages.shift();
+                if (chatMessages.firstChild) {
+                    chatMessages.removeChild(chatMessages.firstChild);
+                }
+            }
+
+            renderMessage(msg);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        function renderMessage(msg) {
+            const el = document.createElement('div');
+            const isSelf = msg.senderId === _currentUserId;
+            const isSystem = !msg.senderId;
+
+            el.className = 'chat-message';
+            if (isSelf) el.classList.add('self');
+            if (isSystem) el.classList.add('system');
+
+            const time = new Date(msg.timestamp);
+            const timeStr = `${time.getHours().toString().padStart(2, '0')}:${time.getMinutes().toString().padStart(2, '0')}`;
+
+            if (isSystem) {
+                el.innerHTML = `
+                    <span class="chat-message__content">${escapeHtml(msg.content)}</span>
+                    <span class="chat-message__time">${timeStr}</span>
+                `;
+            } else {
+                el.innerHTML = `
+                    <span class="chat-message__sender">${escapeHtml(msg.senderName)}</span>
+                    <span class="chat-message__content">${escapeHtml(msg.content)}</span>
+                    <span class="chat-message__time">${timeStr}</span>
+                `;
+            }
+
+            chatMessages.appendChild(el);
+        }
+
+        // ============================================================
+        // Utility
+        // ============================================================
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // ============================================================
+        // Resize Handler
+        // ============================================================
+        window.addEventListener("resize", () => {
+            rearrangeLayout();
+        });
+
+        window.addEventListener("orientationchange", () => {
+            setTimeout(() => {
+                rearrangeLayout();
+            }, 100);
+        });
+    </script>
+</body>
+
+</html>

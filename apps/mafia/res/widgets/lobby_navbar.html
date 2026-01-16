@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <link rel="stylesheet" as="style" crossorigin
+        href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.6/dist/web/variable/pretendardvariable-dynamic-subset.css">
+    <style>
+        :root {
+            /* Cyberpunk colors */
+            --neon-cyan: #00f0ff;
+            --neon-cyan-dark: #00b8cc;
+            --neon-pink: #ff2d95;
+            --neon-purple: #b026ff;
+
+            /* Background */
+            --bg-card: rgba(18, 18, 26, 0.95);
+            --bg-elevated: rgba(26, 26, 37, 0.95);
+
+            /* Text */
+            --text-primary: #ffffff;
+            --text-secondary: #a0a0b0;
+            --text-muted: #606070;
+
+            /* Misc */
+            --shadow-card: 0 4px 20px rgba(0, 0, 0, 0.3);
+            --radius-full: 9999px;
+            --radius-md: 12px;
+            --radius-sm: 8px;
+            --border-subtle: rgba(255, 255, 255, 0.1);
+            --glow-cyan: 0 0 20px rgba(0, 240, 255, 0.4);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: "Pretendard Variable", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        body {
+            background-color: transparent;
+            display: flex;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        /* ========== Layout Container ========== */
+        .nav-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 12px;
+            background: var(--bg-card);
+            border-radius: var(--radius-md);
+            box-shadow: var(--shadow-card);
+            border: 1px solid var(--border-subtle);
+        }
+
+        /* ========== Nav Button ========== */
+        .nav-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            padding: 10px 16px;
+            border-radius: var(--radius-md);
+            border: 1px solid var(--border-subtle);
+            background: var(--bg-elevated);
+            color: var(--text-secondary);
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            position: relative;
+        }
+
+        .nav-btn:hover {
+            background: rgba(0, 240, 255, 0.1);
+            border-color: var(--neon-cyan);
+            color: var(--neon-cyan);
+        }
+
+        .nav-btn:active {
+            transform: scale(0.97);
+        }
+
+        .nav-btn.active {
+            background: rgba(0, 240, 255, 0.15);
+            border-color: var(--neon-cyan);
+            color: var(--neon-cyan);
+            box-shadow: var(--glow-cyan);
+        }
+
+        .nav-btn__icon {
+            font-size: 16px;
+        }
+
+        .nav-btn__text {
+            white-space: nowrap;
+        }
+
+        /* Badge */
+        .nav-btn__badge {
+            position: absolute;
+            top: -4px;
+            right: -4px;
+            min-width: 18px;
+            height: 18px;
+            padding: 0 5px;
+            background: var(--neon-pink);
+            color: var(--bg-card);
+            font-size: 10px;
+            font-weight: 700;
+            border-radius: var(--radius-full);
+            display: none;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .nav-btn__badge.visible {
+            display: flex;
+        }
+
+        /* Divider */
+        .nav-divider {
+            width: 1px;
+            height: 24px;
+            background: var(--border-subtle);
+        }
+
+        /* User count */
+        .user-count {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            padding: 6px 10px;
+            background: rgba(176, 38, 255, 0.1);
+            border: 1px solid rgba(176, 38, 255, 0.3);
+            border-radius: var(--radius-full);
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--neon-purple);
+        }
+
+        .user-count__icon {
+            font-size: 14px;
+        }
+
+        /* ========== ROOM State Elements ========== */
+        .room-nav {
+            display: none;
+        }
+
+        .room-nav.visible {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .room-title-btn {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 10px 16px;
+            border-radius: var(--radius-md);
+            border: 1px solid var(--neon-cyan);
+            background: rgba(0, 240, 255, 0.1);
+            color: var(--neon-cyan);
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            max-width: 180px;
+        }
+
+        .room-title-btn:hover {
+            background: rgba(0, 240, 255, 0.2);
+            box-shadow: var(--glow-cyan);
+        }
+
+        .room-title-btn__icon {
+            font-size: 14px;
+        }
+
+        .room-title-btn__text {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .ready-count-btn {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            padding: 8px 12px;
+            border-radius: var(--radius-md);
+            border: 1px solid rgba(0, 255, 136, 0.3);
+            background: rgba(0, 255, 136, 0.1);
+            color: #00ff88;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .ready-count-btn:hover {
+            background: rgba(0, 255, 136, 0.2);
+            border-color: rgba(0, 255, 136, 0.5);
+        }
+
+        .leave-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            padding: 10px 14px;
+            border-radius: var(--radius-md);
+            border: 1px solid var(--neon-pink);
+            background: rgba(255, 45, 149, 0.1);
+            color: var(--neon-pink);
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .leave-btn:hover {
+            background: rgba(255, 45, 149, 0.2);
+            box-shadow: 0 0 15px rgba(255, 45, 149, 0.3);
+        }
+
+        .leave-btn:active {
+            transform: scale(0.97);
+        }
+
+        /* Lobby nav hidden when in room */
+        .lobby-nav {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .lobby-nav.hidden {
+            display: none;
+        }
+
+        /* ========== Mobile Styles ========== */
+        body.mobile .nav-wrapper {
+            width: calc(100% - 16px);
+            justify-content: space-between;
+            padding: 6px 10px;
+        }
+
+        body.mobile .nav-btn {
+            flex: 1;
+            padding: 8px 12px;
+        }
+
+        body.mobile .nav-btn__text {
+            display: none;
+        }
+
+        body.mobile .nav-btn__icon {
+            font-size: 18px;
+        }
+
+        body.mobile .user-count {
+            padding: 6px 8px;
+        }
+
+        body.mobile .user-count__text {
+            display: none;
+        }
+
+        /* Mobile styles for ROOM state */
+        body.mobile .room-title-btn {
+            flex: 1;
+            padding: 8px 10px;
+            max-width: none;
+        }
+
+        body.mobile .room-title-btn__text {
+            max-width: 100px;
+        }
+
+        body.mobile .ready-count-btn {
+            padding: 8px 10px;
+        }
+
+        body.mobile .leave-btn {
+            padding: 8px 12px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="nav-wrapper">
+        <!-- LOBBY State -->
+        <div id="lobbyNav" class="lobby-nav">
+            <button id="lobbyBtn" class="nav-btn" onclick="toggleLobby()">
+                <span class="nav-btn__icon">🚪</span>
+                <span class="nav-btn__text">방 목록</span>
+                <span id="roomBadge" class="nav-btn__badge">0</span>
+            </button>
+
+            <button id="usersBtn" class="nav-btn" onclick="toggleUsers()">
+                <span class="nav-btn__icon">👥</span>
+                <span class="nav-btn__text">유저</span>
+            </button>
+
+            <div class="nav-divider"></div>
+
+            <div class="user-count">
+                <span class="user-count__icon">🌐</span>
+                <span id="onlineCount">0</span>
+                <span class="user-count__text">명 접속</span>
+            </div>
+        </div>
+
+        <!-- ROOM State -->
+        <div id="roomNav" class="room-nav">
+            <button id="roomTitleBtn" class="room-title-btn" onclick="openRoomPopup()">
+                <span class="room-title-btn__icon">🎮</span>
+                <span id="roomTitleText" class="room-title-btn__text">방 제목</span>
+            </button>
+
+            <button id="readyCountBtn" class="ready-count-btn" onclick="openRoomPopup()">
+                <span id="readyCountText">0/0 준비</span>
+            </button>
+
+            <div class="nav-divider"></div>
+
+            <button id="leaveBtn" class="leave-btn" onclick="leaveRoom()">
+                나가기
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // ============================================================
+        // State
+        // ============================================================
+        let _isMobile = false;
+        let _isTablet = false;
+        let _init = false;
+        let _lobbyOpen = false;
+        let _usersOpen = false;
+        let _baseWidgetHeight = 0;
+        let _baseWidgetWidth = 0;
+        let _onlineCount = 0;
+        let _waitingRoomCount = 0;
+
+        // Room state
+        let _currentState = "LOBBY"; // "LOBBY" or "ROOM"
+        let _roomData = null;
+
+        const _initInterval = setInterval(() => {
+            if (!_init) {
+                sendMessage("retryInit");
+            } else {
+                clearInterval(_initInterval);
+            }
+        }, 1000);
+
+        // ============================================================
+        // Messaging
+        // ============================================================
+        function sendMessage(type, payload = {}) {
+            window.parent.postMessage({ type, ...payload }, "*");
+        }
+
+        window.addEventListener("message", e => {
+            const data = e.data;
+            if (!data || !data.type) return;
+
+            switch (data.type) {
+                case "init":
+                    _init = true;
+                    _isMobile = data.isMobile || false;
+                    _isTablet = data.isTablet || false;
+                    initWidget();
+                    break;
+
+                case "updateOnlineCount":
+                    _onlineCount = data.count || 0;
+                    updateOnlineDisplay();
+                    break;
+
+                case "updateRoomCount":
+                    _waitingRoomCount = data.count || 0;
+                    updateRoomBadge();
+                    break;
+
+                case "lobbyOpened":
+                    _lobbyOpen = true;
+                    document.getElementById("lobbyBtn").classList.add("active");
+                    break;
+
+                case "lobbyClosed":
+                    _lobbyOpen = false;
+                    document.getElementById("lobbyBtn").classList.remove("active");
+                    break;
+
+                case "usersOpened":
+                    _usersOpen = true;
+                    document.getElementById("usersBtn").classList.add("active");
+                    break;
+
+                case "usersClosed":
+                    _usersOpen = false;
+                    document.getElementById("usersBtn").classList.remove("active");
+                    break;
+
+                case "enterRoom":
+                    _roomData = data.roomData;
+                    switchToRoomState();
+                    break;
+
+                case "exitRoom":
+                    _roomData = null;
+                    switchToLobbyState();
+                    break;
+
+                case "updateRoomStatus":
+                    if (_roomData) {
+                        _roomData.readyCount = data.readyCount || _roomData.readyCount;
+                        _roomData.playerCount = data.playerCount || _roomData.playerCount;
+                        if (data.title) _roomData.title = data.title;
+                        updateRoomDisplay();
+                    }
+                    break;
+            }
+        });
+
+        // ============================================================
+        // Widget Initialization
+        // ============================================================
+        function initWidget() {
+            applyDeviceLayout();
+            updateBaseWidgetSize();
+            rearrangeLayout();
+        }
+
+        function updateBaseWidgetSize() {
+            const navWrapper = document.querySelector(".nav-wrapper");
+            _baseWidgetHeight = navWrapper.offsetHeight;
+            _baseWidgetWidth = navWrapper.offsetWidth + 32;
+        }
+
+        function isLandscapeMobileAsTablet() {
+            return _isMobile && !_isTablet && window.innerWidth > window.innerHeight;
+        }
+
+        function applyDeviceLayout() {
+            if (_isMobile && !isLandscapeMobileAsTablet()) {
+                document.body.classList.add("mobile");
+            } else {
+                document.body.classList.remove("mobile");
+            }
+        }
+
+        function rearrangeLayout() {
+            const isTabletLayout = _isTablet || isLandscapeMobileAsTablet();
+
+            if (_isMobile && !isTabletLayout) {
+                // Mobile: full width, top
+                sendMessage("WidgetRearrange", {
+                    height: `${_baseWidgetHeight}px`,
+                    width: "100%",
+                    anchor: "top",
+                    top: "-4px",
+                    pointerEvents: "auto"
+                });
+            } else if (_isMobile && isTabletLayout) {
+                // Tablet: full width, with top offset
+                sendMessage("WidgetRearrange", {
+                    height: `${_baseWidgetHeight}px`,
+                    width: "100%",
+                    anchor: "top",
+                    top: "32px",
+                    pointerEvents: "auto"
+                });
+            } else {
+                // PC: centered, fixed width
+                sendMessage("WidgetRearrange", {
+                    height: `${_baseWidgetHeight}px`,
+                    width: `${_baseWidgetWidth}px`,
+                    anchor: "top",
+                    top: "16px",
+                    pointerEvents: "auto"
+                });
+            }
+        }
+
+        // ============================================================
+        // Display Updates
+        // ============================================================
+        function updateOnlineDisplay() {
+            document.getElementById("onlineCount").textContent = _onlineCount;
+        }
+
+        function updateRoomBadge() {
+            const badge = document.getElementById("roomBadge");
+            if (_waitingRoomCount > 0) {
+                badge.textContent = _waitingRoomCount > 99 ? "99+" : _waitingRoomCount;
+                badge.classList.add("visible");
+            } else {
+                badge.classList.remove("visible");
+            }
+        }
+
+        // ============================================================
+        // State Switching
+        // ============================================================
+        function switchToRoomState() {
+            _currentState = "ROOM";
+            document.getElementById("lobbyNav").classList.add("hidden");
+            document.getElementById("roomNav").classList.add("visible");
+            updateRoomDisplay();
+            updateBaseWidgetSize();
+            rearrangeLayout();
+        }
+
+        function switchToLobbyState() {
+            _currentState = "LOBBY";
+            document.getElementById("roomNav").classList.remove("visible");
+            document.getElementById("lobbyNav").classList.remove("hidden");
+            updateBaseWidgetSize();
+            rearrangeLayout();
+        }
+
+        function updateRoomDisplay() {
+            if (!_roomData) return;
+            document.getElementById("roomTitleText").textContent = _roomData.title || "방 제목";
+            const readyCount = _roomData.readyCount || 0;
+            const playerCount = _roomData.playerCount || 0;
+            document.getElementById("readyCountText").textContent = `${readyCount}/${playerCount} 준비`;
+        }
+
+        // ============================================================
+        // Actions
+        // ============================================================
+        function toggleLobby() {
+            if (_lobbyOpen) {
+                sendMessage("closeLobby");
+            } else {
+                sendMessage("openLobby");
+            }
+        }
+
+        function toggleUsers() {
+            if (_usersOpen) {
+                sendMessage("closeUsers");
+            } else {
+                sendMessage("openUsers");
+            }
+        }
+
+        function openRoomPopup() {
+            sendMessage("openRoomPopup");
+        }
+
+        function leaveRoom() {
+            sendMessage("leaveRoom");
+        }
+
+        // ============================================================
+        // Resize Handler
+        // ============================================================
+        window.addEventListener("resize", () => {
+            applyDeviceLayout();
+            updateBaseWidgetSize();
+            rearrangeLayout();
+        });
+
+        window.addEventListener("orientationchange", () => {
+            setTimeout(() => {
+                applyDeviceLayout();
+                updateBaseWidgetSize();
+                rearrangeLayout();
+            }, 100);
+        });
+    </script>
+</body>
+
+</html>

@@ -706,8 +706,9 @@ function shuffleArray(array) {
 ;// CONCATENATED MODULE: ../../libs/core/mafia/managers/widget/WidgetType.ts
 var WidgetType;
 (function (WidgetType) {
+  WidgetType["LOBBY_NAVBAR"] = "LOBBY_NAVBAR";
   WidgetType["LOBBY"] = "LOBBY";
-  WidgetType["ROOM"] = "ROOM";
+  WidgetType["LOBBY_CHAT"] = "LOBBY_CHAT";
   WidgetType["GAME_STATUS"] = "GAME_STATUS";
   WidgetType["NIGHT_ACTION"] = "NIGHT_ACTION";
   WidgetType["VOTE"] = "VOTE";
@@ -725,13 +726,8 @@ class WidgetManager {
   constructor() {
     this.playerWidgetMap = {};
     App.addOnKeyDown(13, player => {
-      if (player.tag.widget.lobby) {
-        player.tag.widget.lobby.sendMessage({
-          type: "focusInput"
-        });
-      }
-      if (player.tag.widget.room) {
-        player.tag.widget.room.sendMessage({
+      if (player.tag.widget.lobbyChat) {
+        player.tag.widget.lobbyChat.sendMessage({
           type: "focusInput"
         });
       }
@@ -763,8 +759,9 @@ class WidgetManager {
   createWidgets(player) {
     const widgetMap = this.playerWidgetMap[player.id];
     if (!widgetMap) return;
-    this.createAndInitializeWidget(player, widgetMap, WidgetType.LOBBY, "widgets/lobby_widget.html", "middle");
-    this.createAndInitializeWidget(player, widgetMap, WidgetType.ROOM, "widgets/room_widget.html", "middle");
+    this.createAndInitializeWidget(player, widgetMap, WidgetType.LOBBY_NAVBAR, "widgets/lobby_navbar.html", "top");
+    this.createAndInitializeWidget(player, widgetMap, WidgetType.LOBBY, "widgets/lobby_widget.html", "top");
+    this.createAndInitializeWidget(player, widgetMap, WidgetType.LOBBY_CHAT, "widgets/lobby_chat_widget.html", "bottomleft");
     this.createAndInitializeWidget(player, widgetMap, WidgetType.GAME_STATUS, "widgets/game_status.html", "middleright");
     this.createAndInitializeWidget(player, widgetMap, WidgetType.NIGHT_ACTION, "widgets/night_action.html", "middle");
     this.createAndInitializeWidget(player, widgetMap, WidgetType.VOTE, "widgets/vote_widget.html", "middle");
@@ -801,11 +798,14 @@ class WidgetManager {
       player.tag.widget = {};
     }
     switch (widgetType) {
+      case WidgetType.LOBBY_NAVBAR:
+        player.tag.widget.lobbyNavbar = widget.element;
+        break;
       case WidgetType.LOBBY:
         player.tag.widget.lobby = widget.element;
         break;
-      case WidgetType.ROOM:
-        player.tag.widget.room = widget.element;
+      case WidgetType.LOBBY_CHAT:
+        player.tag.widget.lobbyChat = widget.element;
         break;
       case WidgetType.GAME_STATUS:
         player.tag.widget.gameStatus = widget.element;
@@ -843,11 +843,14 @@ class WidgetManager {
     if (!widget) return;
     if (player.tag.widget) {
       switch (widgetType) {
+        case WidgetType.LOBBY_NAVBAR:
+          player.tag.widget.lobbyNavbar = null;
+          break;
         case WidgetType.LOBBY:
           player.tag.widget.lobby = null;
           break;
-        case WidgetType.ROOM:
-          player.tag.widget.room = null;
+        case WidgetType.LOBBY_CHAT:
+          player.tag.widget.lobbyChat = null;
           break;
         case WidgetType.GAME_STATUS:
           player.tag.widget.gameStatus = null;
@@ -953,8 +956,9 @@ class WidgetManager {
       this.clearMessageHandlers(player, widget.widgetType);
     });
     if (player.tag && player.tag.widget) {
+      player.tag.widget.lobbyNavbar = null;
       player.tag.widget.lobby = null;
-      player.tag.widget.room = null;
+      player.tag.widget.lobbyChat = null;
       player.tag.widget.gameStatus = null;
       player.tag.widget.nightAction = null;
       player.tag.widget.voteWidget = null;
@@ -4286,8 +4290,21 @@ class Game extends GameBase {
   }
   showLobbyWidget(player) {
     const widgetManager = WidgetManager.instance;
-    widgetManager.showWidget(player, WidgetType.LOBBY);
+    widgetManager.showWidget(player, WidgetType.LOBBY_NAVBAR);
+    widgetManager.showWidget(player, WidgetType.LOBBY_CHAT);
     App.runLater(() => {
+      widgetManager.sendMessageToWidget(player, WidgetType.LOBBY_NAVBAR, {
+        type: "init",
+        isMobile: player.isMobile,
+        isTablet: false
+      });
+      widgetManager.sendMessageToWidget(player, WidgetType.LOBBY_CHAT, {
+        type: "init",
+        isMobile: player.isMobile,
+        isTablet: false,
+        userId: player.id,
+        userName: player.name
+      });
       widgetManager.sendMessageToWidget(player, WidgetType.LOBBY, {
         type: "init",
         isMobile: player.isMobile,
@@ -4304,12 +4321,93 @@ class Game extends GameBase {
       this.sendUsersList(player);
       this.updateRoomInfo();
     }, 0.1);
+    const lobbyNavbar = widgetManager.getWidget(player, WidgetType.LOBBY_NAVBAR);
+    if (lobbyNavbar && lobbyNavbar.element) {
+      if (player.tag.lobbyNavbarMessageHandler) {
+        lobbyNavbar.element.onMessage.Remove(player.tag.lobbyNavbarMessageHandler);
+      }
+      const navbarHandler = (sender, data) => {
+        if (data.type === "openLobby") {
+          widgetManager.showWidget(sender, WidgetType.LOBBY);
+          widgetManager.sendMessageToWidget(sender, WidgetType.LOBBY_NAVBAR, {
+            type: "lobbyOpened"
+          });
+        } else if (data.type === "closeLobby") {
+          widgetManager.hideWidget(sender, WidgetType.LOBBY);
+          widgetManager.sendMessageToWidget(sender, WidgetType.LOBBY_NAVBAR, {
+            type: "lobbyClosed"
+          });
+        } else if (data.type === "openUsers") {
+          widgetManager.sendMessageToWidget(sender, WidgetType.LOBBY_NAVBAR, {
+            type: "usersOpened"
+          });
+        } else if (data.type === "closeUsers") {
+          widgetManager.sendMessageToWidget(sender, WidgetType.LOBBY_NAVBAR, {
+            type: "usersClosed"
+          });
+        } else if (data.type === "openRoomPopup") {
+          if (sender.tag.roomInfo) {
+            widgetManager.showWidget(sender, WidgetType.LOBBY);
+            widgetManager.sendMessageToWidget(sender, WidgetType.LOBBY, {
+              type: "showRoomPopup"
+            });
+          }
+        } else if (data.type === "leaveRoom") {
+          if (sender.tag.roomInfo) {
+            const roomNum = sender.tag.roomInfo.roomNum;
+            const room = this.mafiaGameRoomManager.getRoom(roomNum.toString());
+            if (room) {
+              room.leavePlayer(sender.id);
+              this.exitRoomState(sender);
+              this.notifyPlayerLeftRoom(room, sender);
+              this.updateRoomInfo();
+            }
+          }
+        }
+      };
+      lobbyNavbar.element.onMessage.Add(navbarHandler);
+      player.tag.lobbyNavbarMessageHandler = navbarHandler;
+    }
+    const lobbyChat = widgetManager.getWidget(player, WidgetType.LOBBY_CHAT);
+    if (lobbyChat && lobbyChat.element) {
+      if (player.tag.lobbyChatMessageHandler) {
+        lobbyChat.element.onMessage.Remove(player.tag.lobbyChatMessageHandler);
+      }
+      const chatHandler = (sender, data) => {
+        var _a;
+        if (data.type === "lobbyChatMessage" && data.content) {
+          if (CommandParser.isCommand(data.content)) {
+            const parsed = CommandParser.parse(data.content);
+            if (parsed) {
+              const executed = CommandManager.instance.executeCommand(parsed.command, parsed.args, {
+                player: sender,
+                room: null,
+                flowManager: null
+              });
+              if (executed) return;
+            }
+          }
+          this.sendLobbyChatMessage(sender, data.content);
+        } else if (data.type === "roomChatMessage" && data.content) {
+          const roomId = (_a = sender.tag.roomInfo) === null || _a === void 0 ? void 0 : _a.roomNum;
+          if (roomId) {
+            const room = this.mafiaGameRoomManager.getRoom(roomId.toString());
+            if (room) {
+              this.sendRoomChatMessage(room, sender, data.content);
+            }
+          }
+        }
+      };
+      lobbyChat.element.onMessage.Add(chatHandler);
+      player.tag.lobbyChatMessageHandler = chatHandler;
+    }
     const lobbyWidget = widgetManager.getWidget(player, WidgetType.LOBBY);
     if (lobbyWidget && lobbyWidget.element) {
       if (player.tag.lobbyWidgetMessageHandler) {
         lobbyWidget.element.onMessage.Remove(player.tag.lobbyWidgetMessageHandler);
       }
       const messageHandler = (sender, data) => {
+        var _a, _b, _c, _d, _e, _f;
         if (data.type === "requestGameModes") {
           const gameModes = this.getGameModesForUI();
           sendAdminConsoleMessage(`게임 모드 정보 요청 처리 (플레이어: ${sender.name}, 모드 수: ${gameModes.length})`);
@@ -4321,21 +4419,10 @@ class Game extends GameBase {
           this.updateRoomInfo();
         } else if (data.type === "requestUsers") {
           this.sendUsersList(sender);
-        } else if (data.type === "lobbyChatMessage" && data.content) {
-          if (CommandParser.isCommand(data.content)) {
-            const parsed = CommandParser.parse(data.content);
-            if (parsed) {
-              const executed = CommandManager.instance.executeCommand(parsed.command, parsed.args, {
-                player: sender,
-                room: null,
-                flowManager: null
-              });
-              if (executed) {
-                return;
-              }
-            }
-          }
-          this.sendLobbyChatMessage(sender, data.content);
+        } else if (data.type === "lobbyClosed") {
+          widgetManager.sendMessageToWidget(sender, WidgetType.LOBBY_NAVBAR, {
+            type: "lobbyClosed"
+          });
         } else if (data.type === "createRoom" && data.data) {
           const {
             title,
@@ -4350,8 +4437,7 @@ class Game extends GameBase {
             });
             if (room) {
               room.joinPlayer(sender);
-              widgetManager.hideWidget(sender, WidgetType.LOBBY);
-              this.showRoomWidget(sender, room);
+              this.enterRoomState(sender, room);
               this.updateRoomInfo();
             }
           }
@@ -4360,8 +4446,7 @@ class Game extends GameBase {
           if (room) {
             const joinResult = room.joinPlayer(sender);
             if (joinResult) {
-              widgetManager.hideWidget(sender, WidgetType.LOBBY);
-              this.showRoomWidget(sender, room);
+              this.enterRoomState(sender, room);
               this.updateRoomInfo();
             } else {
               widgetManager.sendMessageToWidget(sender, WidgetType.LOBBY, {
@@ -4376,40 +4461,20 @@ class Game extends GameBase {
             const room = this.mafiaGameRoomManager.getRoom(roomNum.toString());
             if (room) {
               room.leavePlayer(sender.id);
-              widgetManager.hideWidget(sender, WidgetType.ROOM);
-              this.showLobbyWidget(sender);
+              this.exitRoomState(sender);
               this.updateRoomInfo();
             }
           }
-        }
-      };
-      lobbyWidget.element.onMessage.Add(messageHandler);
-      player.tag.lobbyWidgetMessageHandler = messageHandler;
-    }
-  }
-  showRoomWidget(player, room) {
-    const widgetManager = WidgetManager.instance;
-    widgetManager.showWidget(player, WidgetType.ROOM);
-    App.runLater(() => {
-      this.sendRoomInfoToPlayer(player, room);
-      this.sendGameModeDetailsToPlayer(player, room.gameMode);
-      const gameFlow = room.flowManager;
-      if (gameFlow && gameFlow.isGameInProgress()) {}
-    }, 0.1);
-    this.notifyPlayerJoinedRoom(room, player);
-    const roomWidget = widgetManager.getWidget(player, WidgetType.ROOM);
-    if (roomWidget && roomWidget.element) {
-      if (player.tag.roomWidgetMessageHandler) {
-        roomWidget.element.onMessage.Remove(player.tag.roomWidgetMessageHandler);
-      }
-      const messageHandler = (sender, data) => {
-        var _a, _b, _c, _d, _e, _f, _g, _h;
-        if (data.type === "requestRoomInfo") {
+        } else if (data.type === "requestRoomInfo") {
           const roomId = (_a = sender.tag.roomInfo) === null || _a === void 0 ? void 0 : _a.roomNum;
           if (roomId) {
             const room = this.mafiaGameRoomManager.getRoom(roomId.toString());
             if (room) {
-              this.sendRoomInfoToPlayer(sender, room);
+              const roomData = this.buildRoomData(sender, room);
+              widgetManager.sendMessageToWidget(sender, WidgetType.LOBBY, {
+                type: "roomInfo",
+                roomData: roomData
+              });
             }
           }
         } else if (data.type === "requestGameModeDetails") {
@@ -4417,23 +4482,11 @@ class Game extends GameBase {
           if (roomId) {
             const room = this.mafiaGameRoomManager.getRoom(roomId.toString());
             if (room) {
-              this.sendGameModeDetailsToPlayer(sender, room.gameMode);
-            }
-          }
-        } else if (data.type === "leaveRoom") {
-          const roomId = (_c = sender.tag.roomInfo) === null || _c === void 0 ? void 0 : _c.roomNum;
-          if (roomId) {
-            const room = this.mafiaGameRoomManager.getRoom(roomId.toString());
-            if (room) {
-              room.leavePlayer(sender.id);
-              widgetManager.hideWidget(sender, WidgetType.ROOM);
-              this.showLobbyWidget(sender);
-              this.updateRoomInfo();
-              this.notifyPlayerLeftRoom(room, sender);
+              this.sendGameModeDetailsToLobbyWidget(sender, room.gameMode);
             }
           }
         } else if (data.type === "setReady") {
-          const roomId = (_d = sender.tag.roomInfo) === null || _d === void 0 ? void 0 : _d.roomNum;
+          const roomId = (_c = sender.tag.roomInfo) === null || _c === void 0 ? void 0 : _c.roomNum;
           if (roomId) {
             const room = this.mafiaGameRoomManager.getRoom(roomId.toString());
             if (room) {
@@ -4442,7 +4495,7 @@ class Game extends GameBase {
             }
           }
         } else if (data.type === "cancelReady") {
-          const roomId = (_e = sender.tag.roomInfo) === null || _e === void 0 ? void 0 : _e.roomNum;
+          const roomId = (_d = sender.tag.roomInfo) === null || _d === void 0 ? void 0 : _d.roomNum;
           if (roomId) {
             const room = this.mafiaGameRoomManager.getRoom(roomId.toString());
             if (room) {
@@ -4451,7 +4504,7 @@ class Game extends GameBase {
             }
           }
         } else if (data.type === "startGame") {
-          const roomId = (_f = sender.tag.roomInfo) === null || _f === void 0 ? void 0 : _f.roomNum;
+          const roomId = (_e = sender.tag.roomInfo) === null || _e === void 0 ? void 0 : _e.roomNum;
           if (roomId) {
             const room = this.mafiaGameRoomManager.getRoom(roomId.toString());
             if (room) {
@@ -4464,7 +4517,7 @@ class Game extends GameBase {
                 room.flowManager.startGame();
                 this.updateRoomInfo();
               } else {
-                widgetManager.sendMessageToWidget(sender, WidgetType.ROOM, {
+                widgetManager.sendMessageToWidget(sender, WidgetType.LOBBY, {
                   type: "error",
                   message: "모든 플레이어가 준비 상태여야 합니다."
                 });
@@ -4472,45 +4525,75 @@ class Game extends GameBase {
             }
           }
         } else if (data.type === "kickPlayer" && data.playerId) {
-          const roomId = (_g = sender.tag.roomInfo) === null || _g === void 0 ? void 0 : _g.roomNum;
+          const roomId = (_f = sender.tag.roomInfo) === null || _f === void 0 ? void 0 : _f.roomNum;
           if (roomId) {
             const room = this.mafiaGameRoomManager.getRoom(roomId.toString());
-            if (room) {
-              const isHost = room.hostId === sender.id;
-              if (isHost) {
-                const targetPlayer = App.getPlayerByID(data.playerId);
-                if (targetPlayer) {
-                  room.leavePlayer(targetPlayer.id);
-                  widgetManager.hideWidget(targetPlayer, WidgetType.ROOM);
-                  this.showLobbyWidget(targetPlayer);
-                  this.notifyPlayerKicked(room, targetPlayer);
-                  this.updateRoomInfo();
-                }
+            if (room && room.hostId === sender.id) {
+              const targetPlayer = App.getPlayerByID(data.playerId);
+              if (targetPlayer) {
+                room.leavePlayer(targetPlayer.id);
+                this.exitRoomState(targetPlayer);
+                this.showLobbyWidget(targetPlayer);
+                this.notifyPlayerKicked(room, targetPlayer);
+                this.updateRoomInfo();
               }
-            }
-          }
-        } else if (data.type === "chatMessage" && data.content) {
-          const roomId = (_h = sender.tag.roomInfo) === null || _h === void 0 ? void 0 : _h.roomNum;
-          if (roomId) {
-            const room = this.mafiaGameRoomManager.getRoom(roomId.toString());
-            if (room) {
-              this.sendChatMessageToRoom(room, sender, data.content);
             }
           }
         }
       };
-      roomWidget.element.onMessage.Add(messageHandler);
-      player.tag.roomWidgetMessageHandler = messageHandler;
+      lobbyWidget.element.onMessage.Add(messageHandler);
+      player.tag.lobbyWidgetMessageHandler = messageHandler;
     }
   }
-  sendRoomInfoToPlayer(player, room) {
-    var _a;
+  hideLobbyPopup(player) {
     const widgetManager = WidgetManager.instance;
+    widgetManager.hideWidget(player, WidgetType.LOBBY);
+  }
+  hideLobbyWidgets(player) {
+    const widgetManager = WidgetManager.instance;
+    widgetManager.hideWidget(player, WidgetType.LOBBY_NAVBAR);
+    widgetManager.hideWidget(player, WidgetType.LOBBY);
+    widgetManager.hideWidget(player, WidgetType.LOBBY_CHAT);
+  }
+  enterRoomState(player, room) {
+    const widgetManager = WidgetManager.instance;
+    this.hideLobbyPopup(player);
+    const roomData = this.buildRoomData(player, room);
+    widgetManager.sendMessageToWidget(player, WidgetType.LOBBY_NAVBAR, {
+      type: "enterRoom",
+      roomData: roomData
+    });
+    widgetManager.sendMessageToWidget(player, WidgetType.LOBBY, {
+      type: "enterRoom",
+      roomData: roomData
+    });
+    widgetManager.sendMessageToWidget(player, WidgetType.LOBBY_CHAT, {
+      type: "enterRoom",
+      roomData: roomData
+    });
+    App.runLater(() => {
+      this.sendGameModeDetailsToLobbyWidget(player, room.gameMode);
+    }, 0.1);
+    this.notifyPlayerJoinedRoom(room, player);
+  }
+  exitRoomState(player) {
+    const widgetManager = WidgetManager.instance;
+    widgetManager.sendMessageToWidget(player, WidgetType.LOBBY_NAVBAR, {
+      type: "exitRoom"
+    });
+    widgetManager.sendMessageToWidget(player, WidgetType.LOBBY, {
+      type: "exitRoom"
+    });
+    widgetManager.sendMessageToWidget(player, WidgetType.LOBBY_CHAT, {
+      type: "exitRoom"
+    });
+  }
+  buildRoomData(player, room) {
+    var _a;
     const players = room.getPlayers();
     let hostName = "알 수 없음";
-    let hostId = "";
+    let hostId = room.hostId || "";
     if (room.hostId) {
-      hostId = room.hostId;
       const hostPlayer = players.find(p => p.id === hostId);
       if (hostPlayer) {
         hostName = hostPlayer.name;
@@ -4531,29 +4614,29 @@ class Game extends GameBase {
         isReady: ((_c = gamePlayer === null || gamePlayer === void 0 ? void 0 : gamePlayer.tag) === null || _c === void 0 ? void 0 : _c.isReady) || false
       };
     });
-    widgetManager.sendMessageToWidget(player, WidgetType.ROOM, {
-      type: "roomInfo",
-      roomData: {
-        id: room.id,
-        title: room.title,
-        maxPlayers: room.maxPlayers,
-        gameMode: room.gameMode.getName(),
-        state: room.state,
-        isPlaying: room.state === GameState.IN_PROGRESS,
-        host: {
-          id: hostId,
-          name: hostName
-        },
-        players: playersList,
-        currentUser: {
-          id: player.id,
-          name: player.name,
-          isReady: ((_a = player.tag) === null || _a === void 0 ? void 0 : _a.isReady) || false
-        }
+    const readyCount = playersList.filter(p => p.isReady || p.id === hostId).length;
+    return {
+      id: room.id,
+      title: room.title,
+      maxPlayers: room.maxPlayers,
+      playerCount: players.length,
+      readyCount: readyCount,
+      gameMode: room.gameMode.getName(),
+      state: room.state,
+      isPlaying: room.state === GameState.IN_PROGRESS,
+      host: {
+        id: hostId,
+        name: hostName
+      },
+      players: playersList,
+      currentUser: {
+        id: player.id,
+        name: player.name,
+        isReady: ((_a = player.tag) === null || _a === void 0 ? void 0 : _a.isReady) || false
       }
-    });
+    };
   }
-  sendGameModeDetailsToPlayer(player, gameMode) {
+  sendGameModeDetailsToLobbyWidget(player, gameMode) {
     const widgetManager = WidgetManager.instance;
     const jobs = gameMode.getJobs();
     const jobsData = jobs.map(job => ({
@@ -4562,7 +4645,7 @@ class Game extends GameBase {
       description: job.description,
       team: job.team
     }));
-    widgetManager.sendMessageToWidget(player, WidgetType.ROOM, {
+    widgetManager.sendMessageToWidget(player, WidgetType.LOBBY, {
       type: "gameModeDetails",
       modeData: {
         id: gameMode.getId(),
@@ -4572,13 +4655,34 @@ class Game extends GameBase {
       }
     });
   }
+  sendRoomInfoToPlayer(player, room) {
+    const widgetManager = WidgetManager.instance;
+    const roomData = this.buildRoomData(player, room);
+    widgetManager.sendMessageToWidget(player, WidgetType.LOBBY, {
+      type: "roomInfo",
+      roomData: roomData
+    });
+    widgetManager.sendMessageToWidget(player, WidgetType.LOBBY_NAVBAR, {
+      type: "updateRoomStatus",
+      title: roomData.title,
+      readyCount: roomData.readyCount,
+      playerCount: roomData.playerCount
+    });
+  }
+  sendGameModeDetailsToPlayer(player, gameMode) {
+    this.sendGameModeDetailsToLobbyWidget(player, gameMode);
+  }
   notifyPlayerJoinedRoom(room, player) {
     const widgetManager = WidgetManager.instance;
     const players = room.getPlayers();
     players.forEach(p => {
       if (p.id !== player.id) {
         const gamePlayer = App.getPlayerByID(p.id);
-        widgetManager.sendMessageToWidget(gamePlayer, WidgetType.ROOM, {
+        widgetManager.sendMessageToWidget(gamePlayer, WidgetType.LOBBY_CHAT, {
+          type: "systemMessage",
+          content: `${player.name}님이 입장했습니다.`
+        });
+        widgetManager.sendMessageToWidget(gamePlayer, WidgetType.LOBBY, {
           type: "playerJoined",
           playerId: player.id,
           playerName: player.name
@@ -4588,17 +4692,21 @@ class Game extends GameBase {
     });
   }
   notifyPlayerLeftRoom(room, player) {
+    const widgetManager = WidgetManager.instance;
     room.actionToRoomPlayers(p => {
       if (p.id === player.id) return;
       const gamePlayer = getPlayerById(p.id);
       if (!gamePlayer) return;
-      if (gamePlayer.tag.widget.room) {
-        gamePlayer.tag.widget.room.sendMessage({
-          type: "playerLeft",
-          playerId: player.id,
-          playerName: player.name
-        });
-      }
+      widgetManager.sendMessageToWidget(gamePlayer, WidgetType.LOBBY_CHAT, {
+        type: "systemMessage",
+        content: `${player.name}님이 퇴장했습니다.`
+      });
+      widgetManager.sendMessageToWidget(gamePlayer, WidgetType.LOBBY, {
+        type: "playerLeft",
+        playerId: player.id,
+        playerName: player.name
+      });
+      this.sendRoomInfoToPlayer(gamePlayer, room);
     });
     this.updateRoomInfo();
   }
@@ -4607,7 +4715,12 @@ class Game extends GameBase {
     const players = room.getPlayers();
     players.forEach(p => {
       const gamePlayer = App.getPlayerByID(p.id);
-      widgetManager.sendMessageToWidget(gamePlayer, WidgetType.ROOM, {
+      const statusMsg = player.tag.isReady ? `${player.name}님이 준비 완료했습니다.` : `${player.name}님이 준비를 취소했습니다.`;
+      widgetManager.sendMessageToWidget(gamePlayer, WidgetType.LOBBY_CHAT, {
+        type: "systemMessage",
+        content: statusMsg
+      });
+      widgetManager.sendMessageToWidget(gamePlayer, WidgetType.LOBBY, {
         type: "readyStatusChanged",
         playerId: player.id,
         isReady: player.tag.isReady
@@ -4616,16 +4729,29 @@ class Game extends GameBase {
     });
   }
   notifyPlayerKicked(room, player) {
-    var _a, _b;
-    if ((_b = (_a = player.tag) === null || _a === void 0 ? void 0 : _a.widget) === null || _b === void 0 ? void 0 : _b.room) {
-      const widgetManager = WidgetManager.instance;
-      widgetManager.hideWidget(player, WidgetType.ROOM);
-    }
-    this.showLobbyWidget(player);
-    showLabel(player, "방에서 강퇴되었습니다.");
-  }
-  sendChatMessageToRoom(room, sender, content) {
     const widgetManager = WidgetManager.instance;
+    this.exitRoomState(player);
+    showLabel(player, "방에서 강퇴되었습니다.");
+    const players = room.getPlayers();
+    players.forEach(p => {
+      const gamePlayer = App.getPlayerByID(p.id);
+      if (gamePlayer) {
+        widgetManager.sendMessageToWidget(gamePlayer, WidgetType.LOBBY_CHAT, {
+          type: "systemMessage",
+          content: `${player.name}님이 강퇴되었습니다.`
+        });
+        widgetManager.sendMessageToWidget(gamePlayer, WidgetType.LOBBY, {
+          type: "playerKicked",
+          playerId: player.id,
+          playerName: player.name
+        });
+        this.sendRoomInfoToPlayer(gamePlayer, room);
+      }
+    });
+  }
+  sendRoomChatMessage(room, sender, content) {
+    const widgetManager = WidgetManager.instance;
+    sender.sendMessageBubbleOnly(content);
     const chatMessage = {
       type: "chatMessage",
       senderId: sender.id,
@@ -4636,8 +4762,12 @@ class Game extends GameBase {
     const players = room.getPlayers();
     players.forEach(p => {
       const gamePlayer = App.getPlayerByID(p.id);
-      widgetManager.sendMessageToWidget(gamePlayer, WidgetType.ROOM, chatMessage);
+      widgetManager.sendMessageToWidget(gamePlayer, WidgetType.LOBBY_CHAT, chatMessage);
     });
+    sendAdminConsoleMessage(`[Room Chat ${room.id}] ${sender.name}: ${content}`);
+  }
+  sendChatMessageToRoom(room, sender, content) {
+    this.sendRoomChatMessage(room, sender, content);
   }
   canStartGame(room) {
     var _a;
@@ -4728,6 +4858,10 @@ class Game extends GameBase {
       type: "usersList",
       users: usersList
     });
+    widgetManager.sendMessageToWidget(player, WidgetType.LOBBY_NAVBAR, {
+      type: "updateOnlineCount",
+      count: usersList.length
+    });
   }
   updateUsersInfo() {
     var _a, _b, _c;
@@ -4747,6 +4881,10 @@ class Game extends GameBase {
         widgetManager.sendMessageToWidget(gamePlayer, WidgetType.LOBBY, {
           type: "usersList",
           users: usersList
+        });
+        widgetManager.sendMessageToWidget(gamePlayer, WidgetType.LOBBY_NAVBAR, {
+          type: "updateOnlineCount",
+          count: usersList.length
         });
       }
     }
@@ -4778,12 +4916,17 @@ class Game extends GameBase {
         });
       }
     }
+    const waitingRoomCount = roomsList.filter(r => r.state === GameState.WAITING).length;
     for (const p of App.players) {
       const gamePlayer = p;
       if (!((_a = gamePlayer.tag) === null || _a === void 0 ? void 0 : _a.roomInfo)) {
         widgetManager.sendMessageToWidget(gamePlayer, WidgetType.LOBBY, {
           type: "roomsList",
           rooms: roomsList
+        });
+        widgetManager.sendMessageToWidget(gamePlayer, WidgetType.LOBBY_NAVBAR, {
+          type: "updateRoomCount",
+          count: waitingRoomCount
         });
       }
     }
@@ -4807,11 +4950,7 @@ class Game extends GameBase {
       sendAdminConsoleMessage(`[Game] 플레이어 ${player.name}가 방 ${room.id}에 입장했습니다.`);
     });
     this.mafiaGameRoomManager.on("playerKicked", (room, player) => {
-      var _a, _b;
-      if ((_b = (_a = player.tag) === null || _a === void 0 ? void 0 : _a.widget) === null || _b === void 0 ? void 0 : _b.room) {
-        player.tag.widget.room.destroy();
-        player.tag.widget.room = null;
-      }
+      this.exitRoomState(player);
       this.showLobbyWidget(player);
       this.notifyPlayerKicked(room, player);
     });
@@ -4823,36 +4962,41 @@ class Game extends GameBase {
       this.notifyReadyStatusChanged(room, player);
     });
     this.mafiaGameRoomManager.on("gameStarted", room => {
+      const widgetManager = WidgetManager.instance;
       room.actionToRoomPlayers(player => {
         const gamePlayer = getPlayerById(player.id);
         if (!gamePlayer) return;
-        if (gamePlayer.tag.widget.room) {
-          gamePlayer.tag.widget.room.sendMessage({
-            type: "gameStarting"
-          });
-        }
+        widgetManager.sendMessageToWidget(gamePlayer, WidgetType.LOBBY_CHAT, {
+          type: "systemMessage",
+          content: "게임이 곧 시작됩니다..."
+        });
+        widgetManager.hideWidget(gamePlayer, WidgetType.LOBBY);
       });
     });
     this.mafiaGameRoomManager.on("gameEnded", room => {
+      const widgetManager = WidgetManager.instance;
       room.actionToRoomPlayers(player => {
         const gamePlayer = getPlayerById(player.id);
         if (!gamePlayer) return;
-        if (gamePlayer.tag.widget.room) {
-          gamePlayer.tag.widget.room.sendMessage({
-            type: "gameEnded"
-          });
-        }
+        widgetManager.sendMessageToWidget(gamePlayer, WidgetType.LOBBY_CHAT, {
+          type: "systemMessage",
+          content: "게임이 종료되었습니다."
+        });
       });
       this.updateRoomInfo();
     });
   }
   notifyHostChanged(room, newHost) {
+    const widgetManager = WidgetManager.instance;
     const players = room.getPlayers();
     players.forEach(p => {
-      var _a, _b;
       const gamePlayer = App.getPlayerByID(p.id);
-      if ((_b = (_a = gamePlayer === null || gamePlayer === void 0 ? void 0 : gamePlayer.tag) === null || _a === void 0 ? void 0 : _a.widget) === null || _b === void 0 ? void 0 : _b.room) {
-        gamePlayer.tag.widget.room.sendMessage({
+      if (gamePlayer) {
+        widgetManager.sendMessageToWidget(gamePlayer, WidgetType.LOBBY_CHAT, {
+          type: "systemMessage",
+          content: `${newHost.name}님이 새로운 방장이 되었습니다.`
+        });
+        widgetManager.sendMessageToWidget(gamePlayer, WidgetType.LOBBY, {
           type: "hostChanged",
           newHostId: newHost.id,
           newHostName: newHost.name
@@ -4875,7 +5019,7 @@ class Game extends GameBase {
     for (const p of App.players) {
       const gamePlayer = p;
       if (!((_a = gamePlayer.tag) === null || _a === void 0 ? void 0 : _a.roomInfo)) {
-        widgetManager.sendMessageToWidget(gamePlayer, WidgetType.LOBBY, chatMessage);
+        widgetManager.sendMessageToWidget(gamePlayer, WidgetType.LOBBY_CHAT, chatMessage);
       }
     }
     sendAdminConsoleMessage(`[Lobby Chat] ${sender.name}: ${content}`);
@@ -4893,7 +5037,7 @@ class Game extends GameBase {
     for (const p of App.players) {
       const gamePlayer = p;
       if (!((_a = gamePlayer.tag) === null || _a === void 0 ? void 0 : _a.roomInfo)) {
-        widgetManager.sendMessageToWidget(gamePlayer, WidgetType.LOBBY, chatMessage);
+        widgetManager.sendMessageToWidget(gamePlayer, WidgetType.LOBBY_CHAT, chatMessage);
       }
     }
     sendAdminConsoleMessage(`[Lobby System] ${content}`);

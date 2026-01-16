@@ -1,50 +1,45 @@
 <!DOCTYPE html>
 <html lang="ko">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.6/dist/web/variable/pretendardvariable-dynamic-subset.css">
+    <link rel="stylesheet" as="style" crossorigin
+        href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.6/dist/web/variable/pretendardvariable-dynamic-subset.css">
     <style>
-        /* ========== Design System Variables ========== */
         :root {
-            --sat: env(safe-area-inset-top);
-            --sar: env(safe-area-inset-right);
-            --sab: env(safe-area-inset-bottom);
-            --sal: env(safe-area-inset-left);
-
+            /* Cyberpunk colors */
             --neon-cyan: #00f0ff;
             --neon-cyan-dark: #00b8cc;
             --neon-pink: #ff2d95;
-            --neon-pink-dark: #cc0055;
             --neon-purple: #b026ff;
 
+            /* Background */
             --bg-base: #0a0a0f;
-            --bg-surface: #12121a;
-            --bg-elevated: #1a1a25;
+            --bg-card: rgba(18, 18, 26, 0.98);
+            --bg-elevated: rgba(26, 26, 37, 0.95);
             --bg-overlay: rgba(10, 10, 15, 0.85);
 
+            /* Text */
             --text-primary: #ffffff;
             --text-secondary: #a0a0b0;
             --text-muted: #606070;
 
+            /* Status */
             --success: #00ff88;
             --danger: #ff3366;
 
-            --border-subtle: rgba(255, 255, 255, 0.05);
-            --border-default: rgba(255, 255, 255, 0.1);
-            --border-cyan: rgba(0, 240, 255, 0.3);
-
-            --glow-cyan: 0 0 20px rgba(0, 240, 255, 0.5);
-            --glow-cyan-subtle: 0 0 10px rgba(0, 240, 255, 0.2);
-            --glow-pink: 0 0 20px rgba(255, 45, 149, 0.5);
-
-            --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.4);
+            /* Misc */
+            --shadow-card: 0 4px 20px rgba(0, 0, 0, 0.3);
             --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.5);
-
-            --radius-md: 10px;
-            --radius-lg: 14px;
             --radius-full: 9999px;
-
+            --radius-lg: 14px;
+            --radius-md: 10px;
+            --radius-sm: 8px;
+            --border-subtle: rgba(255, 255, 255, 0.1);
+            --border-cyan: rgba(0, 240, 255, 0.3);
+            --glow-cyan: 0 0 20px rgba(0, 240, 255, 0.4);
+            --glow-cyan-subtle: 0 0 10px rgba(0, 240, 255, 0.2);
             --transition-fast: 0.15s ease;
             --transition-normal: 0.25s ease;
         }
@@ -53,7 +48,7 @@
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-            font-family: 'Pretendard Variable', 'Pretendard', -apple-system, sans-serif;
+            font-family: "Pretendard Variable", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
             user-select: none;
             -webkit-user-select: none;
         }
@@ -62,137 +57,56 @@
             width: 100%;
             height: 100%;
             background: transparent;
-            color: var(--text-primary);
             overflow: hidden;
         }
 
         body {
             display: flex;
-            align-items: center;
+            align-items: flex-start;
             justify-content: center;
+            padding-top: 60px;
         }
 
-        body.compact {
-            align-items: flex-end;
-            justify-content: flex-end;
-            padding: 16px;
-        }
-
-        /* Blur overlay for Center Card mode */
-        .blur-overlay {
-            position: fixed;
-            inset: 0;
-            background: rgba(10, 10, 15, 0.6);
-            backdrop-filter: blur(6px);
-            -webkit-backdrop-filter: blur(6px);
-            z-index: 1;
-            opacity: 1;
-            transition: opacity var(--transition-normal);
-            cursor: pointer;
-        }
-
-        body.compact .blur-overlay,
-        body.mobile .blur-overlay {
-            display: none;
+        body.mobile {
+            padding-top: 50px;
         }
 
         /* ========== Scrollbar ========== */
-        ::-webkit-scrollbar { width: 6px; }
-        ::-webkit-scrollbar-track { background: var(--bg-base); border-radius: var(--radius-full); }
-        ::-webkit-scrollbar-thumb { background: var(--bg-elevated); border-radius: var(--radius-full); }
-        ::-webkit-scrollbar-thumb:hover { background: rgba(0, 240, 255, 0.3); }
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--bg-base);
+            border-radius: var(--radius-full);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--bg-elevated);
+            border-radius: var(--radius-full);
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(0, 240, 255, 0.3);
+        }
 
         /* ========== Main Container ========== */
         .lobby-container {
             display: none;
             flex-direction: column;
-            width: 70%;
-            max-width: 900px;
-            height: 80%;
-            max-height: 700px;
-            background: var(--bg-base);
-            border: 1px solid rgba(0, 240, 255, 0.2);
+            width: 400px;
+            max-width: calc(100% - 32px);
+            max-height: calc(100% - 80px);
+            background: var(--bg-card);
+            border: 1px solid var(--border-cyan);
             border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-lg), var(--glow-cyan-subtle);
             overflow: hidden;
-            box-shadow: var(--shadow-lg), 0 0 60px rgba(0, 240, 255, 0.1);
-            transition: all var(--transition-normal);
-            z-index: 2;
-            position: relative;
         }
 
         body.mobile .lobby-container {
-            width: 100%;
-            height: 100%;
-            max-width: none;
-            max-height: none;
-            border-radius: 0;
-            border: none;
-        }
-
-
-        /* Compact mode - hide rooms, show chat only */
-        body.compact .lobby-container {
-            width: 320px;
-            max-width: 320px;
-            height: auto;
-            max-height: none;
-            border-radius: var(--radius-lg);
-            box-shadow: var(--shadow-lg), 0 0 30px rgba(0, 240, 255, 0.1);
-        }
-
-        body.compact .header,
-        body.compact .main-content {
-            display: none;
-        }
-
-        body.compact .chat-section {
-            border-top: none;
-        }
-
-        body.compact .chat-section .chat-messages {
-            height: 180px;
-        }
-
-        /* Expand button in compact mode */
-        .expand-bar {
-            display: none;
-            padding: 10px 16px;
-            background: linear-gradient(180deg, var(--bg-surface) 0%, var(--bg-base) 100%);
-            border-bottom: 1px solid rgba(0, 240, 255, 0.1);
-            border-radius: var(--radius-lg) var(--radius-lg) 0 0;
-            cursor: pointer;
-            transition: all var(--transition-fast);
-        }
-
-        .expand-bar:hover {
-            background: var(--bg-elevated);
-        }
-
-        .expand-bar-content {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .expand-bar-title {
-            font-size: 14px;
-            font-weight: 600;
-            color: var(--neon-cyan);
-            text-shadow: 0 0 10px rgba(0, 240, 255, 0.3);
-        }
-
-        .expand-bar-badge {
-            padding: 4px 10px;
-            background: rgba(0, 240, 255, 0.15);
-            border: 1px solid rgba(0, 240, 255, 0.3);
-            border-radius: var(--radius-full);
-            font-size: 12px;
-            font-weight: 600;
-            color: var(--neon-cyan);
-        }
-
-        body.compact .expand-bar {
-            display: block;
+            width: calc(100% - 16px);
+            max-height: calc(100% - 60px);
         }
 
         /* ========== Header ========== */
@@ -200,150 +114,121 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 16px 20px;
-            background: linear-gradient(180deg, var(--bg-surface) 0%, var(--bg-base) 100%);
-            border-bottom: 1px solid rgba(0, 240, 255, 0.1);
+            padding: 14px 16px;
+            background: linear-gradient(180deg, var(--bg-elevated) 0%, var(--bg-card) 100%);
+            border-bottom: 1px solid var(--border-subtle);
         }
 
-        .header-left h1 {
-            font-size: 22px;
+        .header-title {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 16px;
             font-weight: 700;
             color: var(--neon-cyan);
-            text-shadow: var(--glow-cyan);
-            letter-spacing: 1px;
         }
 
-        .header-controls {
-            display: flex;
-            gap: 10px;
-            align-items: center;
+        .header-title__icon {
+            font-size: 18px;
         }
 
-        /* Header action buttons */
-        .header-btn {
-            width: 36px;
-            height: 36px;
+        .header-close {
+            width: 32px;
+            height: 32px;
             display: flex;
             align-items: center;
             justify-content: center;
             background: var(--bg-elevated);
-            border: 1px solid var(--border-default);
+            border: 1px solid var(--border-subtle);
             border-radius: var(--radius-md);
             color: var(--text-secondary);
-            font-size: 16px;
+            font-size: 18px;
             cursor: pointer;
             transition: all var(--transition-fast);
         }
 
-        .header-btn:hover {
-            border-color: var(--neon-cyan);
-            color: var(--neon-cyan);
+        .header-close:hover {
+            border-color: var(--neon-pink);
+            color: var(--neon-pink);
         }
 
-        body.mobile .header-btn.minimize {
-            display: none;
+        /* ========== Controls ========== */
+        .controls {
+            display: flex;
+            gap: 8px;
+            padding: 12px 16px;
+            background: var(--bg-card);
+            border-bottom: 1px solid var(--border-subtle);
         }
 
-        /* ========== Search Bar ========== */
-        .search-bar {
-            position: relative;
-        }
-
-        .search-bar input {
-            width: 200px;
-            padding: 10px 16px;
+        .search-input {
+            flex: 1;
+            padding: 10px 14px;
             background: var(--bg-base);
-            border: 1px solid var(--border-default);
+            border: 1px solid var(--border-subtle);
             border-radius: var(--radius-full);
             color: var(--text-primary);
-            font-size: 14px;
+            font-size: 13px;
             transition: all var(--transition-fast);
         }
 
-        .search-bar input::placeholder {
+        .search-input::placeholder {
             color: var(--text-muted);
         }
 
-        .search-bar input:focus {
+        .search-input:focus {
             outline: none;
             border-color: var(--neon-cyan);
             box-shadow: var(--glow-cyan-subtle);
         }
 
-        /* ========== Buttons ========== */
         .btn {
             display: inline-flex;
             align-items: center;
             justify-content: center;
             gap: 6px;
-            padding: 10px 18px;
-            font-size: 14px;
+            padding: 10px 16px;
+            font-size: 13px;
             font-weight: 600;
             border: none;
             border-radius: var(--radius-md);
             cursor: pointer;
             transition: all var(--transition-normal);
+            white-space: nowrap;
         }
 
-        .btn:active { transform: scale(0.97); }
+        .btn:active {
+            transform: scale(0.97);
+        }
 
         .btn-primary {
             background: linear-gradient(135deg, var(--neon-cyan) 0%, var(--neon-cyan-dark) 100%);
             color: var(--bg-base);
-            box-shadow: var(--glow-cyan);
+            box-shadow: var(--glow-cyan-subtle);
         }
 
         .btn-primary:hover {
-            box-shadow: 0 0 30px rgba(0, 240, 255, 0.6);
-            transform: translateY(-2px);
+            box-shadow: var(--glow-cyan);
         }
 
         .btn-secondary {
             background: var(--bg-elevated);
             color: var(--text-secondary);
-            border: 1px solid var(--border-default);
+            border: 1px solid var(--border-subtle);
         }
 
         .btn-secondary:hover {
-            background: var(--bg-surface);
+            background: var(--bg-base);
             color: var(--text-primary);
             border-color: var(--border-cyan);
-        }
-
-        /* ========== Main Content ========== */
-        .main-content {
-            display: flex;
-            flex: 1;
-            overflow: hidden;
-        }
-
-        /* ========== Rooms Section ========== */
-        .rooms-section {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            padding: 16px;
-            overflow: hidden;
-        }
-
-        .section-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 12px;
-        }
-
-        .section-title {
-            font-size: 16px;
-            font-weight: 600;
-            color: var(--text-primary);
         }
 
         /* ========== Filters ========== */
         .filters {
             display: flex;
-            gap: 8px;
-            margin-bottom: 12px;
+            gap: 6px;
+            padding: 8px 16px 12px;
+            background: var(--bg-card);
         }
 
         .filter-btn {
@@ -352,7 +237,7 @@
             font-weight: 600;
             color: var(--text-muted);
             background: transparent;
-            border: 1px solid var(--border-default);
+            border: 1px solid var(--border-subtle);
             border-radius: var(--radius-full);
             cursor: pointer;
             transition: all var(--transition-fast);
@@ -373,6 +258,7 @@
         .rooms-list {
             flex: 1;
             overflow-y: auto;
+            padding: 8px 16px 16px;
             display: flex;
             flex-direction: column;
             gap: 10px;
@@ -380,9 +266,9 @@
 
         /* ========== Room Card ========== */
         .room-card {
-            background: var(--bg-surface);
+            background: var(--bg-elevated);
             border: 1px solid var(--border-subtle);
-            border-radius: var(--radius-lg);
+            border-radius: var(--radius-md);
             padding: 14px 16px;
             cursor: pointer;
             transition: all var(--transition-normal);
@@ -403,14 +289,18 @@
         }
 
         .room-card:hover {
-            background: var(--bg-elevated);
+            background: var(--bg-base);
             border-color: var(--border-cyan);
             transform: translateY(-2px);
-            box-shadow: var(--shadow-md);
+            box-shadow: var(--shadow-card);
         }
 
         .room-card:hover::before {
             opacity: 1;
+        }
+
+        .room-card:active {
+            transform: translateY(0);
         }
 
         .room-header {
@@ -421,7 +311,7 @@
         }
 
         .room-title {
-            font-size: 15px;
+            font-size: 14px;
             font-weight: 600;
             color: var(--text-primary);
         }
@@ -461,7 +351,7 @@
 
         .room-meta {
             display: flex;
-            gap: 16px;
+            gap: 12px;
             font-size: 12px;
             color: var(--text-secondary);
         }
@@ -509,178 +399,32 @@
             color: var(--text-primary);
         }
 
-        /* ========== User Sidebar ========== */
-        .user-sidebar {
-            width: 240px;
-            padding: 16px;
-            background: var(--bg-surface);
-            border-left: 1px solid var(--border-subtle);
-            overflow-y: auto;
-        }
-
-        body.mobile .user-sidebar {
-            display: none;
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            width: 100%;
-            max-height: 50%;
-            border-left: none;
-            border-top: 1px solid var(--border-cyan);
-            border-radius: var(--radius-lg) var(--radius-lg) 0 0;
-            z-index: 100;
-            box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.5);
-        }
-
-        body.mobile .user-sidebar.visible {
-            display: block;
-        }
-
-        body.compact .user-sidebar {
-            display: none;
-        }
-
-        .user-list {
+        /* ========== Empty State ========== */
+        .empty-state {
             display: flex;
             flex-direction: column;
-            gap: 8px;
-        }
-
-        .user-item {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            padding: 10px;
-            background: var(--bg-base);
-            border: 1px solid var(--border-subtle);
-            border-radius: var(--radius-md);
-            transition: all var(--transition-fast);
-        }
-
-        .user-item:hover {
-            border-color: var(--border-cyan);
-            background: var(--bg-elevated);
-        }
-
-        .user-avatar {
-            width: 36px;
-            height: 36px;
-            display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 16px;
-            font-weight: 600;
-            background: var(--bg-elevated);
-            border: 1px solid var(--border-default);
-            border-radius: var(--radius-full);
-            color: var(--neon-cyan);
-        }
-
-        .user-info { flex: 1; min-width: 0; }
-
-        .user-name {
-            font-size: 13px;
-            font-weight: 600;
-            color: var(--text-primary);
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
-        .user-level {
-            font-size: 11px;
-            color: var(--text-muted);
-        }
-
-        /* ========== Chat Section ========== */
-        .chat-section {
-            padding: 12px 16px;
-            background: var(--bg-surface);
-            border-top: 1px solid var(--border-subtle);
-        }
-
-        .chat-messages {
-            height: 100px;
-            overflow-y: auto;
-            margin-bottom: 10px;
-            padding: 8px;
-            background: var(--bg-base);
-            border: 1px solid var(--border-subtle);
-            border-radius: var(--radius-md);
-        }
-
-        .chat-message {
-            padding: 6px 10px;
-            margin-bottom: 6px;
-            border-radius: var(--radius-md);
-            font-size: 13px;
-            word-break: break-word;
-        }
-
-        .chat-message .sender {
-            font-weight: 600;
-            color: var(--neon-pink);
-            margin-right: 6px;
-        }
-
-        .chat-message .timestamp {
-            font-size: 10px;
-            color: var(--text-muted);
-            margin-left: 6px;
-        }
-
-        .chat-message.self {
-            background: rgba(0, 240, 255, 0.1);
-        }
-
-        .chat-message.system {
-            background: rgba(176, 38, 255, 0.1);
-            color: var(--text-secondary);
-            font-style: italic;
+            padding: 40px 20px;
             text-align: center;
         }
 
-        .chat-input-container {
-            display: flex;
-            gap: 10px;
+        .empty-state__icon {
+            font-size: 48px;
+            margin-bottom: 12px;
+            opacity: 0.5;
         }
 
-        .chat-input {
-            flex: 1;
-            padding: 10px 14px;
-            background: var(--bg-base);
-            border: 1px solid var(--border-default);
-            border-radius: var(--radius-full);
-            color: var(--text-primary);
-            font-size: 14px;
-            transition: all var(--transition-fast);
-        }
-
-        .chat-input:focus {
-            outline: none;
-            border-color: var(--neon-cyan);
-            box-shadow: var(--glow-cyan-subtle);
-        }
-
-        .chat-input::placeholder {
-            color: var(--text-muted);
-        }
-
-        .chat-submit {
-            padding: 10px 16px;
-            background: linear-gradient(135deg, var(--neon-cyan) 0%, var(--neon-cyan-dark) 100%);
-            color: var(--bg-base);
-            border: none;
-            border-radius: var(--radius-full);
+        .empty-state__title {
+            font-size: 15px;
             font-weight: 600;
-            font-size: 13px;
-            cursor: pointer;
-            transition: all var(--transition-normal);
+            color: var(--text-primary);
+            margin-bottom: 6px;
         }
 
-        .chat-submit:hover {
-            box-shadow: var(--glow-cyan);
+        .empty-state__desc {
+            font-size: 13px;
+            color: var(--text-muted);
         }
 
         /* ========== Modal ========== */
@@ -696,11 +440,11 @@
         }
 
         .modal {
-            background: var(--bg-surface);
+            background: var(--bg-card);
             border: 1px solid var(--border-cyan);
             border-radius: var(--radius-lg);
-            padding: 24px;
-            width: 450px;
+            padding: 20px;
+            width: 380px;
             max-width: 90%;
             max-height: 90vh;
             overflow-y: auto;
@@ -711,25 +455,24 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 20px;
+            margin-bottom: 16px;
             padding-bottom: 12px;
             border-bottom: 1px solid var(--border-subtle);
         }
 
         .modal-title {
-            font-size: 20px;
+            font-size: 18px;
             font-weight: 700;
             color: var(--neon-cyan);
-            text-shadow: var(--glow-cyan-subtle);
         }
 
         .modal-close {
-            width: 32px;
-            height: 32px;
+            width: 28px;
+            height: 28px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 20px;
+            font-size: 18px;
             color: var(--text-secondary);
             background: var(--bg-elevated);
             border: 1px solid var(--border-subtle);
@@ -744,29 +487,31 @@
         }
 
         .form-group {
-            margin-bottom: 16px;
+            margin-bottom: 14px;
         }
 
         .form-label {
             display: block;
             margin-bottom: 6px;
-            font-size: 13px;
+            font-size: 12px;
             font-weight: 600;
             color: var(--text-secondary);
         }
 
-        .form-input, .form-select {
+        .form-input,
+        .form-select {
             width: 100%;
-            padding: 12px 14px;
+            padding: 10px 12px;
             background: var(--bg-base);
-            border: 1px solid var(--border-default);
+            border: 1px solid var(--border-subtle);
             border-radius: var(--radius-md);
             color: var(--text-primary);
-            font-size: 14px;
+            font-size: 13px;
             transition: all var(--transition-fast);
         }
 
-        .form-input:focus, .form-select:focus {
+        .form-input:focus,
+        .form-select:focus {
             outline: none;
             border-color: var(--neon-cyan);
             box-shadow: var(--glow-cyan-subtle);
@@ -781,22 +526,25 @@
         }
 
         .form-select option {
-            background: var(--bg-surface);
+            background: var(--bg-card);
             color: var(--text-primary);
         }
 
-        /* ========== Game Mode Selection ========== */
+        /* Game Mode Grid */
         .game-mode-list {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
-            gap: 10px;
-            margin-bottom: 16px;
+            gap: 8px;
+        }
+
+        body.mobile .game-mode-list {
+            grid-template-columns: 1fr;
         }
 
         .game-mode-item {
-            padding: 12px;
+            padding: 10px;
             background: var(--bg-base);
-            border: 1px solid var(--border-default);
+            border: 1px solid var(--border-subtle);
             border-radius: var(--radius-md);
             cursor: pointer;
             transition: all var(--transition-fast);
@@ -810,14 +558,13 @@
         .game-mode-item.selected {
             border-color: var(--neon-cyan);
             background: rgba(0, 240, 255, 0.1);
-            box-shadow: var(--glow-cyan-subtle);
         }
 
         .game-mode-name {
-            font-size: 14px;
+            font-size: 13px;
             font-weight: 600;
             color: var(--text-primary);
-            margin-bottom: 4px;
+            margin-bottom: 2px;
         }
 
         .game-mode-desc {
@@ -828,191 +575,359 @@
         .modal-footer {
             display: flex;
             justify-content: flex-end;
-            gap: 10px;
-            margin-top: 20px;
-            padding-top: 16px;
+            gap: 8px;
+            margin-top: 16px;
+            padding-top: 12px;
             border-top: 1px solid var(--border-subtle);
         }
 
-        /* ========== Empty State ========== */
-        .empty-state {
-            display: flex;
+        /* ========== ROOM State Container ========== */
+        .room-container {
+            display: none;
             flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            padding: 40px;
-            text-align: center;
-        }
-
-        .empty-state-icon {
-            font-size: 48px;
-            margin-bottom: 16px;
-            opacity: 0.5;
-        }
-
-        .empty-state-title {
-            font-size: 16px;
-            font-weight: 600;
-            color: var(--text-primary);
-            margin-bottom: 8px;
-        }
-
-        .empty-state-desc {
-            font-size: 14px;
-            color: var(--text-muted);
-        }
-
-        /* ========== Toggle Buttons (Mobile only) ========== */
-        .toggle-btn {
-            display: none;
-            position: absolute;
-            width: 44px;
-            height: 44px;
-            align-items: center;
-            justify-content: center;
-            font-size: 18px;
-            background: var(--bg-surface);
+            width: 400px;
+            max-width: calc(100% - 32px);
+            max-height: calc(100% - 80px);
+            background: var(--bg-card);
             border: 1px solid var(--border-cyan);
-            border-radius: var(--radius-full);
-            color: var(--neon-cyan);
-            cursor: pointer;
-            transition: all var(--transition-fast);
-            z-index: 50;
-            box-shadow: var(--shadow-md);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-lg), var(--glow-cyan-subtle);
+            overflow: hidden;
         }
 
-        .toggle-btn:hover {
-            background: var(--bg-elevated);
-            box-shadow: var(--glow-cyan);
+        body.mobile .room-container {
+            width: calc(100% - 16px);
+            max-height: calc(100% - 60px);
         }
 
-        .user-toggle {
-            bottom: 80px;
-            right: 16px;
-        }
-
-        body.mobile .user-toggle {
+        /* Section Title */
+        .section-title {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 10px;
             display: flex;
+            align-items: center;
+            gap: 6px;
         }
 
-        /* ========== Sidebar Backdrop ========== */
-        .sidebar-backdrop {
-            display: none;
-            position: fixed;
-            inset: 0;
-            background: rgba(0, 0, 0, 0.5);
-            z-index: 99;
+        .section-title__icon {
+            font-size: 14px;
         }
 
-        body.mobile .sidebar-backdrop.visible {
-            display: block;
+        /* Game Mode Section */
+        .game-mode-section {
+            padding: 12px 16px;
+            background: var(--bg-elevated);
+            border-bottom: 1px solid var(--border-subtle);
         }
 
-        /* ========== Mobile Adjustments ========== */
-        body.mobile .header {
+        .game-mode-card {
+            background: var(--bg-base);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-md);
+            padding: 12px;
+        }
+
+        .game-mode-card__name {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--neon-cyan);
+            margin-bottom: 4px;
+        }
+
+        .game-mode-card__desc {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-bottom: 10px;
+            line-height: 1.4;
+        }
+
+        .job-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+
+        .job-tag {
+            padding: 4px 10px;
+            border-radius: var(--radius-full);
+            font-size: 11px;
+            font-weight: 500;
+        }
+
+        .job-tag.mafia {
+            background: rgba(255, 51, 102, 0.2);
+            color: #ff6b8a;
+            border: 1px solid rgba(255, 51, 102, 0.3);
+        }
+
+        .job-tag.citizen {
+            background: rgba(0, 240, 255, 0.15);
+            color: var(--neon-cyan);
+            border: 1px solid rgba(0, 240, 255, 0.3);
+        }
+
+        .job-tag.neutral {
+            background: rgba(255, 170, 0, 0.15);
+            color: #ffaa00;
+            border: 1px solid rgba(255, 170, 0, 0.3);
+        }
+
+        /* Participants Section */
+        .participants-section {
+            flex: 1;
+            overflow-y: auto;
             padding: 12px 16px;
         }
 
-        body.mobile .header-left h1 {
-            font-size: 18px;
+        .participants-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
         }
 
-        body.mobile .header-controls {
-            flex-wrap: wrap;
-            gap: 8px;
+        body.mobile .participants-grid {
+            grid-template-columns: repeat(3, 1fr);
         }
 
-        body.mobile .search-bar input {
-            width: 140px;
+        .participant-card {
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-md);
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+            transition: all var(--transition-fast);
         }
 
-        body.mobile .rooms-section {
-            padding: 12px;
+        .participant-card:hover {
+            border-color: var(--neon-cyan);
+            transform: translateY(-2px);
         }
 
-        body.mobile .room-card {
-            padding: 12px;
+        .participant-card.host {
+            border-color: var(--neon-pink);
+            background: rgba(255, 45, 149, 0.05);
         }
 
-        body.mobile .room-title {
+        .participant-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: var(--radius-full);
+            background: var(--bg-base);
+            border: 2px solid var(--border-subtle);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--text-secondary);
+            position: relative;
+        }
+
+        .participant-card.host .participant-avatar {
+            border-color: var(--neon-pink);
+        }
+
+        .participant-avatar__badge {
+            position: absolute;
+            top: -4px;
+            right: -4px;
+            width: 18px;
+            height: 18px;
+            background: var(--neon-pink);
+            border-radius: var(--radius-full);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+        }
+
+        .participant-name {
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--text-primary);
+            text-align: center;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 100%;
+        }
+
+        .participant-status {
+            padding: 3px 8px;
+            border-radius: var(--radius-full);
+            font-size: 9px;
+            font-weight: 600;
+        }
+
+        .participant-status.host {
+            background: rgba(255, 45, 149, 0.2);
+            color: var(--neon-pink);
+            border: 1px solid rgba(255, 45, 149, 0.3);
+        }
+
+        .participant-status.ready {
+            background: rgba(0, 255, 136, 0.15);
+            color: var(--success);
+            border: 1px solid rgba(0, 255, 136, 0.3);
+        }
+
+        .participant-status.not-ready {
+            background: rgba(255, 51, 102, 0.15);
+            color: var(--danger);
+            border: 1px solid rgba(255, 51, 102, 0.3);
+        }
+
+        .kick-btn {
+            padding: 3px 8px;
+            background: transparent;
+            border: 1px solid rgba(255, 51, 102, 0.3);
+            border-radius: var(--radius-sm);
+            color: var(--danger);
+            font-size: 9px;
+            cursor: pointer;
+            transition: all var(--transition-fast);
+            margin-top: 4px;
+        }
+
+        .kick-btn:hover {
+            background: rgba(255, 51, 102, 0.2);
+        }
+
+        /* Empty Slot */
+        .participant-card.empty {
+            border-style: dashed;
+            opacity: 0.5;
+        }
+
+        .participant-card.empty .participant-avatar {
+            background: transparent;
+            border-style: dashed;
+        }
+
+        /* Action Section */
+        .action-section {
+            padding: 12px 16px;
+            background: var(--bg-elevated);
+            border-top: 1px solid var(--border-subtle);
+        }
+
+        .action-btn {
+            width: 100%;
+            padding: 12px 16px;
+            border-radius: var(--radius-md);
             font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all var(--transition-normal);
+            border: none;
         }
 
-        body.mobile .chat-section {
-            padding: 10px 12px;
+        .action-btn.ready {
+            background: linear-gradient(135deg, var(--success), #00cc6a);
+            color: var(--bg-base);
         }
 
-        body.mobile .chat-messages {
-            height: 80px;
+        .action-btn.ready:hover {
+            box-shadow: 0 0 20px rgba(0, 255, 136, 0.5);
         }
 
-        body.mobile .game-mode-list {
-            grid-template-columns: 1fr;
+        .action-btn.cancel-ready {
+            background: linear-gradient(135deg, var(--danger), #cc0033);
+            color: white;
+        }
+
+        .action-btn.cancel-ready:hover {
+            box-shadow: 0 0 20px rgba(255, 51, 102, 0.5);
+        }
+
+        .action-btn.start {
+            background: linear-gradient(135deg, var(--neon-cyan), var(--neon-cyan-dark));
+            color: var(--bg-base);
+            box-shadow: var(--glow-cyan-subtle);
+        }
+
+        .action-btn.start:hover:not(:disabled) {
+            box-shadow: var(--glow-cyan);
+        }
+
+        .action-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
         }
     </style>
 </head>
-<body>
-    <!-- Blur Overlay -->
-    <div class="blur-overlay"></div>
 
-    <div id="lobby-container" class="lobby-container">
-        <!-- Expand Bar (visible in compact mode) -->
-        <div id="expandBar" class="expand-bar">
-            <div class="expand-bar-content">
-                <span class="expand-bar-title">🎮 MAFIA LOBBY</span>
-                <span id="roomCountBadge" class="expand-bar-badge">0개 대기중</span>
-            </div>
-        </div>
+<body>
+    <div id="lobbyContainer" class="lobby-container">
         <!-- Header -->
         <div class="header">
-            <div class="header-left">
-                <h1>MAFIA LOBBY</h1>
+            <div class="header-title">
+                <span class="header-title__icon">🚪</span>
+                <span>방 목록</span>
             </div>
-            <div class="header-controls">
-                <div class="search-bar">
-                    <input type="text" id="searchInput" placeholder="방 검색...">
-                </div>
-                <button id="createRoomBtn" class="btn btn-primary">방 만들기</button>
-                <button id="refreshBtn" class="btn btn-secondary">새로고침</button>
-                <button id="minimizeBtn" class="header-btn minimize" title="축소">−</button>
+            <button id="closeBtn" class="header-close">×</button>
+        </div>
+
+        <!-- Controls -->
+        <div class="controls">
+            <input type="text" id="searchInput" class="search-input" placeholder="방 검색...">
+            <button id="createRoomBtn" class="btn btn-primary">+ 방 만들기</button>
+        </div>
+
+        <!-- Filters -->
+        <div class="filters">
+            <button class="filter-btn active" data-filter="all">전체</button>
+            <button class="filter-btn" data-filter="waiting">대기중</button>
+            <button class="filter-btn" data-filter="playing">게임중</button>
+        </div>
+
+        <!-- Rooms List -->
+        <div id="roomsList" class="rooms-list"></div>
+    </div>
+
+    <!-- ROOM State Container -->
+    <div id="roomContainer" class="room-container">
+        <!-- Header -->
+        <div class="header">
+            <div class="header-title">
+                <span class="header-title__icon">🎮</span>
+                <span id="roomTitleDisplay">방 제목</span>
+            </div>
+            <button id="roomCloseBtn" class="header-close">×</button>
+        </div>
+
+        <!-- Game Mode Section -->
+        <div class="game-mode-section">
+            <div class="section-title">
+                <span class="section-title__icon">⚙️</span>
+                <span>게임 설정</span>
+            </div>
+            <div id="gameModeCard" class="game-mode-card">
+                <div id="gameModeName" class="game-mode-card__name">클래식 모드</div>
+                <div id="gameModeDesc" class="game-mode-card__desc">마피아 vs 시민의 기본 대결</div>
+                <div id="jobTags" class="job-tags"></div>
             </div>
         </div>
 
-        <!-- Main Content -->
-        <div class="main-content">
-            <!-- Rooms Section -->
-            <div class="rooms-section">
-                <div class="section-header">
-                    <span class="section-title">방 목록</span>
-                </div>
-                <div class="filters">
-                    <button class="filter-btn active" data-filter="all">전체</button>
-                    <button class="filter-btn" data-filter="waiting">대기중</button>
-                    <button class="filter-btn" data-filter="playing">게임중</button>
-                </div>
-                <div id="roomsList" class="rooms-list"></div>
+        <!-- Participants Section -->
+        <div class="participants-section">
+            <div class="section-title">
+                <span class="section-title__icon">👥</span>
+                <span>참가자 (<span id="participantCount">0/8</span>)</span>
             </div>
-
-            <!-- User Sidebar -->
-            <div id="userSidebar" class="user-sidebar">
-                <div class="section-header">
-                    <span class="section-title">접속 유저</span>
-                </div>
-                <div id="usersList" class="user-list"></div>
-            </div>
-
-            <!-- Mobile User Toggle -->
-            <button id="userToggle" class="toggle-btn user-toggle">👥</button>
-            <div id="sidebarBackdrop" class="sidebar-backdrop"></div>
+            <div id="participantsGrid" class="participants-grid"></div>
         </div>
 
-        <!-- Chat Section -->
-        <div class="chat-section">
-            <div id="chatMessages" class="chat-messages"></div>
-            <div class="chat-input-container">
-                <input type="text" id="chatInput" class="chat-input" placeholder="메시지 입력..." maxlength="200">
-                <button id="chatSubmit" class="chat-submit">전송</button>
-            </div>
+        <!-- Action Section -->
+        <div class="action-section">
+            <button id="actionBtn" class="action-btn ready">준비 완료</button>
         </div>
     </div>
 
@@ -1026,7 +941,7 @@
 
             <div class="form-group">
                 <label class="form-label">방 제목</label>
-                <input type="text" id="roomTitle" class="form-input" placeholder="방 제목을 입력하세요">
+                <input type="text" id="roomTitle" class="form-input" placeholder="방 제목을 입력하세요" maxlength="20">
             </div>
 
             <div class="form-group">
@@ -1054,193 +969,321 @@
     </div>
 
     <script>
-        // ============================================
+        // ============================================================
         // State
-        // ============================================
-        let rooms = [];
-        let users = [];
-        let selectedGameMode = null;
-        let gameModes = [];
-        let filteredRooms = [];
-        let currentFilter = 'all';
-        let refreshInterval = null;
-        let isVisible = false;
+        // ============================================================
         let _isMobile = false;
         let _isTablet = false;
-        let isCompact = true; // Start in compact mode
-        let isSidebarVisible = false;
+        let _init = false;
+        let _isVisible = false;
+        let _rooms = [];
+        let _filteredRooms = [];
+        let _currentFilter = 'all';
+        let _gameModes = [];
+        let _selectedGameMode = null;
 
-        let chatMessages = [];
-        let currentUserId = null;
-        let currentUserName = null;
-        let lastChatSentTime = 0;
-        let chatCooldown = 500;
+        // Room state
+        let _currentState = "LOBBY"; // "LOBBY" or "ROOM"
+        let _roomData = null;
+        let _gameModeDetails = null;
+        let _isHost = false;
+        let _isReady = false;
+        let _currentUserId = null;
 
-        let lastRequestTime = { rooms: 0, users: 0, gameModes: 0 };
-        let requestCooldown = 3000;
+        const _initInterval = setInterval(() => {
+            if (!_init) {
+                sendMessage("retryInit");
+            } else {
+                clearInterval(_initInterval);
+            }
+        }, 1000);
 
-        // ============================================
+        // ============================================================
         // DOM Elements
-        // ============================================
-        const lobbyContainer = document.getElementById('lobby-container');
-        const roomsList = document.getElementById('roomsList');
-        const usersList = document.getElementById('usersList');
-        const userSidebar = document.getElementById('userSidebar');
-        const sidebarBackdrop = document.getElementById('sidebarBackdrop');
+        // ============================================================
+        const lobbyContainer = document.getElementById('lobbyContainer');
+        const closeBtn = document.getElementById('closeBtn');
+        const searchInput = document.getElementById('searchInput');
         const createRoomBtn = document.getElementById('createRoomBtn');
+        const roomsList = document.getElementById('roomsList');
+        const filterBtns = document.querySelectorAll('.filter-btn');
+
+        // Modal elements
         const createRoomModal = document.getElementById('createRoomModal');
         const closeModalBtn = document.getElementById('closeModalBtn');
         const cancelCreateBtn = document.getElementById('cancelCreateBtn');
         const confirmCreateBtn = document.getElementById('confirmCreateBtn');
         const gameModeList = document.getElementById('gameModeList');
-        const searchInput = document.getElementById('searchInput');
-        const refreshBtn = document.getElementById('refreshBtn');
-        const filterBtns = document.querySelectorAll('.filter-btn');
-        const expandBar = document.getElementById('expandBar');
-        const roomCountBadge = document.getElementById('roomCountBadge');
-        const minimizeBtn = document.getElementById('minimizeBtn');
-        const blurOverlay = document.querySelector('.blur-overlay');
-        const userToggle = document.getElementById('userToggle');
-        const chatMessagesEl = document.getElementById('chatMessages');
-        const chatInput = document.getElementById('chatInput');
-        const chatSubmit = document.getElementById('chatSubmit');
 
-        // ============================================
+        // Room state elements
+        const roomContainer = document.getElementById('roomContainer');
+        const roomCloseBtn = document.getElementById('roomCloseBtn');
+        const roomTitleEl = document.getElementById('roomTitleDisplay');
+        const gameModeNameEl = document.getElementById('gameModeName');
+        const gameModeDescEl = document.getElementById('gameModeDesc');
+        const jobTagsEl = document.getElementById('jobTags');
+        const participantCountEl = document.getElementById('participantCount');
+        const participantsGridEl = document.getElementById('participantsGrid');
+        const actionBtnEl = document.getElementById('actionBtn');
+
+        // ============================================================
         // Event Listeners
-        // ============================================
+        // ============================================================
+        closeBtn.addEventListener('click', closeLobby);
         createRoomBtn.addEventListener('click', showCreateRoomModal);
         closeModalBtn.addEventListener('click', hideCreateRoomModal);
         cancelCreateBtn.addEventListener('click', hideCreateRoomModal);
         confirmCreateBtn.addEventListener('click', handleCreateRoom);
-        refreshBtn.addEventListener('click', () => { requestRoomsWithDelay(); requestUsersWithDelay(); });
-        expandBar.addEventListener('click', expandFromCompact);
-        minimizeBtn.addEventListener('click', enterCompactMode);
-        blurOverlay.addEventListener('click', enterCompactMode);
-        userToggle.addEventListener('click', toggleUserSidebar);
-        sidebarBackdrop.addEventListener('click', toggleUserSidebar);
         searchInput.addEventListener('input', searchRooms);
-        chatSubmit.addEventListener('click', sendChatMessage);
-        chatInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') sendChatMessage(); });
 
         filterBtns.forEach(btn => {
             btn.addEventListener('click', () => {
                 filterBtns.forEach(b => b.classList.remove('active'));
                 btn.classList.add('active');
-                currentFilter = btn.dataset.filter;
+                _currentFilter = btn.dataset.filter;
                 applyFilter();
             });
         });
 
-        document.addEventListener('keydown', (e) => { if (e.key === 'Escape') window.parent.focus(); });
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                if (createRoomModal.style.display === 'flex') {
+                    hideCreateRoomModal();
+                } else if (_currentState === "ROOM") {
+                    closeRoomPopup();
+                } else {
+                    closeLobby();
+                }
+            }
+        });
 
-        // ============================================
-        // Widget Display Functions
-        // ============================================
-        function hideWidget() {
-            lobbyContainer.style.display = 'none';
-            isVisible = false;
-            isCompact = false;
-            document.body.classList.remove('compact');
-            window.parent.postMessage({ type: 'WidgetRearrange', width: '0px', height: '0px' }, '*');
-            window.parent.focus();
+        // Room state event listeners
+        roomCloseBtn.addEventListener('click', closeRoomPopup);
+        actionBtnEl.addEventListener('click', handleActionButton);
+
+        // ============================================================
+        // Messaging
+        // ============================================================
+        function sendMessage(type, payload = {}) {
+            window.parent.postMessage({ type, ...payload }, "*");
         }
 
-        function revealWidget() {
-            isVisible = true;
+        window.addEventListener("message", e => {
+            const data = e.data;
+            if (!data || !data.type) return;
 
-            if (_isMobile) {
-                // Mobile: always full screen
-                document.body.classList.remove('compact');
-                lobbyContainer.style.display = 'flex';
-                window.parent.postMessage({ type: 'WidgetRearrange', anchor: 'middle', height: '100%', width: '100%' }, '*');
+            switch (data.type) {
+                case "init":
+                    _init = true;
+                    _isMobile = data.isMobile || false;
+                    _isTablet = data.isTablet || false;
+                    _currentUserId = data.userId || null;
+                    initWidget();
+                    break;
+
+                case "showWidget":
+                    if (_currentState === "ROOM") {
+                        showRoomPopup();
+                    } else {
+                        showLobby();
+                    }
+                    break;
+
+                case "hideWidget":
+                    if (_currentState === "ROOM") {
+                        hideRoomPopup();
+                    } else {
+                        hideLobby();
+                    }
+                    break;
+
+                case "roomsList":
+                    _rooms = data.rooms || [];
+                    applyFilter();
+                    break;
+
+                case "gameModes":
+                    _gameModes = data.modes || [];
+                    renderGameModes();
+                    break;
+
+                case "roomCreated":
+                    hideCreateRoomModal();
+                    break;
+
+                case "error":
+                    alert(`오류: ${data.message}`);
+                    break;
+
+                // Room state messages
+                case "enterRoom":
+                    _currentState = "ROOM";
+                    _roomData = data.roomData;
+                    _isReady = false;
+                    updateRoomData();
+                    break;
+
+                case "exitRoom":
+                    _currentState = "LOBBY";
+                    _roomData = null;
+                    _gameModeDetails = null;
+                    _isHost = false;
+                    _isReady = false;
+                    hideRoomPopup();
+                    break;
+
+                case "showRoomPopup":
+                    if (_currentState === "ROOM") {
+                        showRoomPopup();
+                    }
+                    break;
+
+                case "roomInfo":
+                    _roomData = data.roomData;
+                    updateRoomData();
+                    break;
+
+                case "gameModeDetails":
+                    _gameModeDetails = data.modeData;
+                    renderGameModeInfo();
+                    break;
+
+                case "updateRoomInfo":
+                    if (data.roomData) {
+                        _roomData = data.roomData;
+                        updateRoomData();
+                    }
+                    break;
+
+                case "readyStatusChanged":
+                    sendMessage("requestRoomInfo");
+                    break;
+
+                case "playerJoined":
+                case "playerLeft":
+                case "playerKicked":
+                case "hostChanged":
+                    sendMessage("requestRoomInfo");
+                    break;
+            }
+        });
+
+        // ============================================================
+        // Widget Functions
+        // ============================================================
+        function initWidget() {
+            if (_isMobile && !_isTablet) {
+                document.body.classList.add('mobile');
             } else {
-                // Desktop: Center Card mode (expanded)
-                if (isCompact) {
-                    applyCompactMode();
-                } else {
-                    applyExpandedMode();
-                }
+                document.body.classList.remove('mobile');
+            }
+
+            // Start hidden
+            hideLobby();
+        }
+
+        function showLobby() {
+            _isVisible = true;
+            lobbyContainer.style.display = 'flex';
+            rearrangeLayout();
+            sendMessage("requestRooms");
+            sendMessage("requestGameModes");
+        }
+
+        function hideLobby() {
+            _isVisible = false;
+            lobbyContainer.style.display = 'none';
+            sendMessage("WidgetRearrange", {
+                width: "0px",
+                height: "0px",
+                pointerEvents: "none"
+            });
+        }
+
+        function closeLobby() {
+            hideLobby();
+            sendMessage("lobbyClosed");
+        }
+
+        function rearrangeLayout() {
+            if (_isMobile && !_isTablet) {
+                // Mobile: centered, nearly full width
+                sendMessage("WidgetRearrange", {
+                    width: "100%",
+                    height: "calc(100% - 60px)",
+                    anchor: "top",
+                    top: "50px",
+                    pointerEvents: "auto"
+                });
+            } else if (_isTablet) {
+                // Tablet: centered popup
+                sendMessage("WidgetRearrange", {
+                    width: "450px",
+                    height: "calc(100% - 100px)",
+                    anchor: "top",
+                    top: "80px",
+                    pointerEvents: "auto"
+                });
+            } else {
+                // PC: centered popup
+                sendMessage("WidgetRearrange", {
+                    width: "420px",
+                    height: "calc(100% - 120px)",
+                    anchor: "top",
+                    top: "80px",
+                    pointerEvents: "auto"
+                });
             }
         }
 
-        function applyExpandedMode() {
-            // Center Card mode - expanded view
-            isCompact = false;
-            document.body.classList.remove('compact');
-            lobbyContainer.style.display = 'flex';
-            window.parent.postMessage({ type: 'WidgetRearrange', anchor: 'middle', width: '100%', height: '100%' }, '*');
-        }
-
-        function applyCompactMode() {
-            // Compact mode - chat only, bottom right
-            isCompact = true;
-            document.body.classList.add('compact');
-            lobbyContainer.style.display = 'flex';
-            updateRoomCountBadge();
-            window.parent.postMessage({ type: 'WidgetRearrange', anchor: 'bottomright', width: '340px', height: '320px' }, '*');
-        }
-
-        function enterCompactMode() {
-            if (_isMobile) return; // No compact mode on mobile
-            applyCompactMode();
-        }
-
-        function expandFromCompact() {
-            applyExpandedMode();
-            requestRoomsWithDelay();
-            requestUsersWithDelay();
-        }
-
-        function updateRoomCountBadge() {
-            const waitingRooms = rooms.filter(r => r.state === 'WAITING').length;
-            roomCountBadge.textContent = `${waitingRooms}개 대기중`;
-        }
-
-        function toggleUserSidebar() {
-            if (!_isMobile) return;
-            isSidebarVisible = !isSidebarVisible;
-            userSidebar.classList.toggle('visible', isSidebarVisible);
-            sidebarBackdrop.classList.toggle('visible', isSidebarVisible);
-        }
-
-        // ============================================
+        // ============================================================
         // Room Functions
-        // ============================================
-        function updateRooms(roomsData) {
-            rooms = roomsData;
-            updateRoomCountBadge();
-            applyFilter();
-        }
-
+        // ============================================================
         function applyFilter() {
-            if (currentFilter === 'all') filteredRooms = [...rooms];
-            else if (currentFilter === 'waiting') filteredRooms = rooms.filter(r => r.state === 'WAITING');
-            else if (currentFilter === 'playing') filteredRooms = rooms.filter(r => r.state === 'IN_PROGRESS');
+            if (_currentFilter === 'all') {
+                _filteredRooms = [..._rooms];
+            } else if (_currentFilter === 'waiting') {
+                _filteredRooms = _rooms.filter(r => r.state === 'WAITING');
+            } else if (_currentFilter === 'playing') {
+                _filteredRooms = _rooms.filter(r => r.state === 'IN_PROGRESS');
+            }
             renderRooms();
         }
 
         function searchRooms() {
             const term = searchInput.value.toLowerCase().trim();
-            if (!term) { applyFilter(); return; }
-            filteredRooms = rooms.filter(r => r.title.toLowerCase().includes(term) || (r.hostName && r.hostName.toLowerCase().includes(term)));
+            if (!term) {
+                applyFilter();
+                return;
+            }
+            _filteredRooms = _rooms.filter(r =>
+                r.title.toLowerCase().includes(term) ||
+                (r.hostName && r.hostName.toLowerCase().includes(term))
+            );
             renderRooms();
         }
 
         function renderRooms() {
-            if (filteredRooms.length === 0) {
+            if (_filteredRooms.length === 0) {
                 roomsList.innerHTML = `
                     <div class="empty-state">
-                        <div class="empty-state-icon">🎮</div>
-                        <div class="empty-state-title">방이 없습니다</div>
-                        <div class="empty-state-desc">'방 만들기' 버튼을 클릭하여 새 방을 만들어보세요!</div>
+                        <div class="empty-state__icon">🎮</div>
+                        <div class="empty-state__title">방이 없습니다</div>
+                        <div class="empty-state__desc">'방 만들기' 버튼을 눌러 새 방을 만들어보세요!</div>
                     </div>`;
                 return;
             }
 
-            roomsList.innerHTML = filteredRooms.map(room => {
+            roomsList.innerHTML = _filteredRooms.map(room => {
                 let statusClass = 'waiting', statusText = '대기중';
-                if (room.state === 'IN_PROGRESS') { statusClass = 'playing'; statusText = '게임중'; }
-                else if (room.playerCount >= room.maxPlayers) { statusClass = 'full'; statusText = '만원'; }
+                if (room.state === 'IN_PROGRESS') {
+                    statusClass = 'playing';
+                    statusText = '게임중';
+                } else if (room.playerCount >= room.maxPlayers) {
+                    statusClass = 'full';
+                    statusText = '만원';
+                }
+
                 const fillPercent = (room.playerCount / room.maxPlayers) * 100;
                 const fillClass = fillPercent >= 100 ? 'full' : '';
                 const hostName = room.hostName || (room.host?.name) || '알 수 없음';
@@ -1253,56 +1296,45 @@
                         </div>
                         <div class="room-info">
                             <div class="room-meta">
-                                <span class="room-meta-item"><span class="room-meta-icon">👑</span> ${escapeHtml(hostName)}</span>
-                                <span class="room-meta-item"><span class="room-meta-icon">🎲</span> ${escapeHtml(room.gameMode || '기본')}</span>
+                                <span class="room-meta-item">
+                                    <span class="room-meta-icon">👑</span>
+                                    ${escapeHtml(hostName)}
+                                </span>
+                                <span class="room-meta-item">
+                                    <span class="room-meta-icon">🎲</span>
+                                    ${escapeHtml(room.gameMode || '기본')}
+                                </span>
                             </div>
                             <div class="room-players">
-                                <div class="room-players-bar"><div class="room-players-fill ${fillClass}" style="width: ${fillPercent}%"></div></div>
+                                <div class="room-players-bar">
+                                    <div class="room-players-fill ${fillClass}" style="width: ${fillPercent}%"></div>
+                                </div>
                                 <span class="room-players-text">${room.playerCount}/${room.maxPlayers}</span>
                             </div>
                         </div>
                     </div>`;
             }).join('');
 
+            // Add click handlers
             document.querySelectorAll('.room-card').forEach(card => {
-                card.addEventListener('click', () => joinRoom(card.dataset.roomId));
+                card.addEventListener('click', () => {
+                    joinRoom(card.dataset.roomId);
+                });
             });
         }
 
         function joinRoom(roomId) {
-            sendMessage({ type: 'joinRoom', roomId });
+            sendMessage("joinRoom", { roomId });
         }
 
-        // ============================================
-        // User Functions
-        // ============================================
-        function updateUsers(usersData) {
-            users = usersData;
-            renderUsers();
-        }
-
-        function renderUsers() {
-            if (users.length === 0) {
-                usersList.innerHTML = `<div class="empty-state"><div class="empty-state-desc">접속한 유저가 없습니다.</div></div>`;
-                return;
-            }
-            usersList.innerHTML = users.map(user => `
-                <div class="user-item" data-user-id="${user.id}">
-                    <div class="user-avatar">${escapeHtml(user.name.charAt(0))}</div>
-                    <div class="user-info">
-                        <div class="user-name">${escapeHtml(user.name)}</div>
-                        <div class="user-level">Lv. ${user.level || 1}</div>
-                    </div>
-                </div>`).join('');
-        }
-
-        // ============================================
+        // ============================================================
         // Modal Functions
-        // ============================================
+        // ============================================================
         function showCreateRoomModal() {
             createRoomModal.style.display = 'flex';
-            selectedGameMode = null;
-            requestGameModesWithDelay();
+            _selectedGameMode = null;
+            document.getElementById('roomTitle').value = '';
+            document.getElementById('maxPlayers').value = '8';
             renderGameModes();
         }
 
@@ -1311,19 +1343,24 @@
         }
 
         function renderGameModes() {
-            if (gameModes.length === 0) {
-                gameModeList.innerHTML = `<div class="empty-state"><div class="empty-state-desc">게임 모드 불러오는 중...</div></div>`;
+            if (_gameModes.length === 0) {
+                gameModeList.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state__desc">게임 모드 불러오는 중...</div>
+                    </div>`;
                 return;
             }
-            gameModeList.innerHTML = gameModes.map(mode => `
-                <div class="game-mode-item ${selectedGameMode === mode.id ? 'selected' : ''}" data-mode-id="${mode.id}">
+
+            gameModeList.innerHTML = _gameModes.map(mode => `
+                <div class="game-mode-item ${_selectedGameMode === mode.id ? 'selected' : ''}" data-mode-id="${mode.id}">
                     <div class="game-mode-name">${escapeHtml(mode.name)}</div>
                     <div class="game-mode-desc">${escapeHtml(mode.description)}</div>
-                </div>`).join('');
+                </div>
+            `).join('');
 
             document.querySelectorAll('.game-mode-item').forEach(item => {
                 item.addEventListener('click', () => {
-                    selectedGameMode = item.dataset.modeId;
+                    _selectedGameMode = item.dataset.modeId;
                     document.querySelectorAll('.game-mode-item').forEach(i => i.classList.remove('selected'));
                     item.classList.add('selected');
                 });
@@ -1333,136 +1370,230 @@
         function handleCreateRoom() {
             const title = document.getElementById('roomTitle').value.trim();
             const maxPlayers = parseInt(document.getElementById('maxPlayers').value);
-            if (!title) { alert('방 제목을 입력해주세요.'); return; }
-            if (!selectedGameMode) { alert('게임 모드를 선택해주세요.'); return; }
-            sendMessage({ type: 'createRoom', data: { title, maxPlayers, gameModeId: selectedGameMode } });
+
+            if (!title) {
+                alert('방 제목을 입력해주세요.');
+                return;
+            }
+
+            if (!_selectedGameMode) {
+                alert('게임 모드를 선택해주세요.');
+                return;
+            }
+
+            sendMessage("createRoom", {
+                data: {
+                    title,
+                    maxPlayers,
+                    gameModeId: _selectedGameMode
+                }
+            });
+
             hideCreateRoomModal();
         }
 
-        // ============================================
-        // Chat Functions
-        // ============================================
-        function sendChatMessage() {
-            const content = chatInput.value.trim();
-            if (!content) return;
-            const now = Date.now();
-            if (now - lastChatSentTime < chatCooldown) return;
-            lastChatSentTime = now;
-            sendMessage({ type: 'lobbyChatMessage', content });
-            chatInput.value = '';
-            chatInput.focus();
+        // ============================================================
+        // Room Functions
+        // ============================================================
+        function showRoomPopup() {
+            _isVisible = true;
+            lobbyContainer.style.display = 'none';
+            roomContainer.style.display = 'flex';
+            rearrangeRoomLayout();
+            sendMessage("requestRoomInfo");
+            sendMessage("requestGameModeDetails");
         }
 
-        function addChatMessage(senderId, senderName, content, timestamp) {
-            const el = document.createElement('div');
-            el.className = 'chat-message' + (senderId === currentUserId ? ' self' : '') + (!senderId ? ' system' : '');
-            const time = new Date(timestamp);
-            const timeStr = `${time.getHours().toString().padStart(2, '0')}:${time.getMinutes().toString().padStart(2, '0')}`;
-            el.innerHTML = senderId
-                ? `<span class="sender">${escapeHtml(senderName)}</span>${escapeHtml(content)}<span class="timestamp">${timeStr}</span>`
-                : `${escapeHtml(content)}<span class="timestamp">${timeStr}</span>`;
-            chatMessagesEl.appendChild(el);
-            chatMessagesEl.scrollTop = chatMessagesEl.scrollHeight;
-            while (chatMessagesEl.children.length > 50) chatMessagesEl.removeChild(chatMessagesEl.firstChild);
+        function hideRoomPopup() {
+            _isVisible = false;
+            roomContainer.style.display = 'none';
+            sendMessage("WidgetRearrange", {
+                width: "0px",
+                height: "0px",
+                pointerEvents: "none"
+            });
         }
 
-        // ============================================
-        // Utility Functions
-        // ============================================
-        function sendMessage(msg) { window.parent.postMessage(msg, '*'); }
+        function closeRoomPopup() {
+            hideRoomPopup();
+            sendMessage("roomPopupClosed");
+        }
 
+        function rearrangeRoomLayout() {
+            if (_isMobile && !_isTablet) {
+                sendMessage("WidgetRearrange", {
+                    width: "100%",
+                    height: "calc(100% - 60px)",
+                    anchor: "top",
+                    top: "50px",
+                    pointerEvents: "auto"
+                });
+            } else if (_isTablet) {
+                sendMessage("WidgetRearrange", {
+                    width: "450px",
+                    height: "calc(100% - 100px)",
+                    anchor: "top",
+                    top: "80px",
+                    pointerEvents: "auto"
+                });
+            } else {
+                sendMessage("WidgetRearrange", {
+                    width: "420px",
+                    height: "calc(100% - 120px)",
+                    anchor: "top",
+                    top: "80px",
+                    pointerEvents: "auto"
+                });
+            }
+        }
+
+        function updateRoomData() {
+            if (!_roomData) return;
+
+            // Update title
+            roomTitleEl.textContent = _roomData.title || '방 제목';
+
+            // Check if current user is host
+            _isHost = _roomData.currentUser && _roomData.host &&
+                      _roomData.currentUser.id === _roomData.host.id;
+
+            // Get ready status
+            _isReady = _roomData.currentUser?.isReady || false;
+
+            // Update participant count
+            const players = _roomData.players || [];
+            const maxPlayers = _roomData.maxPlayers || 8;
+            participantCountEl.textContent = `${players.length}/${maxPlayers}`;
+
+            // Render participants
+            renderParticipants();
+
+            // Update action button
+            updateActionButton();
+        }
+
+        function renderParticipants() {
+            if (!_roomData) return;
+
+            const players = _roomData.players || [];
+            const maxPlayers = _roomData.maxPlayers || 8;
+            const hostId = _roomData.host?.id;
+
+            let html = '';
+
+            // Render existing players
+            players.forEach(player => {
+                const isPlayerHost = player.id === hostId;
+                const isPlayerReady = player.isReady;
+                const initial = player.name.charAt(0).toUpperCase();
+
+                let statusClass = '';
+                let statusText = '';
+
+                if (isPlayerHost) {
+                    statusClass = 'host';
+                    statusText = '방장';
+                } else if (isPlayerReady) {
+                    statusClass = 'ready';
+                    statusText = '준비완료';
+                } else {
+                    statusClass = 'not-ready';
+                    statusText = '대기중';
+                }
+
+                html += `
+                    <div class="participant-card ${isPlayerHost ? 'host' : ''}">
+                        <div class="participant-avatar">
+                            ${initial}
+                            ${isPlayerHost ? '<span class="participant-avatar__badge">👑</span>' : ''}
+                        </div>
+                        <div class="participant-name">${escapeHtml(player.name)}</div>
+                        <div class="participant-status ${statusClass}">${statusText}</div>
+                        ${_isHost && !isPlayerHost ? `<button class="kick-btn" onclick="kickPlayer('${player.id}')">강퇴</button>` : ''}
+                    </div>
+                `;
+            });
+
+            // Render empty slots
+            for (let i = players.length; i < maxPlayers; i++) {
+                html += `
+                    <div class="participant-card empty">
+                        <div class="participant-avatar">·</div>
+                        <div class="participant-name">빈 자리</div>
+                    </div>
+                `;
+            }
+
+            participantsGridEl.innerHTML = html;
+        }
+
+        function renderGameModeInfo() {
+            if (!_gameModeDetails) return;
+
+            gameModeNameEl.textContent = _gameModeDetails.name || '게임 모드';
+            gameModeDescEl.textContent = _gameModeDetails.description || '';
+
+            const jobs = _gameModeDetails.jobs || [];
+            jobTagsEl.innerHTML = jobs.map(job => {
+                const teamClass = (job.team || 'citizen').toLowerCase();
+                return `<span class="job-tag ${teamClass}">${escapeHtml(job.name)}</span>`;
+            }).join('');
+        }
+
+        function updateActionButton() {
+            if (_isHost) {
+                // Host: Show start button
+                const players = _roomData?.players || [];
+                const allReady = players.every(p =>
+                    p.id === _roomData.host?.id || p.isReady
+                );
+                const canStart = players.length >= 4 && allReady;
+
+                actionBtnEl.className = 'action-btn start';
+                actionBtnEl.textContent = '게임 시작';
+                actionBtnEl.disabled = !canStart;
+            } else {
+                // Non-host: Show ready button
+                if (_isReady) {
+                    actionBtnEl.className = 'action-btn cancel-ready';
+                    actionBtnEl.textContent = '준비 취소';
+                } else {
+                    actionBtnEl.className = 'action-btn ready';
+                    actionBtnEl.textContent = '준비 완료';
+                }
+                actionBtnEl.disabled = false;
+            }
+        }
+
+        function handleActionButton() {
+            if (_isHost) {
+                sendMessage("startGame");
+            } else {
+                if (_isReady) {
+                    _isReady = false;
+                    sendMessage("cancelReady");
+                } else {
+                    _isReady = true;
+                    sendMessage("setReady");
+                }
+                updateActionButton();
+            }
+        }
+
+        function kickPlayer(playerId) {
+            if (!_isHost) return;
+            sendMessage("kickPlayer", { playerId: playerId });
+        }
+
+        // ============================================================
+        // Utility
+        // ============================================================
         function escapeHtml(text) {
             const div = document.createElement('div');
             div.textContent = text;
             return div.innerHTML;
         }
-
-        function requestRoomsWithDelay() {
-            const now = Date.now();
-            if (now - lastRequestTime.rooms >= requestCooldown) {
-                lastRequestTime.rooms = now;
-                sendMessage({ type: 'requestRooms' });
-            }
-        }
-
-        function requestUsersWithDelay() {
-            const now = Date.now();
-            if (now - lastRequestTime.users >= requestCooldown) {
-                lastRequestTime.users = now;
-                sendMessage({ type: 'requestUsers' });
-            }
-        }
-
-        function requestGameModesWithDelay() {
-            const now = Date.now();
-            if (now - lastRequestTime.gameModes >= requestCooldown) {
-                lastRequestTime.gameModes = now;
-                sendMessage({ type: 'requestGameModes' });
-            }
-        }
-
-        // ============================================
-        // Message Handler
-        // ============================================
-        window.addEventListener('message', (e) => {
-            const data = e.data;
-            if (!data || !data.type) return;
-
-            switch (data.type) {
-                case 'init':
-                    _isMobile = data.isMobile;
-                    _isTablet = data.isTablet;
-                    currentUserId = data.userId;
-                    currentUserName = data.userName;
-
-                    if (_isMobile && !_isTablet) {
-                        document.body.classList.add('mobile');
-                        isCompact = false; // Mobile always starts expanded
-                    } else {
-                        document.body.classList.remove('mobile');
-                        isCompact = true; // Desktop starts in compact mode
-                    }
-
-                    revealWidget();
-                    sendMessage({ type: 'requestGameModes' });
-                    setTimeout(() => sendMessage({ type: 'requestRooms' }), 200);
-                    setTimeout(() => sendMessage({ type: 'requestUsers' }), 400);
-
-                    if (refreshInterval) clearInterval(refreshInterval);
-                    refreshInterval = setInterval(() => {
-                        if (isVisible && !isCompact) { requestRoomsWithDelay(); requestUsersWithDelay(); }
-                    }, 30000);
-                    break;
-
-                case 'roomsList': updateRooms(data.rooms); break;
-                case 'usersList': updateUsers(data.users); break;
-                case 'gameModes': gameModes = data.modes; renderGameModes(); break;
-                case 'chatMessage': addChatMessage(data.senderId, data.senderName, data.content, data.timestamp); break;
-                case 'hideWidget':
-                    hideWidget();
-                    if (refreshInterval) { clearInterval(refreshInterval); refreshInterval = null; }
-                    break;
-                case 'showWidget':
-                    revealWidget();
-                    requestGameModesWithDelay();
-                    requestRoomsWithDelay();
-                    requestUsersWithDelay();
-                    if (!refreshInterval) {
-                        refreshInterval = setInterval(() => {
-                            if (isVisible) { requestRoomsWithDelay(); requestUsersWithDelay(); }
-                        }, 30000);
-                    }
-                    break;
-                case 'error': alert(`오류: ${data.message}`); break;
-                case 'focusInput': chatInput.focus(); break;
-            }
-        });
-
-        // Retry init
-        let initRetryInterval = setInterval(() => {
-            if (!isVisible) sendMessage({ type: 'retryInit' });
-            else clearInterval(initRetryInterval);
-        }, 1000);
     </script>
 </body>
+
 </html>

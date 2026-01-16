@@ -21,8 +21,9 @@ export interface PlayerTag {
 	guestId?: string;
 	isReady?: boolean; // 플레이어 준비 상태
 	profile: PlayerProfile; // 플레이어 프로필 정보
+	lobbyNavbarMessageHandler?: any; // 로비 네비게이션 바 메시지 핸들러
+	lobbyChatMessageHandler?: any; // 로비 채팅 메시지 핸들러
 	lobbyWidgetMessageHandler?: any; // 로비 위젯 메시지 핸들러
-	roomWidgetMessageHandler?: any; // 방 위젯 메시지 핸들러
 }
 
 export interface GamePlayer extends ScriptPlayer {

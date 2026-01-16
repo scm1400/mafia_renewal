@@ -426,12 +426,24 @@
         // Initialization
         // ============================================
         function initializeWidget(data) {
-            state.myPlayerId = data.myPlayerId || '';
-            state.channels = data.channels || ['day'];
-            state.activeChannel = data.activeChannel || state.channels[0] || 'day';
-            state.readOnlyChannels = data.readOnlyChannels || [];
             state.isMobile = data.isMobile || false;
             state.isTablet = data.isTablet || false;
+
+            // Apply mobile class
+            if (state.isMobile) {
+                document.body.classList.add('mobile');
+            }
+
+            // 게임 데이터가 없으면 위젯 숨김 상태 유지 (초기 생성 시)
+            if (!data.myPlayerId || !data.channels || data.channels.length === 0) {
+                hideWidget();
+                return;
+            }
+
+            state.myPlayerId = data.myPlayerId;
+            state.channels = data.channels;
+            state.activeChannel = data.activeChannel || state.channels[0] || 'day';
+            state.readOnlyChannels = data.readOnlyChannels || [];
 
             // Initialize messages and unread counts for each channel
             state.channels.forEach(channel => {
@@ -442,11 +454,6 @@
                     state.unreadCounts[channel] = 0;
                 }
             });
-
-            // Apply mobile class
-            if (state.isMobile) {
-                document.body.classList.add('mobile');
-            }
 
             revealWidget();
             renderTabs();

@@ -36,11 +36,8 @@ export class WidgetManager {
      */
     private constructor() {
         ScriptApp.addOnKeyDown(13, (player) => {
-            if(player.tag.widget.lobby){
-                player.tag.widget.lobby.sendMessage({type:"focusInput"})
-            }
-            if(player.tag.widget.room){
-                player.tag.widget.room.sendMessage({type:"focusInput"})
+            if(player.tag.widget.lobbyChat){
+                player.tag.widget.lobbyChat.sendMessage({type:"focusInput"})
             }
             if(player.tag.widget.finalDefense){
                 player.tag.widget.finalDefense.sendMessage({type:"focusInput"})
@@ -89,9 +86,16 @@ export class WidgetManager {
 
         // 각 위젯을 초기에 숨긴 상태로 생성
         // 공통 함수를 사용하여 중복 코드 제거
-        this.createAndInitializeWidget(player, widgetMap, WidgetType.LOBBY, "widgets/lobby_widget.html", "middle");
-        this.createAndInitializeWidget(player, widgetMap, WidgetType.ROOM, "widgets/room_widget.html", "middle");
+
+        // 로비 관련 위젯
+        this.createAndInitializeWidget(player, widgetMap, WidgetType.LOBBY_NAVBAR, "widgets/lobby_navbar.html", "top");
+        this.createAndInitializeWidget(player, widgetMap, WidgetType.LOBBY, "widgets/lobby_widget.html", "top");
+        this.createAndInitializeWidget(player, widgetMap, WidgetType.LOBBY_CHAT, "widgets/lobby_chat_widget.html", "bottomleft");
+
+        // 기본 위젯
         this.createAndInitializeWidget(player, widgetMap, WidgetType.GAME_STATUS, "widgets/game_status.html", "middleright");
+
+        // 게임 플레이 위젯
         this.createAndInitializeWidget(player, widgetMap, WidgetType.NIGHT_ACTION, "widgets/night_action.html", "middle");
         this.createAndInitializeWidget(player, widgetMap, WidgetType.VOTE, "widgets/vote_widget.html", "middle");
         this.createAndInitializeWidget(player, widgetMap, WidgetType.FINAL_DEFENSE, "widgets/final_defense_widget.html", "middle");
@@ -153,11 +157,14 @@ export class WidgetManager {
         }
         
         switch (widgetType) {
+            case WidgetType.LOBBY_NAVBAR:
+                player.tag.widget.lobbyNavbar = widget.element;
+                break;
             case WidgetType.LOBBY:
                 player.tag.widget.lobby = widget.element;
                 break;
-            case WidgetType.ROOM:
-                player.tag.widget.room = widget.element;
+            case WidgetType.LOBBY_CHAT:
+                player.tag.widget.lobbyChat = widget.element;
                 break;
             case WidgetType.GAME_STATUS:
                 player.tag.widget.gameStatus = widget.element;
@@ -203,11 +210,14 @@ export class WidgetManager {
         // player.tag.widget에서 참조 제거 (기존 코드와의 호환성 유지)
         if (player.tag.widget) {
             switch (widgetType) {
+                case WidgetType.LOBBY_NAVBAR:
+                    player.tag.widget.lobbyNavbar = null;
+                    break;
                 case WidgetType.LOBBY:
                     player.tag.widget.lobby = null;
                     break;
-                case WidgetType.ROOM:
-                    player.tag.widget.room = null;
+                case WidgetType.LOBBY_CHAT:
+                    player.tag.widget.lobbyChat = null;
                     break;
                 case WidgetType.GAME_STATUS:
                     player.tag.widget.gameStatus = null;
@@ -401,8 +411,9 @@ export class WidgetManager {
         // player.tag.widget에서 모든 위젯 참조 제거 (기존 코드와의 호환성 유지)
         if (player.tag && player.tag.widget) {
             // 모든 위젯 필드 초기화
+            player.tag.widget.lobbyNavbar = null;
             player.tag.widget.lobby = null;
-            player.tag.widget.room = null;
+            player.tag.widget.lobbyChat = null;
             player.tag.widget.gameStatus = null;
             player.tag.widget.nightAction = null;
             player.tag.widget.voteWidget = null;

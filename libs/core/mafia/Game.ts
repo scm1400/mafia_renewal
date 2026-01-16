@@ -182,21 +182,39 @@ export class Game extends GameBase {
 	private showLobbyWidget(player: GamePlayer) {
 		const widgetManager = WidgetManager.instance;
 
-		// 위젯 관리자를 통해 로비 위젯 표시
-		widgetManager.showWidget(player, WidgetType.LOBBY);
+		// 로비 네비게이션 바와 채팅 위젯 표시
+		widgetManager.showWidget(player, WidgetType.LOBBY_NAVBAR);
+		widgetManager.showWidget(player, WidgetType.LOBBY_CHAT);
+		// LOBBY 위젯은 navbar 버튼 클릭 시에만 표시
 
 		// 약간의 딜레이 후 데이터 전송 (위젯이 준비될 시간을 줌)
 		ScriptApp.runLater(() => {
-			// 초기화 메시지에 플레이어 ID와 이름 포함
-			widgetManager.sendMessageToWidget(player, WidgetType.LOBBY, {
+			// 네비게이션 바 초기화
+			widgetManager.sendMessageToWidget(player, WidgetType.LOBBY_NAVBAR, {
 				type: "init",
 				isMobile: player.isMobile,
-				isTablet: false, // 태블릿 구분 로직이 없으면 기본값
+				isTablet: false,
+			});
+
+			// 로비 채팅 초기화
+			widgetManager.sendMessageToWidget(player, WidgetType.LOBBY_CHAT, {
+				type: "init",
+				isMobile: player.isMobile,
+				isTablet: false,
 				userId: player.id,
 				userName: player.name,
 			});
 
-			// 게임 모드 정보 전송
+			// 로비 위젯 초기화 (방 목록 팝업)
+			widgetManager.sendMessageToWidget(player, WidgetType.LOBBY, {
+				type: "init",
+				isMobile: player.isMobile,
+				isTablet: false,
+				userId: player.id,
+				userName: player.name,
+			});
+
+			// 게임 모드 정보 전송 (로비 위젯용)
 			const gameModes = this.getGameModesForUI();
 			sendAdminConsoleMessage(`게임 모드 정보 전송 (플레이어: ${player.name}, 모드 수: ${gameModes.length})`);
 
@@ -212,15 +230,99 @@ export class Game extends GameBase {
 			this.updateRoomInfo();
 		}, 0.1); // 0.1초 딜레이 (위젯이 준비되는 시간)
 
-		// 로비 위젯 메시지 처리 설정
+		// ========== 로비 네비게이션 바 메시지 핸들러 ==========
+		const lobbyNavbar = widgetManager.getWidget(player, WidgetType.LOBBY_NAVBAR);
+		if (lobbyNavbar && lobbyNavbar.element) {
+			if (player.tag.lobbyNavbarMessageHandler) {
+				lobbyNavbar.element.onMessage.Remove(player.tag.lobbyNavbarMessageHandler);
+			}
+
+			const navbarHandler = (sender: GamePlayer, data) => {
+				if (data.type === "openLobby") {
+					// 방 목록 팝업 표시
+					widgetManager.showWidget(sender, WidgetType.LOBBY);
+					widgetManager.sendMessageToWidget(sender, WidgetType.LOBBY_NAVBAR, { type: "lobbyOpened" });
+				} else if (data.type === "closeLobby") {
+					// 방 목록 팝업 숨김
+					widgetManager.hideWidget(sender, WidgetType.LOBBY);
+					widgetManager.sendMessageToWidget(sender, WidgetType.LOBBY_NAVBAR, { type: "lobbyClosed" });
+				} else if (data.type === "openUsers") {
+					// 유저 목록 팝업 (추후 구현)
+					widgetManager.sendMessageToWidget(sender, WidgetType.LOBBY_NAVBAR, { type: "usersOpened" });
+				} else if (data.type === "closeUsers") {
+					// 유저 목록 팝업 닫기
+					widgetManager.sendMessageToWidget(sender, WidgetType.LOBBY_NAVBAR, { type: "usersClosed" });
+				} else if (data.type === "openRoomPopup") {
+					// 방 상태일 때 참가자 팝업 표시 요청
+					if (sender.tag.roomInfo) {
+						widgetManager.showWidget(sender, WidgetType.LOBBY);
+						widgetManager.sendMessageToWidget(sender, WidgetType.LOBBY, { type: "showRoomPopup" });
+					}
+				} else if (data.type === "leaveRoom") {
+					// 방 나가기
+					if (sender.tag.roomInfo) {
+						const roomNum = sender.tag.roomInfo.roomNum;
+						const room = this.mafiaGameRoomManager.getRoom(roomNum.toString());
+						if (room) {
+							room.leavePlayer(sender.id);
+							this.exitRoomState(sender);
+							this.notifyPlayerLeftRoom(room, sender);
+							this.updateRoomInfo();
+						}
+					}
+				}
+			};
+
+			lobbyNavbar.element.onMessage.Add(navbarHandler);
+			player.tag.lobbyNavbarMessageHandler = navbarHandler;
+		}
+
+		// ========== 로비 채팅 메시지 핸들러 ==========
+		const lobbyChat = widgetManager.getWidget(player, WidgetType.LOBBY_CHAT);
+		if (lobbyChat && lobbyChat.element) {
+			if (player.tag.lobbyChatMessageHandler) {
+				lobbyChat.element.onMessage.Remove(player.tag.lobbyChatMessageHandler);
+			}
+
+			const chatHandler = (sender: GamePlayer, data) => {
+				if (data.type === "lobbyChatMessage" && data.content) {
+					// 명령어 확인
+					if (CommandParser.isCommand(data.content)) {
+						const parsed = CommandParser.parse(data.content);
+						if (parsed) {
+							const executed = CommandManager.instance.executeCommand(parsed.command, parsed.args, {
+								player: sender,
+								room: null,
+								flowManager: null,
+							});
+							if (executed) return;
+						}
+					}
+					// 일반 채팅 메시지 처리
+					this.sendLobbyChatMessage(sender, data.content);
+				} else if (data.type === "roomChatMessage" && data.content) {
+					// 방 채팅 메시지 처리
+					const roomId = sender.tag.roomInfo?.roomNum;
+					if (roomId) {
+						const room = this.mafiaGameRoomManager.getRoom(roomId.toString());
+						if (room) {
+							this.sendRoomChatMessage(room, sender, data.content);
+						}
+					}
+				}
+			};
+
+			lobbyChat.element.onMessage.Add(chatHandler);
+			player.tag.lobbyChatMessageHandler = chatHandler;
+		}
+
+		// ========== 로비 위젯 (방 목록 팝업) 메시지 핸들러 ==========
 		const lobbyWidget = widgetManager.getWidget(player, WidgetType.LOBBY);
 		if (lobbyWidget && lobbyWidget.element) {
-			// 이미 이벤트 리스너가 있으면 먼저 제거
 			if (player.tag.lobbyWidgetMessageHandler) {
 				lobbyWidget.element.onMessage.Remove(player.tag.lobbyWidgetMessageHandler);
 			}
 
-			// 새 메시지 핸들러 생성
 			const messageHandler = (sender: GamePlayer, data) => {
 				if (data.type === "requestGameModes") {
 					const gameModes = this.getGameModesForUI();
@@ -234,26 +336,9 @@ export class Game extends GameBase {
 					this.updateRoomInfo();
 				} else if (data.type === "requestUsers") {
 					this.sendUsersList(sender);
-				} else if (data.type === "lobbyChatMessage" && data.content) {
-					// 명령어 확인
-					if (CommandParser.isCommand(data.content)) {
-						const parsed = CommandParser.parse(data.content);
-						if (parsed) {
-							const executed = CommandManager.instance.executeCommand(parsed.command, parsed.args, {
-								player: sender,
-								room: null, // 로비에서는 null
-								flowManager: null,
-							});
-
-							// 명령어가 실행되었으면 채팅으로 브로드캐스트하지 않음
-							if (executed) {
-								return;
-							}
-						}
-					}
-
-					// 일반 채팅 메시지 처리
-					this.sendLobbyChatMessage(sender, data.content);
+				} else if (data.type === "lobbyClosed") {
+					// navbar에 상태 동기화
+					widgetManager.sendMessageToWidget(sender, WidgetType.LOBBY_NAVBAR, { type: "lobbyClosed" });
 				} else if (data.type === "createRoom" && data.data) {
 					const { title, maxPlayers, gameModeId } = data.data;
 
@@ -265,14 +350,11 @@ export class Game extends GameBase {
 						});
 
 						if (room) {
-							// 방 생성 후 해당 방에 플레이어 입장
 							room.joinPlayer(sender);
 
-							// 로비 위젯 닫고 방 위젯 표시
-							widgetManager.hideWidget(sender, WidgetType.LOBBY);
-							this.showRoomWidget(sender, room);
+							// 방 상태로 전환 (enterRoom 메시지 전송)
+							this.enterRoomState(sender, room);
 
-							// 모든 플레이어에게 방 목록 업데이트
 							this.updateRoomInfo();
 						}
 					}
@@ -282,14 +364,11 @@ export class Game extends GameBase {
 						const joinResult = room.joinPlayer(sender);
 
 						if (joinResult) {
-							// 로비 위젯 닫고 방 위젯 표시
-							widgetManager.hideWidget(sender, WidgetType.LOBBY);
-							this.showRoomWidget(sender, room);
+							// 방 상태로 전환 (enterRoom 메시지 전송)
+							this.enterRoomState(sender, room);
 
-							// 모든 플레이어에게 방 목록 업데이트
 							this.updateRoomInfo();
 						} else {
-							// 방 참가 실패 메시지 전송
 							widgetManager.sendMessageToWidget(sender, WidgetType.LOBBY, {
 								type: "error",
 								message: "방에 입장할 수 없습니다.",
@@ -303,79 +382,24 @@ export class Game extends GameBase {
 						if (room) {
 							room.leavePlayer(sender.id);
 
-							// 방 위젯 닫고 로비 위젯 표시
-							widgetManager.hideWidget(sender, WidgetType.ROOM);
-							this.showLobbyWidget(sender);
+							// 로비 상태로 전환 (exitRoom 메시지 전송)
+							this.exitRoomState(sender);
 
-							// 모든 플레이어에게 방 정보 업데이트 전송
 							this.updateRoomInfo();
 						}
 					}
 				}
-			};
-
-			// 메시지 핸들러 등록 및 플레이어 태그에 저장
-			lobbyWidget.element.onMessage.Add(messageHandler);
-			player.tag.lobbyWidgetMessageHandler = messageHandler;
-		}
-	}
-
-	/**
-	 * 방 위젯을 표시합니다.
-	 * @param player 플레이어
-	 * @param room 게임 방
-	 */
-	private showRoomWidget(player: GamePlayer, room: GameRoom) {
-		const widgetManager = WidgetManager.instance;
-
-		// 위젯 관리자를 통해 방 위젯 표시
-		widgetManager.showWidget(player, WidgetType.ROOM);
-
-		// 약간의 딜레이 후 데이터 전송 (위젯이 준비될 시간을 줌)
-		ScriptApp.runLater(() => {
-			// 방 정보 전송
-			this.sendRoomInfoToPlayer(player, room);
-
-			// 게임 모드 상세 정보 전송
-			this.sendGameModeDetailsToPlayer(player, room.gameMode);
-
-			// 게임이 진행 중인지 확인
-			const gameFlow = room.flowManager;
-			if (gameFlow && gameFlow.isGameInProgress()) {
-				// 이미 사망한 플레이어인지 확인
-				// const deadPlayers = gameFlow.getDeadPlayers();
-				// if (deadPlayers && deadPlayers.includes(player.id)) {
-				// 	// 죽은 플레이어 채팅 위젯 표시
-				// 	gameFlow.showPermanentDeadChatWidget(player);
-				// }
-				// // 영매인지 확인
-				// const mafiaPlayer = room.getPlayer(player.id);
-				// if (mafiaPlayer && mafiaPlayer.jobId === JobId.MEDIUM && mafiaPlayer.isAlive) {
-				// 	// 영매용 채팅 위젯 표시
-				// 	gameFlow.showMediumChatWidget(player);
-				// }
-			}
-		}, 0.1); // 0.1초 딜레이 (위젯이 준비되는 시간)
-
-		// 방에 있는 다른 플레이어들에게 새 플레이어 입장 알림
-		this.notifyPlayerJoinedRoom(room, player);
-
-		// 방 위젯 메시지 처리 설정
-		const roomWidget = widgetManager.getWidget(player, WidgetType.ROOM);
-		if (roomWidget && roomWidget.element) {
-			// 이미 이벤트 리스너가 있으면 먼저 제거
-			if (player.tag.roomWidgetMessageHandler) {
-				roomWidget.element.onMessage.Remove(player.tag.roomWidgetMessageHandler);
-			}
-
-			// 새 메시지 핸들러 생성
-			const messageHandler = (sender: GamePlayer, data) => {
-				if (data.type === "requestRoomInfo") {
+				// Room operations from lobby widget
+				else if (data.type === "requestRoomInfo") {
 					const roomId = sender.tag.roomInfo?.roomNum;
 					if (roomId) {
 						const room = this.mafiaGameRoomManager.getRoom(roomId.toString());
 						if (room) {
-							this.sendRoomInfoToPlayer(sender, room);
+							const roomData = this.buildRoomData(sender, room);
+							widgetManager.sendMessageToWidget(sender, WidgetType.LOBBY, {
+								type: "roomInfo",
+								roomData: roomData,
+							});
 						}
 					}
 				} else if (data.type === "requestGameModeDetails") {
@@ -383,27 +407,7 @@ export class Game extends GameBase {
 					if (roomId) {
 						const room = this.mafiaGameRoomManager.getRoom(roomId.toString());
 						if (room) {
-							this.sendGameModeDetailsToPlayer(sender, room.gameMode);
-						}
-					}
-				} else if (data.type === "leaveRoom") {
-					const roomId = sender.tag.roomInfo?.roomNum;
-					if (roomId) {
-						const room = this.mafiaGameRoomManager.getRoom(roomId.toString());
-						if (room) {
-							room.leavePlayer(sender.id);
-
-							// 방 위젯 숨기기
-							widgetManager.hideWidget(sender, WidgetType.ROOM);
-
-							// 로비 위젯 표시
-							this.showLobbyWidget(sender);
-
-							// 모든 플레이어에게 방 정보 업데이트 전송
-							this.updateRoomInfo();
-
-							// 방에 남아있는 플레이어들에게 퇴장 메시지 전송
-							this.notifyPlayerLeftRoom(room, sender);
+							this.sendGameModeDetailsToLobbyWidget(sender, room.gameMode);
 						}
 					}
 				} else if (data.type === "setReady") {
@@ -411,10 +415,7 @@ export class Game extends GameBase {
 					if (roomId) {
 						const room = this.mafiaGameRoomManager.getRoom(roomId.toString());
 						if (room) {
-							// 플레이어 준비 상태 설정
 							sender.tag.isReady = true;
-
-							// 방의 모든 플레이어에게 준비 상태 변경 알림
 							this.notifyReadyStatusChanged(room, sender);
 						}
 					}
@@ -423,10 +424,7 @@ export class Game extends GameBase {
 					if (roomId) {
 						const room = this.mafiaGameRoomManager.getRoom(roomId.toString());
 						if (room) {
-							// 플레이어 준비 상태 해제
 							sender.tag.isReady = false;
-
-							// 방의 모든 플레이어에게 준비 상태 변경 알림
 							this.notifyReadyStatusChanged(room, sender);
 						}
 					}
@@ -435,29 +433,16 @@ export class Game extends GameBase {
 					if (roomId) {
 						const room = this.mafiaGameRoomManager.getRoom(roomId.toString());
 						if (room) {
-							// 게임 시작 조건 확인
 							const canStart = this.canStartGame(room);
-
 							if (canStart) {
-								// 방 상태를 PLAYING으로 변경
 								room.state = GameState.IN_PROGRESS;
-
-								// 방장 확인
 								if (!room.hostId) {
 									room.hostId = sender.id;
 								}
-
-								// 게임 시작
 								room.flowManager.startGame();
-
-								// 방의 모든 플레이어에게 게임 시작 알림
-								// this.notifyGameStarting(room);
-
-								// 모든 플레이어에게 방 정보 업데이트 전송
 								this.updateRoomInfo();
 							} else {
-								// 게임 시작 실패 메시지 전송
-								widgetManager.sendMessageToWidget(sender, WidgetType.ROOM, {
+								widgetManager.sendMessageToWidget(sender, WidgetType.LOBBY, {
 									type: "error",
 									message: "모든 플레이어가 준비 상태여야 합니다.",
 								});
@@ -468,67 +453,119 @@ export class Game extends GameBase {
 					const roomId = sender.tag.roomInfo?.roomNum;
 					if (roomId) {
 						const room = this.mafiaGameRoomManager.getRoom(roomId.toString());
-						if (room) {
-							// 방장 권한 확인
-							const isHost = room.hostId === sender.id;
-
-							if (isHost) {
-								// 강퇴할 플레이어 찾기
-								const targetPlayer = ScriptApp.getPlayerByID(data.playerId) as unknown as GamePlayer;
-
-								if (targetPlayer) {
-									// 플레이어 강퇴
-									room.leavePlayer(targetPlayer.id);
-
-									// 강퇴된 플레이어에게 로비 위젯 표시
-									widgetManager.hideWidget(targetPlayer, WidgetType.ROOM);
-									this.showLobbyWidget(targetPlayer);
-
-									// 방의 모든 플레이어에게 강퇴 알림
-									this.notifyPlayerKicked(room, targetPlayer);
-
-									// 모든 플레이어에게 방 정보 업데이트 전송
-									this.updateRoomInfo();
-								}
+						if (room && room.hostId === sender.id) {
+							const targetPlayer = ScriptApp.getPlayerByID(data.playerId) as unknown as GamePlayer;
+							if (targetPlayer) {
+								room.leavePlayer(targetPlayer.id);
+								this.exitRoomState(targetPlayer);
+								this.showLobbyWidget(targetPlayer);
+								this.notifyPlayerKicked(room, targetPlayer);
+								this.updateRoomInfo();
 							}
-						}
-					}
-				} else if (data.type === "chatMessage" && data.content) {
-					const roomId = sender.tag.roomInfo?.roomNum;
-					if (roomId) {
-						const room = this.mafiaGameRoomManager.getRoom(roomId.toString());
-						if (room) {
-							// 채팅 메시지 전송
-							this.sendChatMessageToRoom(room, sender, data.content);
 						}
 					}
 				}
 			};
 
-			// 메시지 핸들러 등록 및 플레이어 태그에 저장
-			roomWidget.element.onMessage.Add(messageHandler);
-			player.tag.roomWidgetMessageHandler = messageHandler;
+			lobbyWidget.element.onMessage.Add(messageHandler);
+			player.tag.lobbyWidgetMessageHandler = messageHandler;
 		}
 	}
 
 	/**
-	 * 방 정보를 플레이어에게 전송합니다.
+	 * 로비 팝업만 숨깁니다 (방 입장 시 navbar와 chat은 유지).
+	 * @param player 플레이어
 	 */
-	private sendRoomInfoToPlayer(player: GamePlayer, room: GameRoom) {
+	private hideLobbyPopup(player: GamePlayer) {
+		const widgetManager = WidgetManager.instance;
+		// LOBBY 팝업만 숨김, navbar와 chat은 ROOM 상태로 전환
+		widgetManager.hideWidget(player, WidgetType.LOBBY);
+	}
+
+	/**
+	 * 모든 로비 관련 위젯을 숨깁니다 (완전히 숨김).
+	 * @param player 플레이어
+	 */
+	private hideLobbyWidgets(player: GamePlayer) {
+		const widgetManager = WidgetManager.instance;
+		widgetManager.hideWidget(player, WidgetType.LOBBY_NAVBAR);
+		widgetManager.hideWidget(player, WidgetType.LOBBY);
+		widgetManager.hideWidget(player, WidgetType.LOBBY_CHAT);
+	}
+
+	/**
+	 * 방 상태로 전환합니다 (enterRoom 메시지를 모든 로비 위젯에 전송).
+	 * @param player 플레이어
+	 * @param room 게임 방
+	 */
+	private enterRoomState(player: GamePlayer, room: GameRoom) {
 		const widgetManager = WidgetManager.instance;
 
+		// LOBBY 팝업만 숨김
+		this.hideLobbyPopup(player);
+
+		// 방 데이터 구성
+		const roomData = this.buildRoomData(player, room);
+
+		// 모든 로비 위젯에 enterRoom 메시지 전송
+		widgetManager.sendMessageToWidget(player, WidgetType.LOBBY_NAVBAR, {
+			type: "enterRoom",
+			roomData: roomData,
+		});
+
+		widgetManager.sendMessageToWidget(player, WidgetType.LOBBY, {
+			type: "enterRoom",
+			roomData: roomData,
+		});
+
+		widgetManager.sendMessageToWidget(player, WidgetType.LOBBY_CHAT, {
+			type: "enterRoom",
+			roomData: roomData,
+		});
+
+		// 약간의 딜레이 후 게임 모드 정보 전송
+		ScriptApp.runLater(() => {
+			this.sendGameModeDetailsToLobbyWidget(player, room.gameMode);
+		}, 0.1);
+
+		// 방에 있는 다른 플레이어들에게 새 플레이어 입장 알림
+		this.notifyPlayerJoinedRoom(room, player);
+	}
+
+	/**
+	 * 로비 상태로 전환합니다 (exitRoom 메시지를 모든 로비 위젯에 전송).
+	 * @param player 플레이어
+	 */
+	private exitRoomState(player: GamePlayer) {
+		const widgetManager = WidgetManager.instance;
+
+		// 모든 로비 위젯에 exitRoom 메시지 전송
+		widgetManager.sendMessageToWidget(player, WidgetType.LOBBY_NAVBAR, {
+			type: "exitRoom",
+		});
+
+		widgetManager.sendMessageToWidget(player, WidgetType.LOBBY, {
+			type: "exitRoom",
+		});
+
+		widgetManager.sendMessageToWidget(player, WidgetType.LOBBY_CHAT, {
+			type: "exitRoom",
+		});
+	}
+
+	/**
+	 * 방 데이터를 구성합니다.
+	 */
+	private buildRoomData(player: GamePlayer, room: GameRoom) {
 		const players = room.getPlayers() as MafiaPlayer[];
-		// host 정보 가져오기 (타입 안전하게 처리)
 		let hostName = "알 수 없음";
-		let hostId = "";
+		let hostId = room.hostId || "";
 
 		if (room.hostId) {
-			hostId = room.hostId; // 이제 room.host는 이미 string 타입
 			const hostPlayer = players.find((p) => p.id === hostId);
 			if (hostPlayer) {
 				hostName = hostPlayer.name;
 			} else {
-				// 플레이어 목록에 없는 경우 getPlayerById로 한번 더 시도
 				const gamePlayer = getPlayerById(hostId);
 				if (gamePlayer) {
 					hostName = gamePlayer.name;
@@ -536,49 +573,47 @@ export class Game extends GameBase {
 			}
 		}
 
-		// 플레이어 정보 구성
 		const playersList = players.map((p) => {
-			// MafiaPlayer에서 필요한 정보만 추출하고, GamePlayer에서 추가 정보 가져오기
 			const gamePlayer = getPlayerById(p.id);
 			return {
 				id: p.id,
 				name: p.name,
-				level: gamePlayer?.tag?.profile?.level || 1, // 플레이어 프로필에서 레벨 가져오기
+				level: gamePlayer?.tag?.profile?.level || 1,
 				isReady: gamePlayer?.tag?.isReady || false,
 			};
 		});
 
-		// 방 정보 전송
-		widgetManager.sendMessageToWidget(player, WidgetType.ROOM, {
-			type: "roomInfo",
-			roomData: {
-				id: room.id,
-				title: room.title,
-				maxPlayers: room.maxPlayers,
-				gameMode: room.gameMode.getName(),
-				state: room.state,
-				isPlaying: room.state === GameState.IN_PROGRESS,
-				host: {
-					id: hostId,
-					name: hostName,
-				},
-				players: playersList,
-				currentUser: {
-					id: player.id,
-					name: player.name,
-					isReady: player.tag?.isReady || false,
-				},
+		// 준비된 플레이어 수 계산
+		const readyCount = playersList.filter((p) => p.isReady || p.id === hostId).length;
+
+		return {
+			id: room.id,
+			title: room.title,
+			maxPlayers: room.maxPlayers,
+			playerCount: players.length,
+			readyCount: readyCount,
+			gameMode: room.gameMode.getName(),
+			state: room.state,
+			isPlaying: room.state === GameState.IN_PROGRESS,
+			host: {
+				id: hostId,
+				name: hostName,
 			},
-		});
+			players: playersList,
+			currentUser: {
+				id: player.id,
+				name: player.name,
+				isReady: player.tag?.isReady || false,
+			},
+		};
 	}
 
 	/**
-	 * 게임 모드 상세 정보를 플레이어에게 전송합니다.
+	 * 게임 모드 상세 정보를 로비 위젯에 전송합니다.
 	 */
-	private sendGameModeDetailsToPlayer(player: GamePlayer, gameMode: GameMode) {
+	private sendGameModeDetailsToLobbyWidget(player: GamePlayer, gameMode: GameMode) {
 		const widgetManager = WidgetManager.instance;
 
-		// 게임 모드 직업 정보 구성
 		const jobs = gameMode.getJobs();
 		const jobsData = jobs.map((job) => ({
 			id: job.id,
@@ -587,8 +622,7 @@ export class Game extends GameBase {
 			team: job.team,
 		}));
 
-		// 게임 모드 정보 전송
-		widgetManager.sendMessageToWidget(player, WidgetType.ROOM, {
+		widgetManager.sendMessageToWidget(player, WidgetType.LOBBY, {
 			type: "gameModeDetails",
 			modeData: {
 				id: gameMode.getId(),
@@ -597,6 +631,35 @@ export class Game extends GameBase {
 				jobs: jobsData,
 			},
 		});
+	}
+
+	/**
+	 * 방 정보를 플레이어에게 전송합니다 (통합 로비 위젯으로).
+	 */
+	private sendRoomInfoToPlayer(player: GamePlayer, room: GameRoom) {
+		const widgetManager = WidgetManager.instance;
+		const roomData = this.buildRoomData(player, room);
+
+		// 로비 위젯으로 방 정보 전송
+		widgetManager.sendMessageToWidget(player, WidgetType.LOBBY, {
+			type: "roomInfo",
+			roomData: roomData,
+		});
+
+		// navbar에 상태 업데이트
+		widgetManager.sendMessageToWidget(player, WidgetType.LOBBY_NAVBAR, {
+			type: "updateRoomStatus",
+			title: roomData.title,
+			readyCount: roomData.readyCount,
+			playerCount: roomData.playerCount,
+		});
+	}
+
+	/**
+	 * @deprecated Use sendGameModeDetailsToLobbyWidget instead
+	 */
+	private sendGameModeDetailsToPlayer(player: GamePlayer, gameMode: GameMode) {
+		this.sendGameModeDetailsToLobbyWidget(player, gameMode);
 	}
 
 	/**
@@ -610,7 +673,15 @@ export class Game extends GameBase {
 			// 자기 자신에게는 알림을 보내지 않음
 			if (p.id !== player.id) {
 				const gamePlayer = ScriptApp.getPlayerByID(p.id) as unknown as GamePlayer;
-				widgetManager.sendMessageToWidget(gamePlayer, WidgetType.ROOM, {
+
+				// 시스템 메시지로 입장 알림
+				widgetManager.sendMessageToWidget(gamePlayer, WidgetType.LOBBY_CHAT, {
+					type: "systemMessage",
+					content: `${player.name}님이 입장했습니다.`,
+				});
+
+				// 로비 위젯에 playerJoined 알림
+				widgetManager.sendMessageToWidget(gamePlayer, WidgetType.LOBBY, {
 					type: "playerJoined",
 					playerId: player.id,
 					playerName: player.name,
@@ -626,6 +697,8 @@ export class Game extends GameBase {
 	 * 플레이어가 방을 나갔을 때 다른 플레이어들에게 알립니다.
 	 */
 	private notifyPlayerLeftRoom(room: GameRoom, player: GamePlayer) {
+		const widgetManager = WidgetManager.instance;
+
 		// 남은 플레이어들에게 알림
 		room.actionToRoomPlayers((p) => {
 			// 자신은 제외
@@ -634,13 +707,21 @@ export class Game extends GameBase {
 			const gamePlayer = getPlayerById(p.id);
 			if (!gamePlayer) return;
 
-			if (gamePlayer.tag.widget.room) {
-				gamePlayer.tag.widget.room.sendMessage({
-					type: "playerLeft",
-					playerId: player.id,
-					playerName: player.name,
-				});
-			}
+			// 시스템 메시지로 퇴장 알림
+			widgetManager.sendMessageToWidget(gamePlayer, WidgetType.LOBBY_CHAT, {
+				type: "systemMessage",
+				content: `${player.name}님이 퇴장했습니다.`,
+			});
+
+			// 로비 위젯에 playerLeft 알림
+			widgetManager.sendMessageToWidget(gamePlayer, WidgetType.LOBBY, {
+				type: "playerLeft",
+				playerId: player.id,
+				playerName: player.name,
+			});
+
+			// 방 정보 업데이트
+			this.sendRoomInfoToPlayer(gamePlayer, room);
 		});
 
 		// 방 정보 업데이트
@@ -656,7 +737,18 @@ export class Game extends GameBase {
 		const players = room.getPlayers() as MafiaPlayer[];
 		players.forEach((p) => {
 			const gamePlayer = ScriptApp.getPlayerByID(p.id) as unknown as GamePlayer;
-			widgetManager.sendMessageToWidget(gamePlayer, WidgetType.ROOM, {
+
+			// 시스템 메시지로 준비 상태 알림
+			const statusMsg = player.tag.isReady
+				? `${player.name}님이 준비 완료했습니다.`
+				: `${player.name}님이 준비를 취소했습니다.`;
+			widgetManager.sendMessageToWidget(gamePlayer, WidgetType.LOBBY_CHAT, {
+				type: "systemMessage",
+				content: statusMsg,
+			});
+
+			// 로비 위젯에 readyStatusChanged 알림
+			widgetManager.sendMessageToWidget(gamePlayer, WidgetType.LOBBY, {
 				type: "readyStatusChanged",
 				playerId: player.id,
 				isReady: player.tag.isReady,
@@ -671,23 +763,46 @@ export class Game extends GameBase {
 	 * 플레이어가 강퇴됐음을 알립니다.
 	 */
 	private notifyPlayerKicked(room: GameRoom, player: GamePlayer) {
-		// 플레이어의 방 위젯 숨기기 (오브젝트 풀 패턴 사용)
-		if (player.tag?.widget?.room) {
-			const widgetManager = WidgetManager.instance;
-			widgetManager.hideWidget(player, WidgetType.ROOM);
-		}
+		const widgetManager = WidgetManager.instance;
 
-		// 로비 위젯 표시
-		this.showLobbyWidget(player);
+		// 로비 상태로 전환 (exitRoom 메시지 전송)
+		this.exitRoomState(player);
+
 		// 강퇴 알림
 		showLabel(player, "방에서 강퇴되었습니다.");
+
+		// 방에 남아있는 플레이어들에게 알림
+		const players = room.getPlayers() as MafiaPlayer[];
+		players.forEach((p) => {
+			const gamePlayer = ScriptApp.getPlayerByID(p.id) as unknown as GamePlayer;
+			if (gamePlayer) {
+				// 시스템 메시지로 강퇴 알림
+				widgetManager.sendMessageToWidget(gamePlayer, WidgetType.LOBBY_CHAT, {
+					type: "systemMessage",
+					content: `${player.name}님이 강퇴되었습니다.`,
+				});
+
+				// 로비 위젯에 playerKicked 알림
+				widgetManager.sendMessageToWidget(gamePlayer, WidgetType.LOBBY, {
+					type: "playerKicked",
+					playerId: player.id,
+					playerName: player.name,
+				});
+
+				// 방 정보 업데이트
+				this.sendRoomInfoToPlayer(gamePlayer, room);
+			}
+		});
 	}
 
 	/**
-	 * 채팅 메시지를 방 전체에 전송합니다.
+	 * 채팅 메시지를 방 전체에 전송합니다 (통합 로비 채팅 위젯으로).
 	 */
-	private sendChatMessageToRoom(room: GameRoom, sender: GamePlayer, content: string) {
+	private sendRoomChatMessage(room: GameRoom, sender: GamePlayer, content: string) {
 		const widgetManager = WidgetManager.instance;
+
+		//@ts-ignore
+		sender.sendMessageBubbleOnly(content);
 
 		const chatMessage = {
 			type: "chatMessage",
@@ -701,8 +816,18 @@ export class Game extends GameBase {
 		const players = room.getPlayers() as MafiaPlayer[];
 		players.forEach((p) => {
 			const gamePlayer = ScriptApp.getPlayerByID(p.id) as unknown as GamePlayer;
-			widgetManager.sendMessageToWidget(gamePlayer, WidgetType.ROOM, chatMessage);
+			widgetManager.sendMessageToWidget(gamePlayer, WidgetType.LOBBY_CHAT, chatMessage);
 		});
+
+		// 관리자 콘솔에 로그
+		sendAdminConsoleMessage(`[Room Chat ${room.id}] ${sender.name}: ${content}`);
+	}
+
+	/**
+	 * @deprecated Use sendRoomChatMessage instead
+	 */
+	private sendChatMessageToRoom(room: GameRoom, sender: GamePlayer, content: string) {
+		this.sendRoomChatMessage(room, sender, content);
 	}
 
 	/**
@@ -850,6 +975,12 @@ export class Game extends GameBase {
 			type: "usersList",
 			users: usersList,
 		});
+
+		// navbar에 접속자 수 업데이트
+		widgetManager.sendMessageToWidget(player, WidgetType.LOBBY_NAVBAR, {
+			type: "updateOnlineCount",
+			count: usersList.length,
+		});
 	}
 
 	/**
@@ -876,6 +1007,12 @@ export class Game extends GameBase {
 				widgetManager.sendMessageToWidget(gamePlayer, WidgetType.LOBBY, {
 					type: "usersList",
 					users: usersList,
+				});
+
+				// navbar에 접속자 수 업데이트
+				widgetManager.sendMessageToWidget(gamePlayer, WidgetType.LOBBY_NAVBAR, {
+					type: "updateOnlineCount",
+					count: usersList.length,
 				});
 			}
 		}
@@ -915,6 +1052,9 @@ export class Game extends GameBase {
 			}
 		}
 
+		// 대기중인 방 수 계산
+		const waitingRoomCount = roomsList.filter(r => r.state === GameState.WAITING).length;
+
 		// 로비에 있는 모든 플레이어에게 방 목록 전송
 		for (const p of ScriptApp.players) {
 			const gamePlayer = p as unknown as GamePlayer;
@@ -923,6 +1063,12 @@ export class Game extends GameBase {
 				widgetManager.sendMessageToWidget(gamePlayer, WidgetType.LOBBY, {
 					type: "roomsList",
 					rooms: roomsList,
+				});
+
+				// navbar에 대기중 방 수 업데이트
+				widgetManager.sendMessageToWidget(gamePlayer, WidgetType.LOBBY_NAVBAR, {
+					type: "updateRoomCount",
+					count: waitingRoomCount,
 				});
 			}
 		}
@@ -961,11 +1107,8 @@ export class Game extends GameBase {
 
 		// 플레이어 강퇴 이벤트
 		this.mafiaGameRoomManager.on("playerKicked", (room, player) => {
-			// 플레이어의 방 위젯 제거
-			if (player.tag?.widget?.room) {
-				player.tag.widget.room.destroy();
-				player.tag.widget.room = null;
-			}
+			// 로비 상태로 전환 (exitRoom 메시지 전송)
+			this.exitRoomState(player);
 
 			// 로비 위젯 표시
 			this.showLobbyWidget(player);
@@ -987,33 +1130,38 @@ export class Game extends GameBase {
 
 		// 게임 시작 이벤트
 		this.mafiaGameRoomManager.on("gameStarted", (room) => {
+			const widgetManager = WidgetManager.instance;
+
 			// 모든 플레이어에게 게임 시작 알림
 			room.actionToRoomPlayers((player) => {
 				const gamePlayer = getPlayerById(player.id);
 				if (!gamePlayer) return;
 
-				// 게임 시작 메시지 전송
-				if (gamePlayer.tag.widget.room) {
-					gamePlayer.tag.widget.room.sendMessage({
-						type: "gameStarting",
-					});
-				}
+				// 게임 시작 시스템 메시지 전송
+				widgetManager.sendMessageToWidget(gamePlayer, WidgetType.LOBBY_CHAT, {
+					type: "systemMessage",
+					content: "게임이 곧 시작됩니다...",
+				});
+
+				// 로비 위젯 숨김 (게임이 시작되면 로비 UI 숨김)
+				widgetManager.hideWidget(gamePlayer, WidgetType.LOBBY);
 			});
 		});
 
 		// 게임 종료 이벤트
 		this.mafiaGameRoomManager.on("gameEnded", (room) => {
+			const widgetManager = WidgetManager.instance;
+
 			// 모든 플레이어에게 게임 종료 알림
 			room.actionToRoomPlayers((player) => {
 				const gamePlayer = getPlayerById(player.id);
 				if (!gamePlayer) return;
 
-				// 게임 종료 메시지 전송
-				if (gamePlayer.tag.widget.room) {
-					gamePlayer.tag.widget.room.sendMessage({
-						type: "gameEnded",
-					});
-				}
+				// 게임 종료 시스템 메시지 전송
+				widgetManager.sendMessageToWidget(gamePlayer, WidgetType.LOBBY_CHAT, {
+					type: "systemMessage",
+					content: "게임이 종료되었습니다.",
+				});
 			});
 
 			// 방 정보 업데이트
@@ -1025,11 +1173,20 @@ export class Game extends GameBase {
 	 * 호스트 변경을 알립니다.
 	 */
 	private notifyHostChanged(room: GameRoom, newHost: GamePlayer) {
+		const widgetManager = WidgetManager.instance;
+
 		const players = room.getPlayers() as MafiaPlayer[];
 		players.forEach((p) => {
 			const gamePlayer = ScriptApp.getPlayerByID(p.id) as unknown as GamePlayer;
-			if (gamePlayer?.tag?.widget?.room) {
-				gamePlayer.tag.widget.room.sendMessage({
+			if (gamePlayer) {
+				// 시스템 메시지로 호스트 변경 알림
+				widgetManager.sendMessageToWidget(gamePlayer, WidgetType.LOBBY_CHAT, {
+					type: "systemMessage",
+					content: `${newHost.name}님이 새로운 방장이 되었습니다.`,
+				});
+
+				// 로비 위젯에 hostChanged 알림
+				widgetManager.sendMessageToWidget(gamePlayer, WidgetType.LOBBY, {
 					type: "hostChanged",
 					newHostId: newHost.id,
 					newHostName: newHost.name,
@@ -1062,7 +1219,7 @@ export class Game extends GameBase {
 			const gamePlayer = p as unknown as GamePlayer;
 			// 방에 입장하지 않은 플레이어만 메시지 전송
 			if (!gamePlayer.tag?.roomInfo) {
-				widgetManager.sendMessageToWidget(gamePlayer, WidgetType.LOBBY, chatMessage);
+				widgetManager.sendMessageToWidget(gamePlayer, WidgetType.LOBBY_CHAT, chatMessage);
 			}
 		}
 
@@ -1090,7 +1247,7 @@ export class Game extends GameBase {
 			const gamePlayer = p as unknown as GamePlayer;
 			// 방에 입장하지 않은 플레이어만 메시지 전송
 			if (!gamePlayer.tag?.roomInfo) {
-				widgetManager.sendMessageToWidget(gamePlayer, WidgetType.LOBBY, chatMessage);
+				widgetManager.sendMessageToWidget(gamePlayer, WidgetType.LOBBY_CHAT, chatMessage);
 			}
 		}
 
