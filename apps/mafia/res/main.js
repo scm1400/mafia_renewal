@@ -718,6 +718,7 @@ var WidgetType;
   WidgetType["ROLE_CARD"] = "ROLE_CARD";
   WidgetType["DAY_CHAT"] = "DAY_CHAT";
   WidgetType["UNIFIED_CHAT"] = "UNIFIED_CHAT";
+  WidgetType["USER_LIST"] = "USER_LIST";
 })(WidgetType || (WidgetType = {}));
 ;// CONCATENATED MODULE: ../../libs/core/mafia/managers/widget/WidgetManager.ts
 
@@ -769,6 +770,7 @@ class WidgetManager {
     this.createAndInitializeWidget(player, widgetMap, WidgetType.APPROVAL_VOTE, "widgets/approval_vote_widget.html", "middle");
     this.createAndInitializeWidget(player, widgetMap, WidgetType.ROLE_CARD, "widgets/role_card.html", "middle");
     this.createAndInitializeWidget(player, widgetMap, WidgetType.UNIFIED_CHAT, "widgets/unified_chat_widget.html", "bottom");
+    this.createAndInitializeWidget(player, widgetMap, WidgetType.USER_LIST, "widgets/user_list_widget.html", "top");
   }
   createAndInitializeWidget(player, widgetMap, widgetType, widgetPath, anchor) {
     const widget = player.showWidget(widgetPath, anchor, 0, 0);
@@ -828,6 +830,9 @@ class WidgetManager {
       case WidgetType.UNIFIED_CHAT:
         player.tag.widget.unifiedChat = widget.element;
         break;
+      case WidgetType.USER_LIST:
+        player.tag.widget.userList = widget.element;
+        break;
       default:
         break;
     }
@@ -872,6 +877,9 @@ class WidgetManager {
           break;
         case WidgetType.UNIFIED_CHAT:
           player.tag.widget.unifiedChat = null;
+          break;
+        case WidgetType.USER_LIST:
+          player.tag.widget.userList = null;
           break;
         default:
           break;
@@ -967,6 +975,7 @@ class WidgetManager {
       player.tag.widget.roleCard = null;
       player.tag.widget.gameModeSelect = null;
       player.tag.widget.unifiedChat = null;
+      player.tag.widget.userList = null;
     }
     sendAdminConsoleMessage(`위젯 정리 완료 (플레이어: ${player.name})`);
   }
@@ -4176,7 +4185,511 @@ function registerCheatCommands() {
   manager.registerCommand(new AutoBotAllCommand());
   manager.registerCommand(new ClearBotsCommand());
 }
+;// CONCATENATED MODULE: ../../libs/utils/EventEmitter.ts
+class EventEmitter {
+  constructor() {
+    this.events = {};
+  }
+  static getInstance() {
+    if (!EventEmitter.instance) {
+      EventEmitter.instance = new EventEmitter();
+    }
+    return EventEmitter.instance;
+  }
+  on(event, listener) {
+    if (!this.events[event]) {
+      this.events[event] = [];
+    }
+    this.events[event].push(listener);
+  }
+  off(event, listener) {
+    if (!this.events[event]) return;
+    this.events[event] = this.events[event].filter(l => l !== listener);
+  }
+  emit(event, ...args) {
+    if (!this.events[event]) return;
+    this.events[event].forEach(listener => {
+      listener(...args);
+    });
+  }
+  once(event, listener) {
+    const onceListener = (...args) => {
+      listener(...args);
+      this.off(event, onceListener);
+    };
+    this.on(event, onceListener);
+  }
+}
+class EventListener {
+  constructor() {
+    this.emitter = EventEmitter.getInstance();
+  }
+  listen(event, callback) {
+    this.emitter.on(event, callback);
+  }
+  stopListening(event, callback) {
+    this.emitter.off(event, callback);
+  }
+}
+var GameEvent;
+(function (GameEvent) {})(GameEvent || (GameEvent = {}));
+;// CONCATENATED MODULE: ../../libs/core/@common/ManagerBase.ts
+
+class ManagerBase {
+  constructor() {
+    this.eventEmitter = EventEmitter.getInstance();
+    this.eventListener = new EventListener();
+  }
+}
+;// CONCATENATED MODULE: ../../libs/core/mafia/types/SocialTypes.ts
+var UserStatus;
+(function (UserStatus) {
+  UserStatus["LOBBY"] = "lobby";
+  UserStatus["IN_ROOM"] = "in_room";
+  UserStatus["IN_GAME"] = "in_game";
+})(UserStatus || (UserStatus = {}));
+;// CONCATENATED MODULE: ../../libs/core/mafia/services/SupabaseService.ts
+
+const SUPABASE_CONFIG = {
+  PROJECT_URL: "https://YOUR_PROJECT_ID.supabase.co",
+  ANON_KEY: "YOUR_ANON_KEY"
+};
+class SupabaseService {
+  constructor() {
+    this.baseUrl = `${SUPABASE_CONFIG.PROJECT_URL}/rest/v1`;
+    this.apiKey = SUPABASE_CONFIG.ANON_KEY;
+    this.headers = {
+      "apikey": this.apiKey,
+      "Authorization": `Bearer ${this.apiKey}`,
+      "Content-Type": "application/json",
+      "Prefer": "return=representation"
+    };
+  }
+  static get instance() {
+    if (!this._instance) {
+      this._instance = new SupabaseService();
+    }
+    return this._instance;
+  }
+  getFriendList(playerId, callback) {
+    const url = `${this.baseUrl}/mafia_friends?or=(requester_id.eq.${playerId},receiver_id.eq.${playerId})&status=eq.accepted`;
+    App.httpGet(url, this.headers, response => {
+      const records = this.parseResponse(response);
+      if (!records) {
+        callback([]);
+        return;
+      }
+      const friendIds = records.map(record => {
+        return record.requester_id === playerId ? record.receiver_id : record.requester_id;
+      });
+      callback(friendIds);
+    });
+  }
+  getPendingRequests(playerId, callback) {
+    const url = `${this.baseUrl}/mafia_friends?receiver_id=eq.${playerId}&status=eq.pending`;
+    App.httpGet(url, this.headers, response => {
+      const records = this.parseResponse(response);
+      if (!records) {
+        callback([]);
+        return;
+      }
+      const requests = records.map(record => ({
+        id: record.id,
+        fromId: record.requester_id,
+        fromName: "",
+        fromImage: "",
+        createdAt: record.created_at
+      }));
+      callback(requests);
+    });
+  }
+  getSentPendingRequests(playerId, callback) {
+    const url = `${this.baseUrl}/mafia_friends?requester_id=eq.${playerId}&status=eq.pending`;
+    App.httpGet(url, this.headers, response => {
+      const records = this.parseResponse(response);
+      if (!records) {
+        callback([]);
+        return;
+      }
+      const receiverIds = records.map(record => record.receiver_id);
+      callback(receiverIds);
+    });
+  }
+  sendFriendRequest(requesterId, receiverId, callback) {
+    const url = `${this.baseUrl}/mafia_friends`;
+    const body = JSON.stringify({
+      requester_id: requesterId,
+      receiver_id: receiverId,
+      status: "pending"
+    });
+    App.httpPost(url, this.headers, body, response => {
+      const result = this.parseResponse(response);
+      callback(result !== null && result.length > 0);
+    });
+  }
+  acceptFriendRequest(requesterId, receiverId, callback) {
+    const url = `${this.baseUrl}/mafia_friends?requester_id=eq.${requesterId}&receiver_id=eq.${receiverId}&status=eq.pending`;
+    const body = JSON.stringify({
+      status: "accepted"
+    });
+    const patchHeaders = Object.assign({}, this.headers);
+    if (App.httpPatch) {
+      App.httpPatch(url, patchHeaders, body, response => {
+        const result = this.parseResponse(response);
+        callback(result !== null && result.length > 0);
+      });
+    } else {
+      this.removeFriendRecord(requesterId, receiverId, removed => {
+        if (!removed) {
+          callback(false);
+          return;
+        }
+        const createUrl = `${this.baseUrl}/mafia_friends`;
+        const createBody = JSON.stringify({
+          requester_id: requesterId,
+          receiver_id: receiverId,
+          status: "accepted"
+        });
+        App.httpPost(createUrl, this.headers, createBody, createResponse => {
+          const createResult = this.parseResponse(createResponse);
+          callback(createResult !== null && createResult.length > 0);
+        });
+      });
+    }
+  }
+  removeFriendRecord(playerId, targetId, callback) {
+    const url = `${this.baseUrl}/mafia_friends?or=(and(requester_id.eq.${playerId},receiver_id.eq.${targetId}),and(requester_id.eq.${targetId},receiver_id.eq.${playerId}))`;
+    if (App.httpDelete) {
+      App.httpDelete(url, this.headers, response => {
+        callback(true);
+      });
+    } else {
+      callback(false);
+    }
+  }
+  getOfflineFriendProfiles(friendIds, callback) {
+    if (friendIds.length === 0) {
+      callback([]);
+      return;
+    }
+    callback([]);
+  }
+  checkIsFriend(playerId, targetId, callback) {
+    const url = `${this.baseUrl}/mafia_friends?or=(and(requester_id.eq.${playerId},receiver_id.eq.${targetId}),and(requester_id.eq.${targetId},receiver_id.eq.${playerId}))&status=eq.accepted`;
+    App.httpGet(url, this.headers, response => {
+      const records = this.parseResponse(response);
+      callback(records !== null && records.length > 0);
+    });
+  }
+  checkPendingRequest(requesterId, receiverId, callback) {
+    const url = `${this.baseUrl}/mafia_friends?requester_id=eq.${requesterId}&receiver_id=eq.${receiverId}&status=eq.pending`;
+    App.httpGet(url, this.headers, response => {
+      const records = this.parseResponse(response);
+      callback(records !== null && records.length > 0);
+    });
+  }
+  parseResponse(response) {
+    const parsed = parseJsonString(response);
+    if (parsed === false) {
+      return null;
+    }
+    return parsed;
+  }
+}
+;// CONCATENATED MODULE: ../../libs/core/mafia/managers/social/SocialManager.ts
+
+
+
+
+
+
+class SocialManager extends ManagerBase {
+  constructor() {
+    super();
+    this.onlineTracker = {};
+    this.updateDelay = 0;
+    this.UPDATE_DELAY_FRAMES = 120;
+    this.playerFriendLists = {};
+    this.playerPendingRequests = {};
+    this.supabaseService = SupabaseService.instance;
+  }
+  addPlayer(player) {
+    var _a, _b;
+    this.onlineTracker[player.id] = {
+      id: player.id,
+      name: player.name,
+      profileImage: ((_b = (_a = player.tag) === null || _a === void 0 ? void 0 : _a.profile) === null || _b === void 0 ? void 0 : _b.avatar) || "",
+      status: UserStatus.LOBBY
+    };
+    this.loadPlayerFriendData(player);
+    this.requestUpdate();
+    sendAdminConsoleMessage(`[SocialManager] 플레이어 추가: ${player.name}`);
+  }
+  removePlayer(playerId) {
+    if (this.onlineTracker[playerId]) {
+      const playerName = this.onlineTracker[playerId].name;
+      delete this.onlineTracker[playerId];
+      delete this.playerFriendLists[playerId];
+      delete this.playerPendingRequests[playerId];
+      this.requestUpdate();
+      sendAdminConsoleMessage(`[SocialManager] 플레이어 제거: ${playerName}`);
+    }
+  }
+  updatePlayerStatus(playerId, status, roomId, roomTitle) {
+    const userData = this.onlineTracker[playerId];
+    if (!userData) return;
+    userData.status = status;
+    userData.roomId = roomId;
+    userData.roomTitle = roomTitle;
+    this.requestUpdate();
+    sendAdminConsoleMessage(`[SocialManager] 상태 업데이트: ${userData.name} -> ${status}`);
+  }
+  requestUpdate() {
+    this.updateDelay = this.UPDATE_DELAY_FRAMES;
+  }
+  onUpdate(dt) {
+    if (this.updateDelay > 0) {
+      this.updateDelay--;
+      if (this.updateDelay === 0) {
+        this.broadcastUserListUpdate();
+      }
+    }
+  }
+  broadcastUserListUpdate() {
+    const players = this.getOnlinePlayers();
+    for (const playerId of Object.keys(this.onlineTracker)) {
+      const player = players.find(p => p.id === playerId);
+      if (player) {
+        this.sendRefreshList(player);
+      }
+    }
+  }
+  sendRefreshList(player) {
+    WidgetManager.instance.sendMessageToWidget(player, WidgetType.USER_LIST, {
+      type: "refreshList",
+      onlineTracker: this.onlineTracker
+    });
+  }
+  loadPlayerFriendData(player) {
+    this.supabaseService.getFriendList(player.id, friendIds => {
+      this.playerFriendLists[player.id] = friendIds;
+      this.supabaseService.getPendingRequests(player.id, requests => {
+        const enrichedRequests = requests.map(req => {
+          const requesterData = this.onlineTracker[req.fromId];
+          return Object.assign(Object.assign({}, req), {
+            fromName: (requesterData === null || requesterData === void 0 ? void 0 : requesterData.name) || "알 수 없음",
+            fromImage: (requesterData === null || requesterData === void 0 ? void 0 : requesterData.profileImage) || ""
+          });
+        });
+        this.playerPendingRequests[player.id] = enrichedRequests;
+      });
+    });
+  }
+  showUserListWidget(player) {
+    const friendList = this.playerFriendLists[player.id] || [];
+    const pendingRequests = this.playerPendingRequests[player.id] || [];
+    const initData = {
+      onlineTracker: this.onlineTracker,
+      friendList: friendList,
+      pendingRequests: pendingRequests,
+      myId: player.id
+    };
+    WidgetManager.instance.sendMessageToWidget(player, WidgetType.USER_LIST, Object.assign({
+      type: "init"
+    }, initData));
+    WidgetManager.instance.showWidget(player, WidgetType.USER_LIST);
+  }
+  hideUserListWidget(player) {
+    WidgetManager.instance.hideWidget(player, WidgetType.USER_LIST);
+  }
+  handleUserListMessage(player, msg) {
+    switch (msg.type) {
+      case "lookupUser":
+        this.handleLookupUser(player, msg.targetId);
+        break;
+      case "whisper":
+        this.handleWhisper(player, msg.targetId, msg.message);
+        break;
+      case "joinRoom":
+        this.handleJoinRoom(player, msg.roomId);
+        break;
+      case "sendFriendRequest":
+        this.handleSendFriendRequest(player, msg.targetId);
+        break;
+      case "acceptFriendRequest":
+        this.handleAcceptFriendRequest(player, msg.requesterId);
+        break;
+      case "rejectFriendRequest":
+        this.handleRejectFriendRequest(player, msg.requesterId);
+        break;
+      case "removeFriend":
+        this.handleRemoveFriend(player, msg.friendId);
+        break;
+      case "closeWidget":
+        this.hideUserListWidget(player);
+        break;
+    }
+  }
+  handleLookupUser(player, targetId) {
+    const targetData = this.onlineTracker[targetId];
+    if (!targetData) {
+      player.sendMessage("해당 유저를 찾을 수 없습니다.", 0xFFAAAA);
+      return;
+    }
+    player.sendMessage(`${targetData.name}님의 프로필 (상태: ${this.getStatusText(targetData.status)})`, 0x00f0ff);
+  }
+  handleWhisper(player, targetId, message) {
+    const targetData = this.onlineTracker[targetId];
+    if (!targetData) {
+      player.sendMessage("해당 유저를 찾을 수 없습니다.", 0xFFAAAA);
+      return;
+    }
+    const targetPlayers = this.getOnlinePlayers();
+    const targetPlayer = targetPlayers.find(p => p.id === targetId);
+    if (targetPlayer) {
+      targetPlayer.sendMessage(`[귓속말] ${player.name}: ${message}`, 0xff2d95);
+      player.sendMessage(`[귓속말 -> ${targetData.name}] ${message}`, 0xff2d95);
+    }
+  }
+  handleJoinRoom(player, roomId) {
+    this.eventEmitter.emit("JOIN_ROOM_REQUEST", {
+      player,
+      roomId
+    });
+  }
+  handleSendFriendRequest(player, targetId) {
+    if (player.id === targetId) {
+      player.sendMessage("자기 자신에게 친구 요청을 보낼 수 없습니다.", 0xFFAAAA);
+      return;
+    }
+    const targetData = this.onlineTracker[targetId];
+    if (!targetData) {
+      player.sendMessage("해당 유저를 찾을 수 없습니다.", 0xFFAAAA);
+      return;
+    }
+    const friendList = this.playerFriendLists[player.id] || [];
+    if (friendList.includes(targetId)) {
+      player.sendMessage("이미 친구입니다.", 0xFFAAAA);
+      return;
+    }
+    this.supabaseService.sendFriendRequest(player.id, targetId, success => {
+      var _a, _b;
+      if (success) {
+        player.sendMessage(`${targetData.name}님에게 친구 요청을 보냈습니다.`, 0x00ff88);
+        const targetPlayers = this.getOnlinePlayers();
+        const targetPlayer = targetPlayers.find(p => p.id === targetId);
+        if (targetPlayer) {
+          this.loadPlayerFriendData(targetPlayer);
+          WidgetManager.instance.sendMessageToWidget(targetPlayer, WidgetType.USER_LIST, {
+            type: "friendRequestReceived",
+            fromId: player.id,
+            fromName: player.name,
+            fromImage: ((_b = (_a = player.tag) === null || _a === void 0 ? void 0 : _a.profile) === null || _b === void 0 ? void 0 : _b.avatar) || ""
+          });
+          targetPlayer.sendMessage(`${player.name}님이 친구 요청을 보냈습니다.`, 0x00f0ff);
+        }
+      } else {
+        player.sendMessage("친구 요청 전송에 실패했습니다.", 0xFFAAAA);
+      }
+    });
+  }
+  handleAcceptFriendRequest(player, requesterId) {
+    this.supabaseService.acceptFriendRequest(requesterId, player.id, success => {
+      if (success) {
+        const requesterData = this.onlineTracker[requesterId];
+        const requesterName = (requesterData === null || requesterData === void 0 ? void 0 : requesterData.name) || "알 수 없음";
+        player.sendMessage(`${requesterName}님의 친구 요청을 수락했습니다.`, 0x00ff88);
+        this.loadPlayerFriendData(player);
+        const targetPlayers = this.getOnlinePlayers();
+        const requesterPlayer = targetPlayers.find(p => p.id === requesterId);
+        if (requesterPlayer) {
+          this.loadPlayerFriendData(requesterPlayer);
+          WidgetManager.instance.sendMessageToWidget(requesterPlayer, WidgetType.USER_LIST, {
+            type: "friendRequestAccepted",
+            byId: player.id,
+            byName: player.name
+          });
+          requesterPlayer.sendMessage(`${player.name}님이 친구 요청을 수락했습니다.`, 0x00ff88);
+        }
+        this.sendFriendListUpdate(player);
+      } else {
+        player.sendMessage("친구 요청 수락에 실패했습니다.", 0xFFAAAA);
+      }
+    });
+  }
+  handleRejectFriendRequest(player, requesterId) {
+    this.supabaseService.removeFriendRecord(requesterId, player.id, success => {
+      if (success) {
+        const requesterData = this.onlineTracker[requesterId];
+        const requesterName = (requesterData === null || requesterData === void 0 ? void 0 : requesterData.name) || "알 수 없음";
+        player.sendMessage(`${requesterName}님의 친구 요청을 거절했습니다.`, 0xFFAAAA);
+        const pendingRequests = this.playerPendingRequests[player.id] || [];
+        this.playerPendingRequests[player.id] = pendingRequests.filter(r => r.fromId !== requesterId);
+        this.sendFriendListUpdate(player);
+      } else {
+        player.sendMessage("친구 요청 거절에 실패했습니다.", 0xFFAAAA);
+      }
+    });
+  }
+  handleRemoveFriend(player, friendId) {
+    this.supabaseService.removeFriendRecord(player.id, friendId, success => {
+      if (success) {
+        const friendData = this.onlineTracker[friendId];
+        const friendName = (friendData === null || friendData === void 0 ? void 0 : friendData.name) || "알 수 없음";
+        player.sendMessage(`${friendName}님을 친구에서 삭제했습니다.`, 0xFFAAAA);
+        const friendList = this.playerFriendLists[player.id] || [];
+        this.playerFriendLists[player.id] = friendList.filter(id => id !== friendId);
+        this.sendFriendListUpdate(player);
+        const targetPlayers = this.getOnlinePlayers();
+        const friendPlayer = targetPlayers.find(p => p.id === friendId);
+        if (friendPlayer) {
+          const friendsFriendList = this.playerFriendLists[friendId] || [];
+          this.playerFriendLists[friendId] = friendsFriendList.filter(id => id !== player.id);
+          this.sendFriendListUpdate(friendPlayer);
+        }
+      } else {
+        player.sendMessage("친구 삭제에 실패했습니다.", 0xFFAAAA);
+      }
+    });
+  }
+  sendFriendListUpdate(player) {
+    const friendList = this.playerFriendLists[player.id] || [];
+    const pendingRequests = this.playerPendingRequests[player.id] || [];
+    WidgetManager.instance.sendMessageToWidget(player, WidgetType.USER_LIST, {
+      type: "friendListUpdate",
+      friendList: friendList,
+      pendingRequests: pendingRequests
+    });
+  }
+  getStatusText(status) {
+    switch (status) {
+      case UserStatus.LOBBY:
+        return "로비 대기";
+      case UserStatus.IN_ROOM:
+        return "방 대기";
+      case UserStatus.IN_GAME:
+        return "게임 중";
+      default:
+        return "알 수 없음";
+    }
+  }
+  getOnlinePlayers() {
+    const players = [];
+    App.players.forEach(player => {
+      players.push(player);
+    });
+    return players;
+  }
+  getOnlineTracker() {
+    return this.onlineTracker;
+  }
+  getPlayerFriendList(playerId) {
+    return this.playerFriendLists[playerId] || [];
+  }
+}
 ;// CONCATENATED MODULE: ../../libs/core/mafia/Game.ts
+
+
 
 
 
@@ -4201,6 +4714,7 @@ class Game extends GameBase {
   constructor() {
     super();
     this.mafiaGameRoomManager = new GameRoomManager();
+    this.socialManager = new SocialManager();
     SpriteManager.getInstance();
     this.addOnStartCallback(this.onStart.bind(this));
     this.addOnJoinPlayerCallback(this.onJoinPlayer.bind(this));
@@ -4220,6 +4734,7 @@ class Game extends GameBase {
     this.setupGameRoomManagerListeners();
   }
   onStart() {
+    App.showProfileOnUnitClick = false;
     App.enableFreeView = false;
     App.sendUpdated();
   }
@@ -4275,6 +4790,7 @@ class Game extends GameBase {
         this.showLobbyWidget(player);
       }, 1);
     }
+    this.socialManager.addPlayer(player);
     this.updateUsersInfo();
     this.sendSystemLobbyChatMessage(`${player.name}님이 게임에 입장했습니다.`);
     player.sendUpdated();
@@ -4338,10 +4854,12 @@ class Game extends GameBase {
             type: "lobbyClosed"
           });
         } else if (data.type === "openUsers") {
+          this.socialManager.showUserListWidget(sender);
           widgetManager.sendMessageToWidget(sender, WidgetType.LOBBY_NAVBAR, {
             type: "usersOpened"
           });
         } else if (data.type === "closeUsers") {
+          this.socialManager.hideUserListWidget(sender);
           widgetManager.sendMessageToWidget(sender, WidgetType.LOBBY_NAVBAR, {
             type: "usersClosed"
           });
@@ -4544,6 +5062,18 @@ class Game extends GameBase {
       lobbyWidget.element.onMessage.Add(messageHandler);
       player.tag.lobbyWidgetMessageHandler = messageHandler;
     }
+    const userListWidget = widgetManager.getWidget(player, WidgetType.USER_LIST);
+    if (userListWidget && userListWidget.element) {
+      const userListHandler = (sender, data) => {
+        this.socialManager.handleUserListMessage(sender, data);
+        if (data.type === "closeWidget") {
+          widgetManager.sendMessageToWidget(sender, WidgetType.LOBBY_NAVBAR, {
+            type: "usersClosed"
+          });
+        }
+      };
+      userListWidget.element.onMessage.Add(userListHandler);
+    }
   }
   hideLobbyPopup(player) {
     const widgetManager = WidgetManager.instance;
@@ -4557,6 +5087,7 @@ class Game extends GameBase {
   }
   enterRoomState(player, room) {
     const widgetManager = WidgetManager.instance;
+    this.socialManager.updatePlayerStatus(player.id, UserStatus.IN_ROOM, room.id, room.title);
     this.hideLobbyPopup(player);
     const roomData = this.buildRoomData(player, room);
     widgetManager.sendMessageToWidget(player, WidgetType.LOBBY_NAVBAR, {
@@ -4578,6 +5109,7 @@ class Game extends GameBase {
   }
   exitRoomState(player) {
     const widgetManager = WidgetManager.instance;
+    this.socialManager.updatePlayerStatus(player.id, UserStatus.LOBBY);
     widgetManager.sendMessageToWidget(player, WidgetType.LOBBY_NAVBAR, {
       type: "exitRoom"
     });
@@ -4592,7 +5124,7 @@ class Game extends GameBase {
     var _a;
     const players = room.getPlayers();
     let hostName = "알 수 없음";
-    let hostId = room.hostId || "";
+    const hostId = room.hostId || "";
     if (room.hostId) {
       const hostPlayer = players.find(p => p.id === hostId);
       if (hostPlayer) {
@@ -4789,6 +5321,7 @@ class Game extends GameBase {
   onLeavePlayer(player) {
     var _a;
     sendAdminConsoleMessage(`[Game] Player ${player.name} (${player.id}) 퇴장`);
+    this.socialManager.removePlayer(player.id);
     if ((_a = player.tag) === null || _a === void 0 ? void 0 : _a.roomInfo) {
       const roomNum = player.tag.roomInfo.roomNum;
       const roomId = roomNum.toString();
@@ -4815,6 +5348,7 @@ class Game extends GameBase {
     this.updateUsersInfo();
   }
   update(dt) {
+    this.socialManager.onUpdate(dt);
     for (let i = 1; i <= Game.ROOM_COUNT; i++) {
       const room = this.mafiaGameRoomManager.getRoom(i.toString());
       if (room && room.flowManager.isGameInProgress()) {
@@ -4966,6 +5500,7 @@ class Game extends GameBase {
       room.actionToRoomPlayers(player => {
         const gamePlayer = getPlayerById(player.id);
         if (!gamePlayer) return;
+        this.socialManager.updatePlayerStatus(gamePlayer.id, UserStatus.IN_GAME, room.id, room.title);
         widgetManager.sendMessageToWidget(gamePlayer, WidgetType.LOBBY_CHAT, {
           type: "systemMessage",
           content: "게임이 곧 시작됩니다..."
@@ -4978,6 +5513,7 @@ class Game extends GameBase {
       room.actionToRoomPlayers(player => {
         const gamePlayer = getPlayerById(player.id);
         if (!gamePlayer) return;
+        this.socialManager.updatePlayerStatus(gamePlayer.id, UserStatus.IN_ROOM, room.id, room.title);
         widgetManager.sendMessageToWidget(gamePlayer, WidgetType.LOBBY_CHAT, {
           type: "systemMessage",
           content: "게임이 종료되었습니다."

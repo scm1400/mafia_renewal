@@ -102,6 +102,9 @@ export class WidgetManager {
         this.createAndInitializeWidget(player, widgetMap, WidgetType.APPROVAL_VOTE, "widgets/approval_vote_widget.html", "middle");
         this.createAndInitializeWidget(player, widgetMap, WidgetType.ROLE_CARD, "widgets/role_card.html", "middle");
         this.createAndInitializeWidget(player, widgetMap, WidgetType.UNIFIED_CHAT, "widgets/unified_chat_widget.html", "bottom");
+
+        // 소셜 위젯
+        this.createAndInitializeWidget(player, widgetMap, WidgetType.USER_LIST, "widgets/user_list_widget.html", "top");
     }
 
     /**
@@ -187,6 +190,9 @@ export class WidgetManager {
             case WidgetType.UNIFIED_CHAT:
                 player.tag.widget.unifiedChat = widget.element;
                 break;
+            case WidgetType.USER_LIST:
+                player.tag.widget.userList = widget.element;
+                break;
             default:
                 break;
         }
@@ -239,6 +245,9 @@ export class WidgetManager {
                     break;
                 case WidgetType.UNIFIED_CHAT:
                     player.tag.widget.unifiedChat = null;
+                    break;
+                case WidgetType.USER_LIST:
+                    player.tag.widget.userList = null;
                     break;
                 default:
                     break;
@@ -422,6 +431,7 @@ export class WidgetManager {
             player.tag.widget.roleCard = null;
             player.tag.widget.gameModeSelect = null;
             player.tag.widget.unifiedChat = null;
+            player.tag.widget.userList = null;
         }
         
         sendAdminConsoleMessage(`위젯 정리 완료 (플레이어: ${player.name})`);

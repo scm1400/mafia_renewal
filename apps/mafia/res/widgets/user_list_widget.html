@@ -1,0 +1,1028 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <link rel="stylesheet" as="style" crossorigin
+        href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.6/dist/web/variable/pretendardvariable-dynamic-subset.css">
+    <style>
+        :root {
+            /* Cyberpunk colors */
+            --neon-cyan: #00f0ff;
+            --neon-cyan-dark: #00b8cc;
+            --neon-pink: #ff2d95;
+            --neon-purple: #b026ff;
+            --warning: #ffaa00;
+
+            /* Background */
+            --bg-base: #0a0a0f;
+            --bg-card: rgba(18, 18, 26, 0.98);
+            --bg-elevated: rgba(26, 26, 37, 0.95);
+            --bg-overlay: rgba(10, 10, 15, 0.85);
+
+            /* Text */
+            --text-primary: #ffffff;
+            --text-secondary: #a0a0b0;
+            --text-muted: #606070;
+
+            /* Status */
+            --success: #00ff88;
+            --danger: #ff3366;
+
+            /* Misc */
+            --shadow-card: 0 4px 20px rgba(0, 0, 0, 0.3);
+            --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.5);
+            --radius-full: 9999px;
+            --radius-lg: 14px;
+            --radius-md: 10px;
+            --radius-sm: 8px;
+            --border-subtle: rgba(255, 255, 255, 0.1);
+            --border-cyan: rgba(0, 240, 255, 0.3);
+            --glow-cyan: 0 0 20px rgba(0, 240, 255, 0.4);
+            --glow-cyan-subtle: 0 0 10px rgba(0, 240, 255, 0.2);
+            --transition-fast: 0.15s ease;
+            --transition-normal: 0.25s ease;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: "Pretendard Variable", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        html, body {
+            width: 100%;
+            height: 100%;
+            background: transparent;
+            overflow: hidden;
+        }
+
+        body {
+            display: flex;
+            align-items: flex-start;
+            justify-content: center;
+            padding-top: 60px;
+        }
+
+        body.mobile {
+            padding-top: 50px;
+        }
+
+        /* ========== Scrollbar ========== */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--bg-base);
+            border-radius: var(--radius-full);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--bg-elevated);
+            border-radius: var(--radius-full);
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(0, 240, 255, 0.3);
+        }
+
+        /* ========== Main Container ========== */
+        .userlist-container {
+            display: none;
+            flex-direction: column;
+            width: 320px;
+            max-width: calc(100% - 32px);
+            max-height: calc(100% - 80px);
+            background: var(--bg-card);
+            border: 1px solid var(--border-cyan);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-lg), var(--glow-cyan-subtle);
+            overflow: hidden;
+        }
+
+        body.mobile .userlist-container {
+            width: calc(100% - 16px);
+            max-height: calc(100% - 60px);
+        }
+
+        /* ========== Header ========== */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 14px 16px;
+            background: linear-gradient(180deg, var(--bg-elevated) 0%, var(--bg-card) 100%);
+            border-bottom: 1px solid var(--border-subtle);
+        }
+
+        .header-title {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--neon-cyan);
+        }
+
+        .header-title__icon {
+            font-size: 18px;
+        }
+
+        .header-title__count {
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--text-secondary);
+        }
+
+        .header-close {
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-md);
+            color: var(--text-secondary);
+            font-size: 18px;
+            cursor: pointer;
+            transition: all var(--transition-fast);
+        }
+
+        .header-close:hover {
+            border-color: var(--neon-pink);
+            color: var(--neon-pink);
+        }
+
+        /* ========== Search ========== */
+        .search-bar {
+            padding: 12px 16px;
+            background: var(--bg-card);
+            border-bottom: 1px solid var(--border-subtle);
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 10px 14px;
+            background: var(--bg-base);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-full);
+            color: var(--text-primary);
+            font-size: 13px;
+            transition: all var(--transition-fast);
+        }
+
+        .search-input::placeholder {
+            color: var(--text-muted);
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: var(--neon-cyan);
+            box-shadow: var(--glow-cyan-subtle);
+        }
+
+        /* ========== Friend Request Alert ========== */
+        .friend-request-alert {
+            display: none;
+            padding: 12px 16px;
+            background: rgba(255, 45, 149, 0.1);
+            border-bottom: 1px solid rgba(255, 45, 149, 0.3);
+        }
+
+        .friend-request-alert.show {
+            display: block;
+        }
+
+        .alert-content {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+        }
+
+        .alert-text {
+            flex: 1;
+            font-size: 13px;
+            color: var(--text-primary);
+        }
+
+        .alert-text strong {
+            color: var(--neon-pink);
+        }
+
+        .alert-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .alert-btn {
+            padding: 6px 12px;
+            font-size: 12px;
+            font-weight: 600;
+            border: none;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            transition: all var(--transition-fast);
+        }
+
+        .alert-btn.accept {
+            background: var(--success);
+            color: var(--bg-base);
+        }
+
+        .alert-btn.reject {
+            background: var(--bg-elevated);
+            color: var(--text-secondary);
+            border: 1px solid var(--border-subtle);
+        }
+
+        .alert-btn:hover {
+            transform: scale(1.05);
+        }
+
+        /* ========== User List ========== */
+        .user-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 8px 0;
+        }
+
+        /* ========== Category ========== */
+        .category {
+            margin-bottom: 4px;
+        }
+
+        .category-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 16px;
+            cursor: pointer;
+            transition: background var(--transition-fast);
+        }
+
+        .category-header:hover {
+            background: var(--bg-elevated);
+        }
+
+        .category-title {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .category-count {
+            font-size: 11px;
+            color: var(--text-muted);
+            background: var(--bg-elevated);
+            padding: 2px 8px;
+            border-radius: var(--radius-full);
+        }
+
+        .category-toggle {
+            font-size: 12px;
+            color: var(--text-muted);
+            transition: transform var(--transition-fast);
+        }
+
+        .category.collapsed .category-toggle {
+            transform: rotate(-90deg);
+        }
+
+        .category-items {
+            display: block;
+        }
+
+        .category.collapsed .category-items {
+            display: none;
+        }
+
+        /* ========== User Item ========== */
+        .user-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 16px;
+            cursor: pointer;
+            transition: all var(--transition-fast);
+            position: relative;
+        }
+
+        .user-item:hover {
+            background: var(--bg-elevated);
+        }
+
+        .user-item.friend {
+            background: rgba(0, 240, 255, 0.03);
+            border-left: 3px solid var(--neon-cyan);
+        }
+
+        .user-item.friend:hover {
+            background: rgba(0, 240, 255, 0.08);
+        }
+
+        .user-item.offline {
+            opacity: 0.5;
+        }
+
+        .user-avatar {
+            position: relative;
+            width: 40px;
+            height: 40px;
+            border-radius: var(--radius-full);
+            background: var(--bg-base);
+            border: 2px solid var(--border-subtle);
+            overflow: hidden;
+            flex-shrink: 0;
+        }
+
+        .user-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .user-avatar__initial {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--text-secondary);
+        }
+
+        .status-indicator {
+            position: absolute;
+            bottom: 0;
+            right: 0;
+            width: 12px;
+            height: 12px;
+            border-radius: var(--radius-full);
+            border: 2px solid var(--bg-card);
+        }
+
+        .status-indicator.lobby {
+            background: var(--neon-cyan);
+            box-shadow: 0 0 8px var(--neon-cyan);
+        }
+
+        .status-indicator.in_room {
+            background: var(--warning);
+            box-shadow: 0 0 8px var(--warning);
+        }
+
+        .status-indicator.in_game {
+            background: var(--neon-pink);
+            box-shadow: 0 0 8px var(--neon-pink);
+        }
+
+        .status-indicator.offline {
+            background: var(--text-muted);
+        }
+
+        .user-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .user-name {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-primary);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .user-status {
+            font-size: 12px;
+            color: var(--text-secondary);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .user-status__text {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .user-status__room {
+            color: var(--neon-cyan);
+            font-weight: 500;
+        }
+
+        /* ========== Context Menu ========== */
+        .context-menu {
+            display: none;
+            position: fixed;
+            background: var(--bg-card);
+            border: 1px solid var(--border-cyan);
+            border-radius: var(--radius-md);
+            box-shadow: var(--shadow-lg), var(--glow-cyan-subtle);
+            min-width: 160px;
+            z-index: 1000;
+            overflow: hidden;
+        }
+
+        .context-menu.show {
+            display: block;
+        }
+
+        .context-menu-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px 16px;
+            font-size: 13px;
+            color: var(--text-primary);
+            cursor: pointer;
+            transition: all var(--transition-fast);
+        }
+
+        .context-menu-item:hover {
+            background: var(--bg-elevated);
+        }
+
+        .context-menu-item__icon {
+            font-size: 14px;
+            width: 20px;
+            text-align: center;
+        }
+
+        .context-menu-divider {
+            height: 1px;
+            background: var(--border-subtle);
+            margin: 4px 0;
+        }
+
+        .context-menu-item.danger {
+            color: var(--danger);
+        }
+
+        .context-menu-item.danger:hover {
+            background: rgba(255, 51, 102, 0.1);
+        }
+
+        .context-menu-item.friend-action {
+            color: var(--neon-cyan);
+        }
+
+        .context-menu-item.friend-action:hover {
+            background: rgba(0, 240, 255, 0.1);
+        }
+
+        /* ========== Empty State ========== */
+        .empty-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 40px 20px;
+            text-align: center;
+        }
+
+        .empty-state__icon {
+            font-size: 48px;
+            margin-bottom: 12px;
+            opacity: 0.5;
+        }
+
+        .empty-state__title {
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 6px;
+        }
+
+        .empty-state__desc {
+            font-size: 13px;
+            color: var(--text-muted);
+        }
+
+        /* ========== Overlay ========== */
+        .overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            z-index: 999;
+        }
+
+        .overlay.show {
+            display: block;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="userlistContainer" class="userlist-container">
+        <!-- Header -->
+        <div class="header">
+            <div class="header-title">
+                <span class="header-title__icon">👥</span>
+                <span>접속자</span>
+                <span id="totalCount" class="header-title__count">(0명)</span>
+            </div>
+            <button id="closeBtn" class="header-close">×</button>
+        </div>
+
+        <!-- Search Bar -->
+        <div class="search-bar">
+            <input type="text" id="searchInput" class="search-input" placeholder="유저 검색...">
+        </div>
+
+        <!-- Friend Request Alert -->
+        <div id="friendRequestAlert" class="friend-request-alert">
+            <div class="alert-content">
+                <span class="alert-text"><strong id="requesterName">유저</strong>님이 친구 요청을 보냈습니다</span>
+                <div class="alert-actions">
+                    <button id="acceptRequestBtn" class="alert-btn accept">수락</button>
+                    <button id="rejectRequestBtn" class="alert-btn reject">거절</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- User List -->
+        <div id="userList" class="user-list">
+            <!-- Me Category -->
+            <div id="categoryMe" class="category">
+                <div class="category-header" onclick="toggleCategory('me')">
+                    <div class="category-title">
+                        <span>나</span>
+                    </div>
+                    <span class="category-toggle">▼</span>
+                </div>
+                <div id="categoryMeItems" class="category-items"></div>
+            </div>
+
+            <!-- Friends Category -->
+            <div id="categoryFriends" class="category">
+                <div class="category-header" onclick="toggleCategory('friends')">
+                    <div class="category-title">
+                        <span>친구</span>
+                        <span id="friendsCount" class="category-count">0</span>
+                    </div>
+                    <span class="category-toggle">▼</span>
+                </div>
+                <div id="categoryFriendsItems" class="category-items"></div>
+            </div>
+
+            <!-- General Users Category -->
+            <div id="categoryUsers" class="category">
+                <div class="category-header" onclick="toggleCategory('users')">
+                    <div class="category-title">
+                        <span>일반 유저</span>
+                        <span id="usersCount" class="category-count">0</span>
+                    </div>
+                    <span class="category-toggle">▼</span>
+                </div>
+                <div id="categoryUsersItems" class="category-items"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Context Menu -->
+    <div id="contextMenu" class="context-menu">
+        <div class="context-menu-item" onclick="handleContextAction('profile')">
+            <span class="context-menu-item__icon">📋</span>
+            <span>프로필 보기</span>
+        </div>
+        <div class="context-menu-item" onclick="handleContextAction('whisper')">
+            <span class="context-menu-item__icon">💬</span>
+            <span>귓속말</span>
+        </div>
+        <div id="joinRoomItem" class="context-menu-item" style="display: none;" onclick="handleContextAction('joinRoom')">
+            <span class="context-menu-item__icon">🚪</span>
+            <span>같은 방 입장</span>
+        </div>
+        <div class="context-menu-divider"></div>
+        <div id="addFriendItem" class="context-menu-item friend-action" onclick="handleContextAction('addFriend')">
+            <span class="context-menu-item__icon">➕</span>
+            <span>친구 추가</span>
+        </div>
+        <div id="removeFriendItem" class="context-menu-item danger" style="display: none;" onclick="handleContextAction('removeFriend')">
+            <span class="context-menu-item__icon">➖</span>
+            <span>친구 삭제</span>
+        </div>
+    </div>
+
+    <!-- Overlay for closing context menu -->
+    <div id="overlay" class="overlay" onclick="hideContextMenu()"></div>
+
+    <script>
+        // ============================================================
+        // State
+        // ============================================================
+        let _isMobile = false;
+        let _isTablet = false;
+        let _init = false;
+        let _isVisible = false;
+        let _myId = null;
+        let _onlineTracker = {};
+        let _friendList = [];
+        let _pendingRequests = [];
+        let _searchTerm = '';
+        let _selectedUser = null;
+        let _currentPendingRequest = null;
+
+        const DEFAULT_PROFILE = "https://i.imgur.com/9MVcq2a.png";
+
+        const _initInterval = setInterval(() => {
+            if (!_init) {
+                sendMessage("retryInit");
+            } else {
+                clearInterval(_initInterval);
+            }
+        }, 1000);
+
+        // ============================================================
+        // DOM Elements
+        // ============================================================
+        const userlistContainer = document.getElementById('userlistContainer');
+        const closeBtn = document.getElementById('closeBtn');
+        const searchInput = document.getElementById('searchInput');
+        const totalCountEl = document.getElementById('totalCount');
+        const friendsCountEl = document.getElementById('friendsCount');
+        const usersCountEl = document.getElementById('usersCount');
+        const categoryMeItems = document.getElementById('categoryMeItems');
+        const categoryFriendsItems = document.getElementById('categoryFriendsItems');
+        const categoryUsersItems = document.getElementById('categoryUsersItems');
+        const contextMenu = document.getElementById('contextMenu');
+        const overlay = document.getElementById('overlay');
+        const friendRequestAlert = document.getElementById('friendRequestAlert');
+        const requesterNameEl = document.getElementById('requesterName');
+
+        // ============================================================
+        // Event Listeners
+        // ============================================================
+        closeBtn.addEventListener('click', closeWidget);
+        searchInput.addEventListener('input', handleSearch);
+
+        document.getElementById('acceptRequestBtn').addEventListener('click', () => {
+            if (_currentPendingRequest) {
+                sendMessage("acceptFriendRequest", { requesterId: _currentPendingRequest.fromId });
+                hideFriendRequestAlert();
+            }
+        });
+
+        document.getElementById('rejectRequestBtn').addEventListener('click', () => {
+            if (_currentPendingRequest) {
+                sendMessage("rejectFriendRequest", { requesterId: _currentPendingRequest.fromId });
+                hideFriendRequestAlert();
+            }
+        });
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                if (contextMenu.classList.contains('show')) {
+                    hideContextMenu();
+                } else {
+                    closeWidget();
+                }
+            }
+        });
+
+        // ============================================================
+        // Messaging
+        // ============================================================
+        function sendMessage(type, payload = {}) {
+            window.parent.postMessage({ type, ...payload }, "*");
+        }
+
+        window.addEventListener("message", e => {
+            const data = e.data;
+            if (!data || !data.type) return;
+
+            switch (data.type) {
+                case "setWidget":
+                    _isMobile = data.isMobile || false;
+                    _isTablet = data.isTablet || false;
+                    initWidget();
+                    break;
+
+                case "init":
+                    _init = true;
+                    _myId = data.myId;
+                    _onlineTracker = data.onlineTracker || {};
+                    _friendList = data.friendList || [];
+                    _pendingRequests = data.pendingRequests || [];
+                    renderUserList();
+                    showPendingRequest();
+                    break;
+
+                case "showWidget":
+                    showWidget();
+                    break;
+
+                case "hideWidget":
+                    hideWidget();
+                    break;
+
+                case "refreshList":
+                    _onlineTracker = data.onlineTracker || {};
+                    renderUserList();
+                    break;
+
+                case "friendListUpdate":
+                    _friendList = data.friendList || [];
+                    _pendingRequests = data.pendingRequests || [];
+                    renderUserList();
+                    showPendingRequest();
+                    break;
+
+                case "friendRequestReceived":
+                    _pendingRequests.push({
+                        fromId: data.fromId,
+                        fromName: data.fromName,
+                        fromImage: data.fromImage
+                    });
+                    showPendingRequest();
+                    break;
+
+                case "friendRequestAccepted":
+                    // Refresh will be triggered by friendListUpdate
+                    break;
+            }
+        });
+
+        // ============================================================
+        // Widget Functions
+        // ============================================================
+        function initWidget() {
+            if (_isMobile && !_isTablet) {
+                document.body.classList.add('mobile');
+            } else {
+                document.body.classList.remove('mobile');
+            }
+            hideWidget();
+        }
+
+        function showWidget() {
+            _isVisible = true;
+            userlistContainer.style.display = 'flex';
+            rearrangeLayout();
+        }
+
+        function hideWidget() {
+            _isVisible = false;
+            userlistContainer.style.display = 'none';
+            hideContextMenu();
+            sendMessage("WidgetRearrange", {
+                width: "0px",
+                height: "0px",
+                pointerEvents: "none"
+            });
+        }
+
+        function closeWidget() {
+            hideWidget();
+            sendMessage("closeWidget");
+        }
+
+        function rearrangeLayout() {
+            if (_isMobile && !_isTablet) {
+                sendMessage("WidgetRearrange", {
+                    width: "100%",
+                    height: "calc(100% - 60px)",
+                    anchor: "top",
+                    top: "50px",
+                    pointerEvents: "auto"
+                });
+            } else if (_isTablet) {
+                sendMessage("WidgetRearrange", {
+                    width: "350px",
+                    height: "calc(100% - 100px)",
+                    anchor: "top",
+                    top: "80px",
+                    pointerEvents: "auto"
+                });
+            } else {
+                sendMessage("WidgetRearrange", {
+                    width: "320px",
+                    height: "calc(100% - 120px)",
+                    anchor: "top",
+                    top: "80px",
+                    pointerEvents: "auto"
+                });
+            }
+        }
+
+        // ============================================================
+        // Render Functions
+        // ============================================================
+        function renderUserList() {
+            const users = Object.values(_onlineTracker);
+            const filteredUsers = _searchTerm
+                ? users.filter(u => u.name.toLowerCase().includes(_searchTerm.toLowerCase()))
+                : users;
+
+            // Separate into categories
+            const me = filteredUsers.filter(u => u.id === _myId);
+            const friends = filteredUsers.filter(u => u.id !== _myId && _friendList.includes(u.id));
+            const others = filteredUsers.filter(u => u.id !== _myId && !_friendList.includes(u.id));
+
+            // Update counts
+            totalCountEl.textContent = `(${users.length}명)`;
+            friendsCountEl.textContent = friends.length;
+            usersCountEl.textContent = others.length;
+
+            // Render each category
+            categoryMeItems.innerHTML = me.map(u => renderUserItem(u, false)).join('');
+            categoryFriendsItems.innerHTML = friends.length > 0
+                ? friends.map(u => renderUserItem(u, true)).join('')
+                : '<div class="empty-state"><div class="empty-state__desc">친구가 없습니다</div></div>';
+            categoryUsersItems.innerHTML = others.length > 0
+                ? others.map(u => renderUserItem(u, false)).join('')
+                : '<div class="empty-state"><div class="empty-state__desc">다른 유저가 없습니다</div></div>';
+
+            // Add click handlers
+            document.querySelectorAll('.user-item').forEach(item => {
+                item.addEventListener('click', (e) => {
+                    showContextMenu(e, item.dataset.userId);
+                });
+            });
+        }
+
+        function renderUserItem(user, isFriend) {
+            const statusClass = user.status || 'lobby';
+            const statusText = getStatusText(user.status, user.roomTitle);
+            const initial = user.name.charAt(0).toUpperCase();
+            const profileImg = user.profileImage || DEFAULT_PROFILE;
+
+            return `
+                <div class="user-item ${isFriend ? 'friend' : ''}" data-user-id="${user.id}">
+                    <div class="user-avatar">
+                        ${profileImg ? `<img src="${profileImg}" alt="" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">` : ''}
+                        <div class="user-avatar__initial" style="${profileImg ? 'display:none' : ''}">${initial}</div>
+                        <div class="status-indicator ${statusClass}"></div>
+                    </div>
+                    <div class="user-info">
+                        <div class="user-name">${escapeHtml(user.name)}</div>
+                        <div class="user-status">
+                            <span class="user-status__text">${statusText}</span>
+                            ${user.roomTitle ? `<span class="user-status__room">${escapeHtml(user.roomTitle)}</span>` : ''}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function getStatusText(status, roomTitle) {
+            switch (status) {
+                case 'lobby': return '로비 대기';
+                case 'in_room': return '방 대기';
+                case 'in_game': return '게임 중';
+                default: return '로비 대기';
+            }
+        }
+
+        // ============================================================
+        // Context Menu
+        // ============================================================
+        function showContextMenu(e, userId) {
+            e.preventDefault();
+            e.stopPropagation();
+
+            if (userId === _myId) return; // Don't show menu for self
+
+            _selectedUser = _onlineTracker[userId];
+            if (!_selectedUser) return;
+
+            const isFriend = _friendList.includes(userId);
+            const hasRoom = _selectedUser.roomId && _selectedUser.status !== 'lobby';
+
+            // Toggle friend actions
+            document.getElementById('addFriendItem').style.display = isFriend ? 'none' : 'flex';
+            document.getElementById('removeFriendItem').style.display = isFriend ? 'flex' : 'none';
+            document.getElementById('joinRoomItem').style.display = hasRoom ? 'flex' : 'none';
+
+            // Position menu
+            const rect = e.currentTarget.getBoundingClientRect();
+            let x = rect.right + 8;
+            let y = rect.top;
+
+            // Adjust if off screen
+            const menuWidth = 160;
+            const menuHeight = 200;
+            if (x + menuWidth > window.innerWidth) {
+                x = rect.left - menuWidth - 8;
+            }
+            if (y + menuHeight > window.innerHeight) {
+                y = window.innerHeight - menuHeight - 16;
+            }
+
+            contextMenu.style.left = `${x}px`;
+            contextMenu.style.top = `${y}px`;
+            contextMenu.classList.add('show');
+            overlay.classList.add('show');
+        }
+
+        function hideContextMenu() {
+            contextMenu.classList.remove('show');
+            overlay.classList.remove('show');
+            _selectedUser = null;
+        }
+
+        function handleContextAction(action) {
+            if (!_selectedUser) return;
+
+            switch (action) {
+                case 'profile':
+                    sendMessage("lookupUser", { targetId: _selectedUser.id });
+                    break;
+                case 'whisper':
+                    const message = prompt(`${_selectedUser.name}님에게 귓속말:`);
+                    if (message && message.trim()) {
+                        sendMessage("whisper", { targetId: _selectedUser.id, message: message.trim() });
+                    }
+                    break;
+                case 'joinRoom':
+                    if (_selectedUser.roomId) {
+                        sendMessage("joinRoom", { roomId: _selectedUser.roomId });
+                    }
+                    break;
+                case 'addFriend':
+                    sendMessage("sendFriendRequest", { targetId: _selectedUser.id });
+                    break;
+                case 'removeFriend':
+                    if (confirm(`${_selectedUser.name}님을 친구에서 삭제하시겠습니까?`)) {
+                        sendMessage("removeFriend", { friendId: _selectedUser.id });
+                    }
+                    break;
+            }
+
+            hideContextMenu();
+        }
+
+        // ============================================================
+        // Friend Request Alert
+        // ============================================================
+        function showPendingRequest() {
+            if (_pendingRequests.length > 0) {
+                _currentPendingRequest = _pendingRequests[0];
+                requesterNameEl.textContent = _currentPendingRequest.fromName || '알 수 없음';
+                friendRequestAlert.classList.add('show');
+            } else {
+                hideFriendRequestAlert();
+            }
+        }
+
+        function hideFriendRequestAlert() {
+            friendRequestAlert.classList.remove('show');
+            _currentPendingRequest = null;
+            // Remove from local array
+            if (_pendingRequests.length > 0) {
+                _pendingRequests.shift();
+                showPendingRequest(); // Show next if any
+            }
+        }
+
+        // ============================================================
+        // Category Toggle
+        // ============================================================
+        function toggleCategory(category) {
+            const el = document.getElementById(`category${capitalize(category)}`);
+            if (el) {
+                el.classList.toggle('collapsed');
+            }
+        }
+
+        // ============================================================
+        // Search
+        // ============================================================
+        function handleSearch() {
+            _searchTerm = searchInput.value.trim();
+            renderUserList();
+        }
+
+        // ============================================================
+        // Utility
+        // ============================================================
+        function escapeHtml(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function capitalize(str) {
+            return str.charAt(0).toUpperCase() + str.slice(1);
+        }
+    </script>
+</body>
+
+</html>

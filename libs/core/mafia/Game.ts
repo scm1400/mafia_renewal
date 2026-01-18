@@ -16,6 +16,8 @@ import { SpriteManager, SpriteType } from "./managers/Sprite/SpriteManager";
 import { CommandParser } from "./managers/command/CommandParser";
 import { CommandManager } from "./managers/command/CommandManager";
 import { registerCheatCommands } from "./managers/command/CheatCommands";
+import { SocialManager } from "./managers/social/SocialManager";
+import { UserStatus } from "./types/SocialTypes";
 
 export const adminList = [];
 export class Game extends GameBase {
@@ -23,6 +25,7 @@ export class Game extends GameBase {
 	public static ROOM_COUNT = 0;
 
 	private mafiaGameRoomManager: GameRoomManager = new GameRoomManager();
+	private socialManager: SocialManager = new SocialManager();
 
 	static create() {
 		if (!Game._instance) {
@@ -65,7 +68,9 @@ export class Game extends GameBase {
 	}
 
 	private onStart() {
-		ScriptApp.enableFreeView = false;
+		//@ts-ignore
+		ScriptApp.showProfileOnUnitClick = false;
+		ScriptApp.enableFreeView = false;		
 		ScriptApp.sendUpdated();
 	}
 
@@ -153,6 +158,9 @@ export class Game extends GameBase {
 				this.showLobbyWidget(player);
 			}, 1);
 		}
+
+		// SocialManager에 플레이어 추가
+		this.socialManager.addPlayer(player);
 
 		// 모든 플레이어에게 유저 목록 업데이트 전송 (기존 코드 유지)
 		this.updateUsersInfo();
@@ -247,10 +255,12 @@ export class Game extends GameBase {
 					widgetManager.hideWidget(sender, WidgetType.LOBBY);
 					widgetManager.sendMessageToWidget(sender, WidgetType.LOBBY_NAVBAR, { type: "lobbyClosed" });
 				} else if (data.type === "openUsers") {
-					// 유저 목록 팝업 (추후 구현)
+					// 유저 목록 팝업 표시
+					this.socialManager.showUserListWidget(sender);
 					widgetManager.sendMessageToWidget(sender, WidgetType.LOBBY_NAVBAR, { type: "usersOpened" });
 				} else if (data.type === "closeUsers") {
 					// 유저 목록 팝업 닫기
+					this.socialManager.hideUserListWidget(sender);
 					widgetManager.sendMessageToWidget(sender, WidgetType.LOBBY_NAVBAR, { type: "usersClosed" });
 				} else if (data.type === "openRoomPopup") {
 					// 방 상태일 때 참가자 팝업 표시 요청
@@ -470,6 +480,21 @@ export class Game extends GameBase {
 			lobbyWidget.element.onMessage.Add(messageHandler);
 			player.tag.lobbyWidgetMessageHandler = messageHandler;
 		}
+
+		// ========== 유저 목록 위젯 메시지 핸들러 ==========
+		const userListWidget = widgetManager.getWidget(player, WidgetType.USER_LIST);
+		if (userListWidget && userListWidget.element) {
+			const userListHandler = (sender: GamePlayer, data) => {
+				this.socialManager.handleUserListMessage(sender, data);
+
+				// 위젯 닫기 시 navbar 상태 동기화
+				if (data.type === "closeWidget") {
+					widgetManager.sendMessageToWidget(sender, WidgetType.LOBBY_NAVBAR, { type: "usersClosed" });
+				}
+			};
+
+			userListWidget.element.onMessage.Add(userListHandler);
+		}
 	}
 
 	/**
@@ -500,6 +525,9 @@ export class Game extends GameBase {
 	 */
 	private enterRoomState(player: GamePlayer, room: GameRoom) {
 		const widgetManager = WidgetManager.instance;
+
+		// SocialManager에서 플레이어 상태 업데이트
+		this.socialManager.updatePlayerStatus(player.id, UserStatus.IN_ROOM, room.id, room.title);
 
 		// LOBBY 팝업만 숨김
 		this.hideLobbyPopup(player);
@@ -539,6 +567,9 @@ export class Game extends GameBase {
 	private exitRoomState(player: GamePlayer) {
 		const widgetManager = WidgetManager.instance;
 
+		// SocialManager에서 플레이어 상태를 로비로 변경
+		this.socialManager.updatePlayerStatus(player.id, UserStatus.LOBBY);
+
 		// 모든 로비 위젯에 exitRoom 메시지 전송
 		widgetManager.sendMessageToWidget(player, WidgetType.LOBBY_NAVBAR, {
 			type: "exitRoom",
@@ -559,7 +590,7 @@ export class Game extends GameBase {
 	private buildRoomData(player: GamePlayer, room: GameRoom) {
 		const players = room.getPlayers() as MafiaPlayer[];
 		let hostName = "알 수 없음";
-		let hostId = room.hostId || "";
+		const hostId = room.hostId || "";
 
 		if (room.hostId) {
 			const hostPlayer = players.find((p) => p.id === hostId);
@@ -863,6 +894,9 @@ export class Game extends GameBase {
 	protected onLeavePlayer(player: GamePlayer): void {
 		sendAdminConsoleMessage(`[Game] Player ${player.name} (${player.id}) 퇴장`);
 
+		// SocialManager에서 플레이어 제거
+		this.socialManager.removePlayer(player.id);
+
 		// 방에 있는 경우 방에서도 퇴장 처리
 		if (player.tag?.roomInfo) {
 			const roomNum = player.tag.roomInfo.roomNum;
@@ -909,6 +943,9 @@ export class Game extends GameBase {
 	}
 
 	private update(dt: number) {
+		// SocialManager 업데이트 (유저 목록 갱신 처리)
+		this.socialManager.onUpdate(dt);
+
 		// 각 방의 게임 상태 업데이트
 		for (let i = 1; i <= Game.ROOM_COUNT; i++) {
 			const room = this.mafiaGameRoomManager.getRoom(i.toString());
@@ -1137,6 +1174,9 @@ export class Game extends GameBase {
 				const gamePlayer = getPlayerById(player.id);
 				if (!gamePlayer) return;
 
+				// SocialManager에서 플레이어 상태를 게임 중으로 변경
+				this.socialManager.updatePlayerStatus(gamePlayer.id, UserStatus.IN_GAME, room.id, room.title);
+
 				// 게임 시작 시스템 메시지 전송
 				widgetManager.sendMessageToWidget(gamePlayer, WidgetType.LOBBY_CHAT, {
 					type: "systemMessage",
@@ -1156,6 +1196,9 @@ export class Game extends GameBase {
 			room.actionToRoomPlayers((player) => {
 				const gamePlayer = getPlayerById(player.id);
 				if (!gamePlayer) return;
+
+				// SocialManager에서 플레이어 상태를 방 대기로 변경
+				this.socialManager.updatePlayerStatus(gamePlayer.id, UserStatus.IN_ROOM, room.id, room.title);
 
 				// 게임 종료 시스템 메시지 전송
 				widgetManager.sendMessageToWidget(gamePlayer, WidgetType.LOBBY_CHAT, {

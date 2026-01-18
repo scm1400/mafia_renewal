@@ -21,4 +21,5 @@ export enum WidgetType {
     ROLE_CARD = "ROLE_CARD",
     DAY_CHAT = "DAY_CHAT",        // deprecated - 추후 삭제
     UNIFIED_CHAT = "UNIFIED_CHAT", // 통합 채팅 위젯
+    USER_LIST = "USER_LIST",       // 유저 목록 위젯
 } 
